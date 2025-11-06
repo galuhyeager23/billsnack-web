@@ -5,6 +5,8 @@ const cors = require('cors');
 const pool = require('./db');
 const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
+const adminRouter = require('./routes/admin');
+const uploadsRouter = require('./routes/uploads');
 
 const app = express();
 // allow larger JSON payloads because registration may include base64 image data URLs
@@ -37,6 +39,10 @@ app.get('/', (req, res) => res.json({ ok: true, message: 'Billsnack API running'
 
 app.use('/api/products', productsRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/admin', adminRouter);
+// serve uploaded files statically
+app.use('/uploads', express.static(require('path').join(__dirname, 'public', 'uploads')));
+app.use('/api/uploads', uploadsRouter);
 
 // health check route that verifies DB connection
 app.get('/health', async (req, res) => {

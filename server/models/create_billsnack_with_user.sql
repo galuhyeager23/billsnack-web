@@ -35,6 +35,13 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT,
   price DECIMAL(10,2) NOT NULL DEFAULT 0.00,
   stock INT NOT NULL DEFAULT 0,
+  category VARCHAR(255) DEFAULT NULL,
+  -- store image URLs/paths as JSON array (or TEXT holding JSON if JSON type unsupported)
+  images JSON DEFAULT NULL,
+  original_price DECIMAL(10,2) DEFAULT NULL,
+  rating DECIMAL(3,2) DEFAULT 0,
+  review_count INT DEFAULT 0,
+  colors JSON DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -76,3 +83,25 @@ ALTER TABLE `users`
   ADD COLUMN IF NOT EXISTS `province` VARCHAR(100) DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `profile_image` LONGTEXT DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS `profile_image_url` VARCHAR(2048) DEFAULT NULL;
+
+-- Ensure new product columns exist for upgrades
+ALTER TABLE `products`
+  ADD COLUMN IF NOT EXISTS `category` VARCHAR(255) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `images` JSON DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `original_price` DECIMAL(10,2) DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS `rating` DECIMAL(3,2) DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `review_count` INT DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS `colors` JSON DEFAULT NULL;
+
+-- Optional: seed an admin user. MySQL cannot create a bcrypt hash by itself,
+-- so replace <BCRYPT_HASH> with a bcrypt hash produced by Node/bcrypt.
+-- Example: from the project `server` folder run:
+--   node -e "require('bcrypt').hash('admin',10).then(h=>console.log(h))"
+-- Then copy the printed hash into the SQL below in place of <BCRYPT_HASH>.
+-- The INSERT will only run if the admin email does not already exist.
+USE `billsnack`;
+INSERT INTO users (email, password_hash, first_name, role, created_at)
+SELECT 'admin@billsnack.id', '<BCRYPT_HASH>', 'Admin', 'admin', NOW()
+FROM DUAL
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@billsnack.id');
+

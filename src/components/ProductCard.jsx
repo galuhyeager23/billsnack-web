@@ -3,11 +3,17 @@ import { Link } from "react-router-dom";
 import StarRating from "./StarRating";
 
 const ProductCard = ({ product }) => {
+  // product.images can be array of strings or array of objects { original, thumb }
+  const firstImage = (product.images && product.images.length > 0) ? product.images[0] : null;
+  const imageUrl = firstImage
+    ? (typeof firstImage === 'string' ? firstImage : (firstImage.thumb || firstImage.original))
+    : '/images/placeholder.png';
+
   return (
     <Link to={`/product/${product.id}`} className="group">
       <div className="bg-gray-100 rounded-lg overflow-hidden">
         <img
-          src={product.images[0]}
+          src={imageUrl}
           alt={product.name}
           className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-300"
         />

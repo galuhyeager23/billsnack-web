@@ -9,9 +9,6 @@ const AdminLoginPage = () => {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  // Default admin credentials
-  const ADMIN_EMAIL = "admin@billsnack.id";
-  const ADMIN_PASSWORD = "admin123456";
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -22,27 +19,33 @@ const AdminLoginPage = () => {
     setError("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Validate credentials
-    if (
-      formData.email === ADMIN_EMAIL &&
-      formData.password === ADMIN_PASSWORD
-    ) {
-      // Store admin auth in localStorage
-      localStorage.setItem(
-        "adminAuth",
-        JSON.stringify({
-          isLoggedIn: true,
-          email: formData.email,
-          loginTime: new Date().toISOString(),
-        })
-      );
-      navigate("/admin");
-    } else {
-      setError("Kredensial admin tidak valid. Silakan coba lagi.");
-      setFormData({ email: "", password: "" });
+    setError("");
+    try {
+      const res = await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:4000')}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // send admin:true so backend can treat this as an admin login attempt
+        body: JSON.stringify({ email: formData.email, password: formData.password, admin: true }),
+      });
+      if (!res.ok) {
+        setError('Kredensial admin tidak valid. Silakan coba lagi.');
+        return;
+      }
+      const data = await res.json();
+      // expected { user, token }
+      if (data && data.token) {
+        // store token for admin API calls
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminAuth', JSON.stringify({ isLoggedIn: true, email: data.user.email || formData.email, loginTime: new Date().toISOString() }));
+        navigate('/admin');
+      } else {
+        setError('Login gagal - respon tidak valid');
+      }
+    } catch (err) {
+      console.error('Admin login error', err);
+      setError('Terjadi kesalahan saat menghubungkan server');
     }
   };
 
@@ -99,18 +102,17 @@ const AdminLoginPage = () => {
               Masuk
             </button>
           </form>
-
           <div className="mt-8 p-4 bg-blue-50 rounded-lg">
             <p className="text-sm text-blue-900 mb-2">
               <strong>📌 Kredensial Admin Demo:</strong>
             </p>
             <p className="text-sm text-blue-800">
-              Email:{" "}
+              Email: {" "}
               <code className="bg-blue-100 px-2 py-1">admin@billsnack.id</code>
             </p>
             <p className="text-sm text-blue-800">
-              Kata Sandi:{" "}
-              <code className="bg-blue-100 px-2 py-1">admin123456</code>
+              Kata Sandi: {" "}
+              <code className="bg-blue-100 px-2 py-1">admin</code>
             </p>
           </div>
 

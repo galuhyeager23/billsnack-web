@@ -9,6 +9,7 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_in_production';
 const SALT_ROUNDS = process.env.SALT_ROUNDS ? Number(process.env.SALT_ROUNDS) : 10;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@billsnack.id';
 
 // Register
 router.post('/register', async (req, res) => {
@@ -59,6 +60,15 @@ router.post('/login', async (req, res) => {
     const userRow = rows[0];
     const ok = await bcrypt.compare(password, userRow.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+    // If this request is an admin login attempt (Admin UI sends admin: true),
+    // require that the user has role 'admin' and matches the configured ADMIN_EMAIL.
+    const isAdminLogin = req.body && req.body.admin;
+    if (isAdminLogin) {
+      if (userRow.role !== 'admin' || (userRow.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+      }
+    }
 
     const user = {
       id: userRow.id,
@@ -161,4 +171,6 @@ router.put('/profile', verifyToken, async (req, res) => {
   }
 });
 
+// expose verifyToken for other route modules (attach to router function object)
 module.exports = router;
+module.exports.verifyToken = verifyToken;

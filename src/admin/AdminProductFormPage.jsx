@@ -5,7 +5,7 @@ import { useProducts } from "../contexts/ProductContext";
 const AdminProductFormPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getProductById, addProduct, updateProduct } = useProducts();
+  const { getProductById, addProduct, updateProduct, uploadImages } = useProducts();
   const isEditing = Boolean(id);
 
   const [product, setProduct] = useState({
@@ -58,9 +58,22 @@ const AdminProductFormPage = () => {
     });
   };
 
+  // handle comma-separated inputs for array fields (e.g., colors as hex values)
   const handleArrayChange = (e, field) => {
-    const values = e.target.value.split(",").map((item) => item.trim());
-    setProduct({ ...product, [field]: values });
+    const raw = e.target.value || "";
+    const values = raw.split(",").map((item) => item.trim()).filter(Boolean);
+    if (field === 'colors') {
+      // convert to array of { name, hex }
+      const colorObjs = values.map((v) => {
+        // allow inputs like "name:hex" or just "#hex"
+        const parts = v.split(":").map(p => p.trim());
+        if (parts.length === 2) return { name: parts[0], hex: parts[1] };
+        return { name: "", hex: parts[0] };
+      });
+      setProduct({ ...product, [field]: colorObjs });
+    } else {
+      setProduct({ ...product, [field]: values });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -71,25 +84,28 @@ const AdminProductFormPage = () => {
       return;
     }
 
-    // Handle image upload (simulated)
-    let finalImages = product.images;
-    if (selectedImages.length > 0) {
-      // In a real app, you would upload files to a server and get URLs back
-      // For demo purposes, we'll create placeholder URLs
-      finalImages = selectedImages.map((_, index) => `/images/uploaded-${Date.now()}-${index}.jpg`);
-    }
+    // Upload selected images (if any) then create/update via ProductContext
+    let finalImages = product.images || [];
+    try {
+      if (selectedImages.length > 0) {
+        // upload via ProductContext.uploadImages (returns array of { original, thumb })
+        const uploaded = await uploadImages(selectedImages);
+        if (uploaded && uploaded.length > 0) {
+          finalImages = uploaded; // store objects so frontend can use thumb/original
+        }
+      }
 
-    const productToSave = {
-      ...product,
-      images: finalImages,
-    };
-
-    if (isEditing) {
-      updateProduct(productToSave);
-    } else {
-      addProduct(productToSave);
+      const productToSave = { ...product, images: finalImages };
+      if (isEditing) {
+        await updateProduct(productToSave);
+      } else {
+        await addProduct(productToSave);
+      }
+      navigate('/admin/products');
+    } catch (err) {
+      console.error('Failed to save product', err);
+      alert('Gagal menyimpan produk. Periksa konsol untuk detail.');
     }
-    navigate("/admin/products");
   };
 
   const FormInput = ({ label, name, value, onChange, type = "text", required = false }) => (
@@ -144,6 +160,12 @@ const AdminProductFormPage = () => {
             type="number"
             value={product.originalPrice || ""}
             onChange={handleChange}
+          />
+          <FormInput
+            label="Warna (contoh: name:#hex atau #hex, pisah koma)"
+            name="colors"
+            value={Array.isArray(product.colors) ? product.colors.map(c => (typeof c === 'string' ? c : (c.name ? `${c.name}:${c.hex}` : c.hex))).join(',') : ''}
+            onChange={(e) => handleArrayChange(e, 'colors')}
           />
         </div>
         <div>
