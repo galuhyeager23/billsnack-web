@@ -32,35 +32,60 @@ export const AuthProvider = ({ children }) => {
     }
   }, [user]);
 
-  const register = async ({ email, password, firstName, lastName }) => {
-    const res = await fetch(`${API_BASE}/api/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, firstName, lastName }),
-    });
+  const register = async ({ email, password, firstName, lastName, username, phone, gender, profileImage, profileImageUrl }) => {
+    const body = { email, password, firstName, lastName };
+    if (username) body.username = username;
+    if (phone) body.phone = phone;
+    if (gender) body.gender = gender;
+    if (profileImage) body.profileImage = profileImage;
+    if (profileImageUrl) body.profileImageUrl = profileImageUrl;
+
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    } catch (networkErr) {
+      console.error('Network error when calling register:', networkErr);
+      throw new Error('Network error: could not reach backend. Pastikan server backend berjalan.');
+    }
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Registration failed');
     }
     const data = await res.json();
     setToken(data.token);
-    setUser(data.user);
+    const userObj = data.user || {};
+    if (userObj.firstName || userObj.lastName) userObj.name = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
+    setUser(userObj);
     return data;
   };
 
   const login = async ({ email, password }) => {
-    const res = await fetch(`${API_BASE}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    let res;
+    try {
+      res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+    } catch (networkErr) {
+      console.error('Network error when calling login:', networkErr);
+      throw new Error('Network error: could not reach backend. Pastikan server backend berjalan.');
+    }
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Login failed');
     }
     const data = await res.json();
     setToken(data.token);
-    setUser(data.user);
+    const userObj = data.user || {};
+    if (userObj.firstName || userObj.lastName) userObj.name = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
+    setUser(userObj);
     return data;
   };
 
@@ -70,14 +95,61 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateProfile = (userData) => {
-    setUser(prevUser => {
-      if (!prevUser) return null;
-      const updatedUser = { ...prevUser, ...userData };
-      if (userData.firstName || userData.lastName) {
-        updatedUser.name = `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim();
-      }
-      return updatedUser;
-    });
+    // If we have a token, persist the profile to the backend
+    if (token) {
+      (async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/auth/profile`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(userData),
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const updated = data.user;
+            // derive display name
+            if (updated.firstName || updated.lastName) {
+              updated.name = `${updated.firstName || ''} ${updated.lastName || ''}`.trim();
+            }
+            setUser(updated);
+          } else {
+            const err = await res.json().catch(() => ({}));
+            console.error('Failed to update profile on server', err);
+            // fallback: update locally
+            setUser(prev => {
+              if (!prev) return null;
+              const updatedLocal = { ...prev, ...userData };
+              if (userData.firstName || userData.lastName) {
+                updatedLocal.name = `${updatedLocal.firstName || ''} ${updatedLocal.lastName || ''}`.trim();
+              }
+              return updatedLocal;
+            });
+          }
+        } catch (e) {
+          console.error('Profile update error', e);
+          setUser(prev => {
+            if (!prev) return null;
+            const updatedLocal = { ...prev, ...userData };
+            if (userData.firstName || userData.lastName) {
+              updatedLocal.name = `${updatedLocal.firstName || ''} ${updatedLocal.lastName || ''}`.trim();
+            }
+            return updatedLocal;
+          });
+        }
+      })();
+    } else {
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        const updatedUser = { ...prevUser, ...userData };
+        if (userData.firstName || userData.lastName) {
+          updatedUser.name = `${updatedUser.firstName || ''} ${updatedUser.lastName || ''}`.trim();
+        }
+        return updatedUser;
+      });
+    }
   };
 
   return (

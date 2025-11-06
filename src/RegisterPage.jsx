@@ -6,6 +6,26 @@ const RegisterPage = () => {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const fileInputRef = React.useRef(null);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('File harus berupa gambar');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Ukuran gambar maksimal 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => setAvatarPreview(null);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [gender, setGender] = useState("");
@@ -27,7 +47,9 @@ const RegisterPage = () => {
     try {
       setLoading(true);
       // Call AuthContext.register which talks to backend
-      await register({ email, password, firstName, lastName });
+      const payload = { email, password, firstName, lastName, username, phone, gender };
+      if (avatarPreview) payload.profileImage = avatarPreview;
+      await register(payload);
       navigate('/');
     } catch (err) {
       console.error('Register error', err);
@@ -55,6 +77,26 @@ const RegisterPage = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="lastName">Nama Belakang</label>
                 <input id="lastName" type="text" placeholder="Nama belakang" value={lastName} onChange={(e)=>setLastName(e.target.value)} required className="w-full rounded-lg border border-gray-200 py-3 px-4 focus:ring-2 focus:ring-yellow-300" />
+              </div>
+            </div>
+
+            <div className="mb-4 flex items-center gap-6">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="text-gray-400">No Image</div>
+                  )}
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+              </div>
+              <div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => fileInputRef.current && fileInputRef.current.click()} className="px-3 py-2 bg-yellow-500 text-white rounded-md">Unggah</button>
+                  <button type="button" onClick={handleRemoveAvatar} className="px-3 py-2 border rounded-md">Hapus</button>
+                </div>
+                <p className="text-sm text-gray-500 mt-2">Format: JPG/PNG, max 2MB</p>
               </div>
             </div>
 

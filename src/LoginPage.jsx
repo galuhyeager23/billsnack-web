@@ -11,14 +11,20 @@ const LoginPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // In a real app, you'd validate credentials against a backend.
-    // Here, we'll just simulate a successful login.
-    if (email && password) {
-      login({ name: "Test User", email: email });
-      navigate("/");
-    } else {
-      alert("Harap masukkan email dan kata sandi.");
-    }
+    // call real login API via AuthContext
+    (async () => {
+      try {
+        if (!email || !password) {
+          alert('Harap masukkan email dan kata sandi.');
+          return;
+        }
+        await login({ email, password });
+        navigate('/');
+      } catch (err) {
+        console.error('Login failed', err);
+        alert(err.message || 'Gagal masuk. Periksa kredensial Anda.');
+      }
+    })();
   };
 
   return (
