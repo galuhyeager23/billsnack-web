@@ -62,6 +62,41 @@ const Header = () => {
     navigate("/");
   };
 
+  // create a small ripple/shadow effect at the click position inside the clicked element
+  // createRipple accepts optional color (e.g. red for Keluar) and duration (ms)
+  const createRipple = (e, color = 'rgba(0,0,0,0.08)', duration = 700) => {
+    const target = e.currentTarget;
+    if (!target) return;
+    // ensure container positioning
+    target.style.position = target.style.position || 'relative';
+    target.style.overflow = 'hidden';
+    const rect = target.getBoundingClientRect();
+    const circle = document.createElement('span');
+    const size = Math.max(rect.width, rect.height) * 1.2;
+    const x = e.clientX - rect.left - size / 2;
+    const y = e.clientY - rect.top - size / 2;
+    circle.style.position = 'absolute';
+    circle.style.left = `${x}px`;
+    circle.style.top = `${y}px`;
+    circle.style.width = `${size}px`;
+    circle.style.height = `${size}px`;
+    circle.style.borderRadius = '50%';
+  circle.style.background = color;
+    circle.style.pointerEvents = 'none';
+    circle.style.transform = 'scale(0)';
+    circle.style.transition = 'transform 350ms ease-out, opacity 600ms ease-out';
+    target.appendChild(circle);
+    // trigger animation
+    requestAnimationFrame(() => {
+      circle.style.transform = 'scale(1)';
+      circle.style.opacity = '0';
+    });
+    // remove after animation
+    setTimeout(() => {
+      if (circle && circle.parentElement === target) target.removeChild(circle);
+    }, duration);
+  };
+
   // Close user menu when clicking outside or pressing Escape
   useEffect(() => {
     function handleClickOutside(e) {
@@ -179,26 +214,53 @@ const Header = () => {
                       </div>
                     </button>
                     {isUserMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20">
-                        <div className="px-4 py-2 text-sm text-gray-700">
-                          Masuk sebagai
-                          <br />
-                          <span className="font-medium">{user.name}</span>
+                      <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-2 z-20">
+                        <div className="px-4 py-3 flex items-center gap-3">
+                          <div className="w-12 h-12">
+                            <UserAvatar name={user.name} src={user.profileImage} size={10} />
+                          </div>
+                          <div className="text-sm text-gray-700">
+                            <div className="text-xs text-gray-500">Masuk sebagai</div>
+                            <div className="font-medium truncate" style={{ maxWidth: 160 }}>{user.name}</div>
+                          </div>
                         </div>
-                        <div className="border-t border-gray-100"></div>
-                        <Link
-                          to="/profile"
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => setIsUserMenuOpen(false)}
-                        >
-                          Profil Saya
-                        </Link>
-                        <button
-                          onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        >
-                          Keluar
-                        </button>
+                        <div className="border-t border-gray-100 my-1"></div>
+                        {(() => {
+                          const itemClass = 'relative overflow-hidden block w-full text-left px-4 py-2 text-sm text-gray-700 hover:text-blue-600 focus:text-blue-600 hover:bg-transparent focus:bg-transparent active:bg-transparent focus:outline-none shadow-none hover:shadow-none bg-transparent appearance-none border-none';
+                          return (
+                            <Link
+                              to="/profile"
+                              className={itemClass}
+                              onClick={(e) => {
+                                createRipple(e);
+                                setIsUserMenuOpen(false);
+                              }}
+                            >
+                              Profil Saya
+                            </Link>
+                          );
+                        })()}
+                        {(() => {
+                          const itemClass = 'relative overflow-hidden block w-full text-left px-4 py-2 text-sm text-gray-700 hover:text-blue-600 focus:text-blue-600 hover:bg-transparent focus:bg-transparent active:bg-transparent focus:outline-none shadow-none hover:shadow-none bg-transparent appearance-none border-none';
+                          return (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                // red ripple for destructive action, delay logout so ripple is visible
+                                createRipple(e, 'rgba(220,38,38,0.12)', 500);
+                                setTimeout(() => {
+                                  setIsUserMenuOpen(false);
+                                  handleLogout();
+                                }, 160);
+                              }}
+                              className={itemClass}
+                              style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
+                              aria-label="Keluar"
+                            >
+                              Keluar
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>

@@ -90,6 +90,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Clear storage immediately so other tabs/components see logged-out state
+    try {
+      localStorage.removeItem('billsnack_user');
+      localStorage.removeItem('billsnack_token');
+    } catch {
+      // ignore
+    }
     setUser(null);
     setToken(null);
   };
