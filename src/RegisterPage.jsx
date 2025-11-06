@@ -11,25 +11,28 @@ const RegisterPage = () => {
   const [gender, setGender] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { register } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (firstName && lastName && username && email && phone && gender && password) {
-      // Simulate registration and login
-      const fullName = `${firstName} ${lastName}`.trim();
-      login({
-        firstName,
-        lastName,
-        username,
-        name: fullName,
-        email,
-        phone,
-        gender,
-      });
-      navigate("/");
-    } else {
-      alert("Harap isi semua kolom.");
+    setError(null);
+    if (!firstName || !lastName || !email || !password) {
+      setError('Harap isi nama depan, nama belakang, email, dan password.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // Call AuthContext.register which talks to backend
+      await register({ email, password, firstName, lastName });
+      navigate('/');
+    } catch (err) {
+      console.error('Register error', err);
+      setError(err.message || 'Pendaftaran gagal');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -184,10 +187,14 @@ const RegisterPage = () => {
             <button
               className="bg-black hover:bg-gray-800 text-white font-bold py-3 px-6 rounded-full focus:outline-none focus:shadow-outline w-full"
               type="submit"
+              disabled={loading}
             >
-              Daftar
+              {loading ? 'Mendaftarkan...' : 'Daftar'}
             </button>
           </div>
+          {error && (
+            <p className="text-center text-red-500 text-sm mt-4">{error}</p>
+          )}
           <p className="text-center text-gray-500 text-sm mt-6">
             Sudah punya akun?{" "}
             <Link to="/login" className="font-bold text-black hover:underline">
