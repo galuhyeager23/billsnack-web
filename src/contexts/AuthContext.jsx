@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from "react";
 
 const AuthContext = createContext(undefined);
@@ -9,7 +10,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const raw = localStorage.getItem('billsnack_user');
       return raw ? JSON.parse(raw) : null;
-    } catch (e) {
+    } catch {
       return null;
     }
   });

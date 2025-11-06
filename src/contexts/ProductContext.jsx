@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 // Fix: Populating ProductContext to manage and provide product data, as the file was empty.
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { PRODUCTS } from "../constants";
@@ -27,7 +28,6 @@ export const ProductProvider = ({ children }) => {
 
   useEffect(() => {
     fetchProducts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getProductById = (id) => products.find((p) => Number(p.id) === Number(id));

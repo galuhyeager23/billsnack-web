@@ -26,4 +26,13 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // Server-side files use Node globals and CommonJS
+  {
+    files: ['server/**', 'server/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: globals.node,
+      parserOptions: { ecmaVersion: 'latest', sourceType: 'script' },
+    },
+    rules: {},
+  },
 ])

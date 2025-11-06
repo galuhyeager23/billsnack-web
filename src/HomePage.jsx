@@ -13,41 +13,61 @@ const HomePage = () => {
   return (
     <div>
       {/* Hero Section */}
-      <section className="bg-white">
-        <div className="px-8 sm:px-12 lg:px-16 py-20 lg:py-32 flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 text-center md:text-left">
-            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-              TEMUKAN SNACK <br /> YANG COCOK <br /> DENGAN SELERA ANDA
+      <section className="bg-gradient-to-r from-yellow-50 via-white to-yellow-50">
+        <div className="px-6 sm:px-12 lg:px-16 py-20 lg:py-32 max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div className="text-center md:text-left">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight text-gray-900">
+              Temukan cemilan favoritmu.
             </h1>
-            <div className="mt-8 flex justify-center md:justify-start space-x-8">
-              <div>
-                <p className="text-3xl font-bold">200+</p>
+            <p className="mt-4 text-gray-600 text-lg max-w-xl mx-auto md:mx-0">
+              Jutaan pilihan snack dari berbagai merek. Cepat, mudah, dan selalu ada promo menarik setiap hari.
+            </p>
+
+            <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center md:items-start">
+              <div className="w-full sm:w-auto flex-1">
+                <div className="flex items-center bg-white rounded-full px-4 py-2 shadow-sm border border-gray-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                  <input className="ml-3 w-full bg-transparent focus:outline-none" placeholder="Cari snack, merk, atau kategori..." />
+                </div>
+              </div>
+
+              <Link to="/shop" className="inline-flex items-center justify-center bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-3 px-6 rounded-full shadow">
+                Belanja Sekarang
+              </Link>
+            </div>
+
+            <div className="mt-8 flex flex-wrap gap-6 justify-center md:justify-start">
+              <div className="text-center">
+                <p className="text-2xl font-bold">200+</p>
                 <p className="text-gray-600 text-sm">Merek</p>
               </div>
-              <div>
-                <p className="text-3xl font-bold">2,000+</p>
+              <div className="text-center">
+                <p className="text-2xl font-bold">2,000+</p>
                 <p className="text-gray-600 text-sm">Produk</p>
               </div>
-              <div>
-                <p className="text-3xl font-bold">30,000+</p>
+              <div className="text-center">
+                <p className="text-2xl font-bold">30,000+</p>
                 <p className="text-gray-600 text-sm">Pelanggan</p>
               </div>
             </div>
-            <Link
-              to="/shop"
-              className="mt-10 inline-block bg-black text-white font-semibold py-4 px-10 rounded-full text-lg hover:bg-gray-800 transition duration-300"
-            >
-              Belanja Sekarang
-            </Link>
           </div>
-          <div className="md:w-1/2 mt-12 md:mt-0 flex justify-center">
-            {/* Placeholder for hero image */}
-            <div className="w-96 h-96 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
-              <img
-                src="https://via.placeholder.com/400x400?text=Hero+Image"
-                alt="Hero"
-                className="w-full h-full object-cover"
-              />
+
+          <div className="flex items-center justify-center">
+            {/* Simple inline SVG illustration to avoid external assets */}
+            <div className="w-80 h-80 bg-white rounded-2xl shadow-xl flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" className="w-64 h-64">
+                <defs>
+                  <linearGradient id="g" x1="0" x2="1">
+                    <stop offset="0" stopColor="#FFD54A" />
+                    <stop offset="1" stopColor="#FFB74D" />
+                  </linearGradient>
+                </defs>
+                <rect x="20" y="30" width="200" height="160" rx="24" fill="url(#g)" />
+                <circle cx="110" cy="80" r="18" fill="#fff" opacity="0.9" />
+                <circle cx="150" cy="110" r="10" fill="#fff" opacity="0.9" />
+                <circle cx="85" cy="130" r="8" fill="#fff" opacity="0.9" />
+                <path d="M60 170c10-12 25-18 40-18s30 6 40 18" stroke="#fff" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.9" />
+              </svg>
             </div>
           </div>
         </div>
@@ -140,7 +160,7 @@ const HomePage = () => {
           <div className="text-center mt-12">
             <Link
               to="/shop"
-              className="border border-black text-black font-semibold py-3 px-8 rounded-full text-lg hover:bg-black hover:text-white transition duration-300"
+              className="inline-flex items-center justify-center bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 px-8 rounded-full shadow transition transform hover:-translate-y-0.5 active:scale-95"
             >
               Lihat Semua
             </Link>
@@ -160,7 +180,7 @@ const HomePage = () => {
           <div className="text-center mt-12">
             <Link
               to="/shop"
-              className="border border-black text-black font-semibold py-3 px-8 rounded-full text-lg hover:bg-black hover:text-white transition duration-300"
+              className="inline-flex items-center justify-center bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 px-8 rounded-full shadow transition transform hover:-translate-y-0.5 active:scale-95"
             >
               Lihat Semua
             </Link>

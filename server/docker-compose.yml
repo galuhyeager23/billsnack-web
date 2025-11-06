@@ -7,7 +7,7 @@ services:
       MYSQL_ROOT_PASSWORD: rootpassword
       MYSQL_DATABASE: billsnack
       MYSQL_USER: billsnack
-      MYSQL_PASSWORD: billsnack_pass
+      MYSQL_PASSWORD: ""
     ports:
       - "3306:3306"
     volumes:
