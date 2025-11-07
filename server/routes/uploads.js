@@ -37,6 +37,7 @@ router.post('/', upload.array('files', 8), (req, res) => {
   try {
     const host = req.get('host');
     const protocol = req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    console.info(`Upload request from ${req.ip} host=${host} files=${(req.files||[]).length}`);
     const filesOut = [];
     // for each uploaded file, create a resized thumbnail if available
     (req.files || []).forEach((f) => {
@@ -66,6 +67,7 @@ router.post('/', upload.array('files', 8), (req, res) => {
       filesOut.push({ original: originalUrl, thumb: thumbUrl });
     });
     // return array of original URLs for backward compatibility plus meta
+    console.info('Upload completed, returning', filesOut.length, 'files');
     res.json({ files: filesOut.map(f => f.original), thumbs: filesOut.map(f => f.thumb), files_meta: filesOut });
   } catch (err) {
     console.error('Upload error', err);

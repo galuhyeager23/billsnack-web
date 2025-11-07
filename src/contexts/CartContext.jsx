@@ -16,13 +16,18 @@ export const CartProvider = ({ children }) => {
             : item
         );
       }
+      // normalize image (product.images may contain strings or objects { original, thumb })
+      const firstImg = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+      const imageUrl = firstImg
+        ? (typeof firstImg === 'string' ? firstImg : (firstImg.thumb || firstImg.original || ''))
+        : '';
       return [
         ...prevItems,
         {
           id: product.id,
           name: product.name,
           price: product.price,
-          image: product.images[0],
+          image: imageUrl,
           quantity,
         },
       ];

@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useProducts } from "./contexts/ProductContext";
 import { useCart } from "./contexts/CartContext";
 import StarRating from "./components/StarRating";
+import { formatPrice } from "./utils/format";
 import ProductCard from "./components/ProductCard";
 
 const ChevronRightIcon = () => (
@@ -28,12 +29,15 @@ const ProductDetailPage = () => {
 
   const product = getProductById(Number(id));
 
-  const [selectedImage, setSelectedImage] = useState(product?.images[0] || "");
+  // selectedImage will store a URL string (normalize objects -> url)
+  const normalizeImg = (img) => (typeof img === 'string' ? img : (img && (img.thumb || img.original)) || '');
+  const [selectedImage, setSelectedImage] = useState(product ? normalizeImg(product.images[0]) : "");
   const [quantity, setQuantity] = useState(1);
+  const [btnHover, setBtnHover] = useState(false);
 
   useEffect(() => {
     if (product) {
-      setSelectedImage(product.images[0]);
+      setSelectedImage(normalizeImg(product.images[0]));
       setQuantity(1);
       window.scrollTo(0, 0);
     }
@@ -52,14 +56,7 @@ const ProductDetailPage = () => {
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
-  const reviews = [
-    { rating: 5, name: "Alex K.", text: "Produk ini luar biasa! Sangat direkomendasikan." },
-    { rating: 5, name: "Sarah M.", text: "Kualitasnya sangat baik dan pengirimannya cepat." },
-    { rating: 4, name: "John D.", text: "Produk bagus, sesuai dengan deskripsi." },
-    { rating: 5, name: "Emma L.", text: "Pembelian terbaik yang pernah saya lakukan. Worth setiap rupiah!" },
-    { rating: 5, name: "Mike T.", text: "Luar biasa! Akan beli lagi." },
-    { rating: 4, name: "Lisa R.", text: "Kualitas bagus dan pengiriman cepat." },
-  ];
+  
 
   return (
     <div className="bg-white">
@@ -79,31 +76,38 @@ const ProductDetailPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div>
-            <div className="bg-gray-100 rounded-lg shadow-sm overflow-hidden mb-4">
-              <img
-                src={selectedImage}
-                alt={product.name}
-                className="w-full h-[500px] object-cover"
-              />
-            </div>
-            <div className="flex space-x-4">
-              {product.images.map((img, index) => (
-                <div
-                  key={index}
-                  className={`w-24 h-24 rounded-md overflow-hidden cursor-pointer border-2 ${
-                    selectedImage === img
-                      ? "border-black"
-                      : "border-gray-200"
-                  }`}
-                  onClick={() => setSelectedImage(img)}
-                >
+            <div className="bg-gray-100 rounded-lg shadow-sm overflow-hidden mb-4 flex items-center justify-center">
+              <div className="w-full max-w-[829px] aspect-[1.08/1] bg-gray-100 flex items-center justify-center overflow-hidden">
+                <div className="w-full h-full flex items-center justify-center p-8 bg-transparent">
                   <img
-                    src={img}
-                    alt={`${product.name} view ${index + 1}`}
-                    className="w-full h-full object-cover"
+                    src={selectedImage}
+                    alt={product.name}
+                    className="max-h-full max-w-full object-contain object-center"
                   />
                 </div>
-              ))}
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              {product.images.map((img, index) => {
+                const url = normalizeImg(img);
+                return (
+                  <div
+                    key={index}
+                    className={`w-24 aspect-[3/2] rounded-md overflow-hidden cursor-pointer border-2 ${
+                      selectedImage === url ? "border-black" : "border-gray-200"
+                    }`}
+                    onClick={() => setSelectedImage(url)}
+                  >
+                    <div className="w-full h-full flex items-center justify-center bg-white">
+                      <img
+                        src={url}
+                        alt={`${product.name} view ${index + 1}`}
+                        className="max-h-full max-w-full object-contain"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -117,22 +121,14 @@ const ProductDetailPage = () => {
               </span>
             </div>
             <div className="flex items-baseline space-x-2 mb-6">
-              <p className="text-3xl font-bold text-black">
-                Rp{product.price.toFixed(2)}
-              </p>
+              <p className="text-3xl font-bold text-black">Rp{formatPrice(product.price)}</p>
               {product.originalPrice && (
-                <p className="text-2xl text-gray-400 line-through">
-                  Rp{product.originalPrice.toFixed(2)}
-                </p>
+                <p className="text-2xl text-gray-400 line-through">Rp{formatPrice(product.originalPrice)}</p>
               )}
             </div>
             <p className="text-gray-600">{product.description}</p>
 
             <hr className="my-8" />
-
-            <div className="space-y-4 mb-6">
-              <p className="text-sm text-gray-600"><strong>Warna:</strong> Merah, Biru, Hitam, Putih</p>
-            </div>
 
             <div className="flex items-center space-x-4 mb-8">
               <div className="flex items-center border rounded-full px-4 py-3">
@@ -154,7 +150,11 @@ const ProductDetailPage = () => {
               </div>
               <button
                 onClick={handleAddToCart}
-                className="flex-grow bg-black text-white font-semibold py-4 px-8 rounded-full text-lg hover:bg-gray-800 transition duration-300"
+                onMouseEnter={() => setBtnHover(true)}
+                onMouseLeave={() => setBtnHover(false)}
+                className="flex-grow text-white font-semibold py-4 px-8 rounded-full text-lg focus:outline-none transition duration-300"
+                aria-label="Tambah ke Keranjang"
+                style={{ backgroundColor: btnHover ? '#E65A00' : '#FF6B00' }}
               >
                 Tambah ke Keranjang
               </button>

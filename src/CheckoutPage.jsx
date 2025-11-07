@@ -103,7 +103,7 @@ const CheckoutPage = () => {
         </p>
         <Link
           to="/shop"
-          className="mt-6 inline-block bg-black text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-gray-800 transition duration-300"
+          className="mt-6 inline-block bg-amber-500 text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
         >
           Kembali ke Toko
         </Link>
@@ -449,7 +449,7 @@ const CheckoutPage = () => {
 
             <button
               type="submit"
-              className="w-full mt-6 bg-black text-white font-semibold py-4 px-8 rounded-full text-lg hover:bg-gray-800 transition duration-300"
+              className="w-full mt-6 bg-amber-500 text-white font-semibold py-4 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
             >
               Buat Pesanan
             </button>

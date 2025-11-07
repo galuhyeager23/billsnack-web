@@ -130,7 +130,7 @@ const OrderConfirmationPage = () => {
         {getPaymentInstructions()}
         <Link
           to="/shop"
-          className="mt-8 inline-block bg-black text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-gray-800 transition duration-300"
+          className="mt-8 inline-block bg-amber-500 text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
         >
           Continue Shopping
         </Link>

@@ -28,15 +28,41 @@ router.get('/products', verifyToken, requireAdmin, async (req, res) => {
 });
 
 router.post('/products', verifyToken, requireAdmin, async (req, res) => {
-  const { name, description, price, stock } = req.body;
+  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
   if (!name || typeof price === 'undefined') return res.status(400).json({ error: 'Missing required fields' });
+  // accept either camelCase `inStock` or snake_case `in_stock` and sanitize
+  const { sanitizeInStock } = require('../utils/validate');
+  const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
+  let in_stock = sanitizeInStock(inStockInput);
+  if (in_stock === null) in_stock = Number(stock) > 0 ? 1 : 0;
   try {
+    // stringify arrays for JSON/DB storage
+    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
+    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
     const [result] = await pool.execute(
-      'INSERT INTO products (name, description, price, stock) VALUES (?, ?, ?, ?)',
-      [name, description || null, price, stock || 0]
+      'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock]
     );
     const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [result.insertId]);
-    res.status(201).json(rows[0]);
+    const r = rows[0];
+    const images = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
+    const colors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
+    const out = {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      price: Number(r.price),
+      stock: Number(r.stock),
+      inStock: !!Number(r.in_stock),
+      category: r.category,
+      images,
+      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
+      rating: r.rating !== null ? Number(r.rating) : 0,
+      reviewCount: r.review_count || 0,
+      colors,
+      createdAt: r.created_at,
+    };
+    res.status(201).json(out);
   } catch (err) {
     console.error('Admin create product error', err);
     res.status(500).json({ error: 'Failed to create product' });
@@ -45,15 +71,38 @@ router.post('/products', verifyToken, requireAdmin, async (req, res) => {
 
 router.put('/products/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock } = req.body;
+  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
+  // accept camelCase `inStock` or snake_case `in_stock`
+  const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
+  const in_stock = typeof inStockInput !== 'undefined' ? (inStockInput ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
   try {
+    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
+    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
     const [result] = await pool.execute(
-      'UPDATE products SET name = ?, description = ?, price = ?, stock = ? WHERE id = ?',
-      [name, description || null, price, stock, id]
+      'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ? WHERE id = ?',
+      [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, id]
     );
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
     const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
-    res.json(rows[0]);
+    const r = rows[0];
+    const images = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
+    const colors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
+    const out = {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      price: Number(r.price),
+      stock: Number(r.stock),
+      inStock: !!Number(r.in_stock),
+      category: r.category,
+      images,
+      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
+      rating: r.rating !== null ? Number(r.rating) : 0,
+      reviewCount: r.review_count || 0,
+      colors,
+      createdAt: r.created_at,
+    };
+    res.json(out);
   } catch (err) {
     console.error('Admin update product error', err);
     res.status(500).json({ error: 'Failed to update product' });

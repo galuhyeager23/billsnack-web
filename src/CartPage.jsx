@@ -108,7 +108,7 @@ const CartPage = () => {
             <h2 className="text-2xl font-semibold">Keranjang Anda kosong</h2>
             <Link
               to="/shop"
-              className="mt-4 inline-block bg-black text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-gray-800 transition duration-300"
+              className="mt-4 inline-block bg-amber-500 text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
             >
               Lanjut Belanja
             </Link>
@@ -157,14 +157,14 @@ const CartPage = () => {
                   placeholder="Tambahkan kode promo"
                   className="flex-grow bg-gray-100 rounded-l-full px-4 py-3 focus:outline-none"
                 />
-                <button className="bg-black text-white font-semibold px-6 rounded-r-full hover:bg-gray-800 transition">
+                <button className="bg-amber-500 text-white font-semibold px-6 rounded-r-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition">
                   Terapkan
                 </button>
               </div>
 
               <Link
                 to="/checkout"
-                className="w-full mt-6 bg-black text-white font-semibold py-4 px-8 rounded-full text-lg hover:bg-gray-800 transition duration-300 flex items-center justify-center"
+                className="w-full mt-6 bg-amber-500 text-white font-semibold py-4 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300 flex items-center justify-center"
               >
                 Lanjut ke Checkout <ChevronRightIcon />
               </Link>

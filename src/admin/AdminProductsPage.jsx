@@ -4,12 +4,16 @@ import { useProducts } from "../contexts/ProductContext";
 
 const AdminProductsPage = () => {
   const { products, deleteProduct, updateProduct } = useProducts();
-  const [toggleStates, setToggleStates] = useState(
-    products.reduce((acc, product) => {
+  const [toggleStates, setToggleStates] = useState({});
+
+  // keep toggleStates in sync when products change
+  React.useEffect(() => {
+    const map = products.reduce((acc, product) => {
       acc[product.id] = product.inStock !== false;
       return acc;
-    }, {})
-  );
+    }, {});
+    setToggleStates(map);
+  }, [products]);
 
   const handleDelete = (id) => {
     if (
@@ -39,7 +43,7 @@ const AdminProductsPage = () => {
         <h1 className="text-3xl font-bold">Kelola Produk</h1>
         <Link
           to="/admin/products/new"
-          className="bg-black text-white px-5 py-2 rounded-md font-semibold hover:bg-gray-800 transition-colors"
+          className="bg-amber-500 text-white px-5 py-2 rounded-md font-semibold hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition-colors"
         >
           Tambah Produk Baru
         </Link>
@@ -61,11 +65,20 @@ const AdminProductsPage = () => {
               products.map((product) => (
                 <tr key={product.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
-                    <img
-                      src={product.images[0]}
-                      alt={product.name}
-                      className="w-16 h-16 object-cover rounded-md"
-                    />
+                    {(() => {
+                      // product.images may be an array of strings or objects { original, thumb }
+                      const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+                      const src = img
+                        ? (typeof img === 'string' ? img : (img.thumb || img.original || ''))
+                        : '';
+                      return (
+                        <img
+                          src={src}
+                          alt={product.name}
+                          className="w-16 h-16 object-cover rounded-md"
+                        />
+                      );
+                    })()}
                   </td>
                   <td className="p-4 font-medium">{product.name}</td>
                   <td className="p-4 text-gray-600">{product.category}</td>

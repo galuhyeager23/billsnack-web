@@ -61,7 +61,7 @@ const Footer = () => {
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-lg bg-yellow-400 flex items-center justify-center text-white font-extrabold">B</div>
               <div>
-                <h3 className="text-2xl font-bold tracking-wider text-white">Billsnack.id</h3>
+                <h3 className="text-2xl font-bold tracking-wider text-white">Bilsnack.id</h3>
                 <p className="text-white text-sm">Camilan enak, layanan cepat. Ikuti kami untuk promo dan update produk baru setiap minggu.</p>
               </div>
             </div>
@@ -119,7 +119,7 @@ const Footer = () => {
         </div>
 
         <div className="mt-10 border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between">
-          <p className="text-sm text-white/90">&copy; {new Date().getFullYear()} Billsnack.id. Semua hak dilindungi.</p>
+          <p className="text-sm text-white/90">&copy; {new Date().getFullYear()} Bilsnack.id. Semua hak dilindungi.</p>
           <a href="#top" className="text-sm mt-3 md:mt-0 text-white hover:text-yellow-50">Kembali ke atas ↑</a>
         </div>
       </div>

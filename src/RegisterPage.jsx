@@ -93,7 +93,13 @@ const RegisterPage = () => {
               </div>
               <div>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => fileInputRef.current && fileInputRef.current.click()} className="px-3 py-2 bg-yellow-500 text-white rounded-md">Unggah</button>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                    className="px-3 py-2 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-md shadow-md transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                  >
+                    Unggah
+                  </button>
                   <button type="button" onClick={handleRemoveAvatar} className="px-3 py-2 border rounded-md">Hapus</button>
                 </div>
                 <p className="text-sm text-gray-500 mt-2">Format: JPG/PNG, max 2MB</p>

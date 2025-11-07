@@ -68,8 +68,15 @@ export const ProductProvider = ({ children }) => {
       });
       if (!res.ok) throw new Error('Failed to update product');
       const data = await res.json();
-      setProducts((prev) => prev.map((p) => (Number(p.id) === Number(data.id) ? data : p)));
-      return data;
+      // Preserve any client-only fields (e.g., inStock) that the server doesn't echo back.
+      const merged = Object.assign({}, data, {});
+      if (typeof updatedProduct.inStock !== 'undefined') merged.inStock = updatedProduct.inStock;
+      // also preserve any other unknown keys present on updatedProduct but not returned by server
+      Object.keys(updatedProduct).forEach((k) => {
+        if (!(k in merged)) merged[k] = updatedProduct[k];
+      });
+      setProducts((prev) => prev.map((p) => (Number(p.id) === Number(merged.id) ? merged : p)));
+      return merged;
     } catch (err) {
       console.error(err);
       throw err;

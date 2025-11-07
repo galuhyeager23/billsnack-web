@@ -33,7 +33,7 @@ const LoginPage = () => {
         {/* Left illustration / promo */}
         <div className="hidden md:flex flex-col items-start justify-center space-y-6 px-6">
           <div className="bg-gradient-to-br from-yellow-200 via-yellow-100 to-white p-6 rounded-3xl shadow-lg">
-            <h2 className="text-2xl font-extrabold text-yellow-800">Billsnack</h2>
+            <h2 className="text-2xl font-extrabold text-yellow-800">Bilsnack</h2>
             <p className="text-gray-600 mt-2">Belanja cemilan favoritmu dengan cepat dan mudah.</p>
           </div>
           <div className="w-full rounded-xl overflow-hidden shadow-md">
