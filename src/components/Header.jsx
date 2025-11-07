@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "../contexts/CartContext";
 import { useAuth } from "../contexts/AuthContext";
+import logo from "../assets/bilsnack.jpg";
 
 const SearchIcon = () => (
   <svg
@@ -136,7 +137,7 @@ const Header = () => {
         <div className="flex items-center justify-between h-20">
           <div className="flex-shrink-0 flex items-center gap-3">
             <Link to="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-yellow-400 flex items-center justify-center text-white font-extrabold">B</div>
+              <img src={logo} alt="Billsnack logo" className="w-10 h-10 rounded-lg object-cover" />
               <span className="text-2xl font-bold tracking-wider">Billsnack.id</span>
             </Link>
           </div>

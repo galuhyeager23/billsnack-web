@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import ProductCard from "./components/ProductCard";
 import { useProducts } from "./contexts/ProductContext";
+import logo from "./assets/bilsnack.jpg";
 
 const HomePage = () => {
   const { products } = useProducts();
@@ -53,21 +54,8 @@ const HomePage = () => {
           </div>
 
           <div className="flex items-center justify-center">
-            {/* Simple inline SVG illustration to avoid external assets */}
-            <div className="w-80 h-80 bg-white rounded-2xl shadow-xl flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" className="w-64 h-64">
-                <defs>
-                  <linearGradient id="g" x1="0" x2="1">
-                    <stop offset="0" stopColor="#FFD54A" />
-                    <stop offset="1" stopColor="#FFB74D" />
-                  </linearGradient>
-                </defs>
-                <rect x="20" y="30" width="200" height="160" rx="24" fill="url(#g)" />
-                <circle cx="110" cy="80" r="18" fill="#fff" opacity="0.9" />
-                <circle cx="150" cy="110" r="10" fill="#fff" opacity="0.9" />
-                <circle cx="85" cy="130" r="8" fill="#fff" opacity="0.9" />
-                <path d="M60 170c10-12 25-18 40-18s30 6 40 18" stroke="#fff" strokeWidth="6" strokeLinecap="round" fill="none" opacity="0.9" />
-              </svg>
+            <div className="w-80 h-80 bg-white rounded-2xl shadow-xl flex items-center justify-center overflow-hidden">
+              <img src={logo} alt="Billsnack" className="w-64 h-64 object-contain" />
             </div>
           </div>
         </div>
