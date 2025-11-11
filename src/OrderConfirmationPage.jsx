@@ -1,5 +1,90 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
+import formatPrice from "./utils/format";
+
+const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+
+// Simple inline modal component to allow leaving a review without navigating away
+function ReviewModal({ open, product, onClose, onSuccess, onError }) {
+  const { token } = useAuth();
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitHover, setSubmitHover] = useState(false);
+
+  const submit = async (ev) => {
+    ev.preventDefault();
+    if (!token) {
+      if (onError) onError('Silakan login terlebih dahulu untuk mengirim ulasan.');
+      return;
+    }
+    if (!product || !product.id) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ productId: product.id, rating: Number(rating), comment }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Gagal mengirim ulasan');
+      }
+      if (onSuccess) onSuccess('Ulasan berhasil dikirim. Terima kasih!');
+      setComment('');
+      setRating(5);
+      if (onClose) onClose();
+    } catch (err) {
+      console.error('Review submit error', err);
+      if (onError) onError(err.message || 'Gagal mengirim ulasan');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-green-50 rounded-lg p-6 w-full max-w-lg border border-green-100">
+        <div className="flex items-center space-x-4 mb-3">
+          {product && product.image ? (
+            <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded" />
+          ) : (
+            <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-500">No</div>
+          )}
+          <h3 className="text-lg font-semibold">Tinggalkan Ulasan — {product && product.name}</h3>
+        </div>
+        <form onSubmit={submit} className="space-y-3">
+          <div>
+            <label className="block text-sm font-medium">Rating</label>
+            <select value={rating} onChange={(e) => setRating(Number(e.target.value))} className="mt-1 rounded-md border px-3 py-2">
+              {[5,4,3,2,1].map(v => <option key={v} value={v}>{v} bintang</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Ulasan</label>
+            <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4} className="mt-1 w-full rounded-md border px-3 py-2" />
+          </div>
+          <div className="flex justify-end space-x-2">
+            <button type="button" onClick={() => onClose && onClose()} className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50">Batal</button>
+            <button
+              type="submit"
+              disabled={submitting}
+              onMouseEnter={() => setSubmitHover(true)}
+              onMouseLeave={() => setSubmitHover(false)}
+              className="px-4 py-2 text-white rounded focus:outline-none transition"
+              style={{ backgroundColor: submitting ? '#FFB380' : (submitHover ? '#E65A00' : '#FF6B00') }}
+            >
+              {submitting ? 'Mengirim...' : 'Kirim Ulasan'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 const OrderConfirmationPage = () => {
   const location = useLocation();
@@ -9,6 +94,18 @@ const OrderConfirmationPage = () => {
     paymentMethod: "qris",
     shippingMethod: "gosend",
   };
+
+  // Toast state for small notifications
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalProduct, setModalProduct] = useState(null);
+  const [reviewBtnHover, setReviewBtnHover] = useState(false);
 
   const getPaymentInstructions = () => {
     switch (paymentMethod) {
@@ -41,7 +138,7 @@ const OrderConfirmationPage = () => {
                 <strong>Account Name:</strong> BillSnack Store
               </p>
               <p>
-                <strong>Amount:</strong> Rp{total.toFixed(2)}
+                <strong>Amount:</strong> Rp{formatPrice(total)}
               </p>
             </div>
             <p className="text-sm text-green-700 mt-2">
@@ -59,7 +156,7 @@ const OrderConfirmationPage = () => {
             <p className="text-sm text-orange-700 mt-2">
               You will pay in cash when your order is delivered to your address.
               Please prepare the exact amount of{" "}
-              <strong>Rp{total.toFixed(2)}</strong> for faster service.
+              <strong>Rp{formatPrice(total)}</strong> for faster service.
             </p>
           </div>
         );
@@ -97,9 +194,9 @@ const OrderConfirmationPage = () => {
             <span className="font-semibold text-black">{orderId}</span>
           </p>
           <p className="text-lg">
-            Order Total:{" "}
+            Order Total: {" "}
             <span className="font-semibold text-black">
-              Rp{total.toFixed(2)}
+              Rp{formatPrice(total)}
             </span>
           </p>
           <p className="text-lg">
@@ -127,13 +224,55 @@ const OrderConfirmationPage = () => {
             </span>
           </p>
         </div>
-        {getPaymentInstructions()}
+  {getPaymentInstructions()}
+  {/* Review Modal markup */}
+  <ReviewModal open={modalOpen} product={modalProduct} onClose={() => setModalOpen(false)} onSuccess={(m) => showToast(m || 'Ulasan tersimpan')} onError={(m) => showToast(m || 'Gagal', 'error')} />
         <Link
           to="/shop"
           className="mt-8 inline-block bg-amber-500 text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
         >
           Continue Shopping
         </Link>
+        {/* Purchased items — show quick links to leave reviews */}
+        {location.state && location.state.items && location.state.items.length > 0 && (
+          <div className="mt-6 text-left">
+            <h3 className="text-lg font-semibold mb-3">Produk yang dibeli</h3>
+            <div className="space-y-3">
+              {location.state.items.map((it) => (
+                <div key={it.id} className="flex items-center justify-between p-3 border rounded bg-green-50 border-green-100">
+                  <div className="flex items-center space-x-3">
+                    {it.image ? (
+                      <img src={it.image} alt={it.name} className="w-16 h-16 object-cover rounded" />
+                    ) : (
+                      <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-500">No Image</div>
+                    )}
+                    <div className="font-medium">{it.name}</div>
+                  </div>
+                  <div className="space-x-2">
+                    <Link to={`/product/${it.id}`} className="text-sm text-blue-600 underline">Lihat Produk</Link>
+                    <button
+                      onClick={() => { setModalProduct(it); setModalOpen(true); }}
+                      onMouseEnter={() => setReviewBtnHover(true)}
+                      onMouseLeave={() => setReviewBtnHover(false)}
+                      className="inline-block ml-2 text-white text-sm px-3 py-1 rounded focus:outline-none transition"
+                      style={{ backgroundColor: reviewBtnHover ? '#E65A00' : '#FF6B00' }}
+                    >
+                      Tinggalkan Ulasan
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* toast */}
+        {toast && (
+          <div className={`fixed top-6 right-6 z-50 ${toast.type === 'error' ? '' : ''}`}>
+            <div className={`px-4 py-2 rounded shadow-lg ${toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white'}`}>
+              {toast.message}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React from "react";
 import { useProducts } from "../contexts/ProductContext";
 import { useAuth } from "../contexts/AuthContext";
+import formatPrice from "../utils/format";
 
 const AdminDashboardPage = () => {
   const { products } = useProducts();
@@ -136,7 +137,7 @@ const AdminDashboardPage = () => {
                       {transaction.customer}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      Rp{transaction.amount.toFixed(2)}
+                      Rp{formatPrice(transaction.amount)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {transaction.paymentMethod}

@@ -8,23 +8,25 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // call real login API via AuthContext
-    (async () => {
-      try {
-        if (!email || !password) {
-          alert('Harap masukkan email dan kata sandi.');
-          return;
-        }
-        await login({ email, password });
-        navigate('/');
-      } catch (err) {
-        console.error('Login failed', err);
-        alert(err.message || 'Gagal masuk. Periksa kredensial Anda.');
-      }
-    })();
+    setError("");
+    if (!email || !password) {
+      setError('Harap masukkan email dan kata sandi.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await login({ email, password });
+      navigate('/');
+    } catch (err) {
+      console.error('Login failed', err);
+      setError(err && err.message ? err.message : 'Gagal masuk. Periksa kredensial Anda.');
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -87,11 +89,18 @@ const LoginPage = () => {
                 </div>
               </div>
 
+              {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
                 className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 rounded-full shadow-md transition transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
+                disabled={submitting}
               >
-                Masuk
+                {submitting ? 'Memproses...' : 'Masuk'}
               </button>
 
               <div className="flex items-center gap-3">

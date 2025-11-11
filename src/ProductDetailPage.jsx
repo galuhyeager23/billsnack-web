@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useProducts } from "./contexts/ProductContext";
 import { useCart } from "./contexts/CartContext";
+import { useAuth } from "./contexts/AuthContext";
 import StarRating from "./components/StarRating";
 import { formatPrice } from "./utils/format";
 import ProductCard from "./components/ProductCard";
@@ -26,6 +27,7 @@ const ProductDetailPage = () => {
   const { id } = useParams();
   const { getProductById, products } = useProducts();
   const { addToCart } = useCart();
+  const { user, token } = useAuth();
 
   const product = getProductById(Number(id));
 
@@ -43,20 +45,102 @@ const ProductDetailPage = () => {
     }
   }, [product]);
 
-  if (!product) {
-    return <div className="text-center py-20">Produk tidak ditemukan</div>;
-  }
 
   const handleAddToCart = () => {
     addToCart(product, quantity);
     alert(`${quantity} x ${product.name} ditambahkan ke keranjang!`);
   };
 
+  // relatedProducts computed below after we ensure product exists
+  const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+  const [reviews, setReviews] = useState([]);
+  const [canReview, setCanReview] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  useEffect(() => {
+    // fetch reviews and can-review status; guard when product is not set yet
+    if (!product) return;
+
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/reviews/product/${product.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setReviews(data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch reviews', e);
+      }
+    })();
+
+    // check if user can review (if logged in)
+    if (user && token) {
+      (async () => {
+        try {
+          const res = await fetch(`${API_BASE}/api/reviews/can-review?productId=${product.id}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (res.ok) {
+            const d = await res.json();
+            setCanReview(!!d.canReview);
+          }
+        } catch (e) {
+          console.error('can-review check failed', e);
+        }
+      })();
+    } else {
+      setCanReview(false);
+    }
+  }, [product, user, token, API_BASE]);
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    if (!user || !token) {
+      alert('Silakan login terlebih dahulu untuk mengirim ulasan.');
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ productId: product.id, rating: Number(newRating), comment: newComment }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Gagal mengirim ulasan');
+      }
+      const data = await res.json();
+      // refetch reviews
+      const revRes = await fetch(`${API_BASE}/api/reviews/product/${product.id}`);
+      if (revRes.ok) setReviews(await revRes.json());
+      // update local product rating (best-effort)
+      if (data && typeof data.rating !== 'undefined') {
+        product.rating = data.rating;
+        product.reviewCount = data.reviewCount;
+      }
+      setNewComment('');
+      setNewRating(5);
+      setCanReview(false);
+    } catch (err) {
+      console.error(err);
+      alert(err.message || 'Gagal mengirim ulasan');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  
+
+  if (!product) {
+    return <div className="text-center py-20">Produk tidak ditemukan</div>;
+  }
+
   const relatedProducts = products
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
-
-  
 
   return (
     <div className="bg-white">
@@ -163,6 +247,66 @@ const ProductDetailPage = () => {
             <button className="w-full border border-black text-black font-semibold py-3 px-8 rounded-full text-lg hover:bg-black hover:text-white transition duration-300">
               Wishlist ♡
             </button>
+          </div>
+          {/* Reviews Section */}
+          <div className="mt-12 lg:col-span-2">
+            <h2 className="text-2xl font-bold mb-4">Ulasan ({reviews.length})</h2>
+            {reviews.length === 0 ? (
+              <p className="text-gray-500">Belum ada ulasan untuk produk ini.</p>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((r) => (
+                  <div key={r.id || `${r.userId}-${r.created_at}` } className="p-4 border rounded-md">
+                    <div className="flex items-center justify-between">
+                      <strong>{r.user_name || r.userId || 'Pelanggan'}</strong>
+                      <StarRating rating={r.rating} />
+                    </div>
+                    {r.comment && <p className="mt-2 text-gray-700">{r.comment}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Review Form - only when allowed */}
+            {canReview ? (
+              <form onSubmit={handleSubmitReview} className="mt-6 space-y-3">
+                <div>
+                  <label className="block text-sm font-medium">Rating</label>
+                  <select
+                    value={newRating}
+                    onChange={(e) => setNewRating(Number(e.target.value))}
+                    className="mt-1 rounded-md border px-3 py-2"
+                  >
+                    {[5,4,3,2,1].map((v) => (
+                      <option key={v} value={v}>{v} bintang</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Ulasan</label>
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    className="mt-1 w-full rounded-md border px-3 py-2"
+                    rows={4}
+                    placeholder="Tulis pengalaman Anda menggunakan produk ini..."
+                  />
+                </div>
+                <div>
+                  <button
+                    type="submit"
+                    disabled={submittingReview}
+                    className="inline-flex items-center px-6 py-2 bg-orange-600 text-white rounded-md disabled:opacity-50"
+                  >
+                    {submittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p className="text-sm text-gray-500 mt-4">
+                {user ? 'Anda belum dapat mengulas produk ini (mungkin belum membeli atau sudah mengulas).' : 'Silakan login setelah membeli untuk mengirim ulasan.'}
+              </p>
+            )}
           </div>
         </div>
 

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useProducts } from "../contexts/ProductContext";
+import formatPrice from "../utils/format";
 
 const AdminProductsPage = () => {
   const { products, deleteProduct, updateProduct } = useProducts();
@@ -83,7 +84,7 @@ const AdminProductsPage = () => {
                   <td className="p-4 font-medium">{product.name}</td>
                   <td className="p-4 text-gray-600">{product.category}</td>
                   <td className="p-4 font-medium">
-                    Rp{product.price.toFixed(2)}
+                    Rp {formatPrice(product.price)}
                   </td>
                   <td className="p-4">
                     <button

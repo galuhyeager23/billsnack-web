@@ -7,6 +7,7 @@ const AdminLoginPage = () => {
     password: "",
   });
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
 
@@ -22,6 +23,7 @@ const AdminLoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
     try {
       const res = await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:4000')}/api/auth/login`, {
         method: 'POST',
@@ -29,16 +31,24 @@ const AdminLoginPage = () => {
         // send admin:true so backend can treat this as an admin login attempt
         body: JSON.stringify({ email: formData.email, password: formData.password, admin: true }),
       });
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError('Kredensial admin tidak valid. Silakan coba lagi.');
+        // Prefer server-provided error message when available
+        const msg = (data && data.error) ? data.error : 'Kredensial admin tidak valid. Silakan coba lagi.';
+        setError(msg);
+        setSubmitting(false);
         return;
       }
-      const data = await res.json();
       // expected { user, token }
       if (data && data.token) {
         // store token for admin API calls
         localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminAuth', JSON.stringify({ isLoggedIn: true, email: data.user.email || formData.email, loginTime: new Date().toISOString() }));
+        // keep a simple adminAuth flag for layout checks
+        localStorage.setItem(
+          'adminAuth',
+          JSON.stringify({ isLoggedIn: true, email: (data.user && data.user.email) || formData.email, loginTime: new Date().toISOString() })
+        );
+        setSubmitting(false);
         navigate('/admin');
       } else {
         setError('Login gagal - respon tidak valid');
@@ -46,6 +56,7 @@ const AdminLoginPage = () => {
     } catch (err) {
       console.error('Admin login error', err);
       setError('Terjadi kesalahan saat menghubungkan server');
+      setSubmitting(false);
     }
   };
 
@@ -98,23 +109,12 @@ const AdminLoginPage = () => {
             <button
               type="submit"
               className="w-full bg-amber-500 text-white font-semibold py-3 px-4 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
+              disabled={submitting}
             >
-              Masuk
+              {submitting ? 'Memproses...' : 'Masuk'}
             </button>
           </form>
-          <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-900 mb-2">
-              <strong>📌 Kredensial Admin Demo:</strong>
-            </p>
-            <p className="text-sm text-blue-800">
-              Email: {" "}
-              <code className="bg-blue-100 px-2 py-1">admin@billsnack.id</code>
-            </p>
-            <p className="text-sm text-blue-800">
-              Kata Sandi: {" "}
-              <code className="bg-blue-100 px-2 py-1">admin</code>
-            </p>
-          </div>
+          {/* Demo credentials removed for security - contact admin to obtain credentials */}
 
           <div className="mt-6 text-center">
             <p className="text-gray-600 text-sm">

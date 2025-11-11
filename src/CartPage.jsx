@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "./contexts/CartContext";
+import formatPrice from "./utils/format";
 
 const ChevronRightIcon = () => (
   <svg
@@ -48,8 +49,8 @@ const CartItemRow = ({ item }) => {
         className="w-28 h-28 object-cover rounded-lg"
       />
       <div className="ml-6 flex-grow">
-        <h3 className="text-lg font-semibold">{item.name}</h3>
-        <p className="text-lg font-bold mt-2">Rp{item.price}</p>
+  <h3 className="text-lg font-semibold">{item.name}</h3>
+  <p className="text-lg font-bold mt-2">Rp {formatPrice(item.price)}</p>
       </div>
       <div className="flex items-center border rounded-full px-3 py-1">
         <button
@@ -66,9 +67,9 @@ const CartItemRow = ({ item }) => {
           +
         </button>
       </div>
-      <p className="w-24 text-center text-lg font-bold">
-        Rp{(item.price * item.quantity).toFixed(2)}
-      </p>
+      <p className="w-24 text-center text-lg font-bold">Rp {formatPrice(
+        item.price * item.quantity
+      )}</p>
       <button
         onClick={() => removeFromCart(cartItemId)}
         className="text-red-500 hover:text-red-700 ml-4"
@@ -87,8 +88,8 @@ const CartPage = () => {
     0
   );
   const discount = subtotal * 0.2; // 20% discount
-  const deliveryFee = 15;
-  const total = subtotal - discount + deliveryFee;
+  // Shipping fee is calculated at checkout; do not show it on cart page.
+  const total = subtotal - discount;
 
   return (
     <div className="bg-white">
@@ -131,24 +132,19 @@ const CartPage = () => {
               <div className="space-y-4 text-lg">
                 <div className="flex justify-between">
                   <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold">Rp{subtotal.toFixed(2)}</span>
+                  <span className="font-semibold">Rp {formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-600">Diskon (-20%)</span>
-                  <span className="font-semibold text-red-500">
-                    -Rp{discount.toFixed(2)}
-                  </span>
+                  <span className="font-semibold text-red-500">-Rp {formatPrice(
+                    discount
+                  )}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Biaya Pengiriman</span>
-                  <span className="font-semibold">
-                    Rp{deliveryFee.toFixed(2)}
-                  </span>
-                </div>
+                {/* Shipping cost will be shown during checkout */}
               </div>
               <div className="flex justify-between text-2xl font-bold mt-6 border-t pt-4">
                 <span>Total</span>
-                <span>Rp{total.toFixed(2)}</span>
+                <span>Rp {formatPrice(total)}</span>
               </div>
 
               <div className="mt-8 flex">

@@ -16,6 +16,7 @@ import OrderConfirmationPage from "./OrderConfirmationPage";
 import LoginPage from "./LoginPage";
 import RegisterPage from "./RegisterPage";
 import ProfilePage from "./ProfilePage";
+import OrderHistoryPage from "./OrderHistoryPage";
 
 // Admin components
 import AdminLayout from "./components/admin/AdminLayout";
@@ -56,6 +57,7 @@ const App = () => {
                         <Route path="/login" element={<LoginPage />} />
                         <Route path="/register" element={<RegisterPage />} />
                         <Route path="/profile" element={<ProfilePage />} />
+                        <Route path="/orders" element={<OrderHistoryPage />} />
                       </Routes>
                     </main>
                     <Footer />

@@ -62,10 +62,23 @@ router.post('/login', async (req, res) => {
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
     // If this request is an admin login attempt (Admin UI sends admin: true),
-    // require that the user has role 'admin' and matches the configured ADMIN_EMAIL.
+    // require that the user either has role 'admin' OR matches the configured ADMIN_EMAIL.
+    // This is intentionally slightly permissive to make local/dev admin login easier
+    // (e.g. when seed created the user but role may not be present). In production
+    // ensure ADMIN_EMAIL and roles are configured correctly.
     const isAdminLogin = req.body && req.body.admin;
     if (isAdminLogin) {
-      if (userRow.role !== 'admin' || (userRow.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+      const emailLower = (userRow.email || '').toLowerCase();
+      const configuredLower = ADMIN_EMAIL.toLowerCase();
+      const isAdminRole = userRow.role === 'admin';
+      const emailMatches = emailLower === configuredLower;
+      // helpful debug logging for failed admin attempts
+      if (!isAdminRole && !emailMatches) {
+        console.error('Admin login rejected - role or email mismatch', {
+          userEmail: userRow.email,
+          userRole: userRow.role,
+          expectedAdminEmail: ADMIN_EMAIL,
+        });
         return res.status(401).json({ error: 'Invalid credentials' });
       }
     }

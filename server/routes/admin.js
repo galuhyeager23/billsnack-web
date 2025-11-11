@@ -141,8 +141,36 @@ router.get('/transactions', verifyToken, requireAdmin, async (req, res) => {
     const tryTables = ['transactions', 'orders', 'order_items'];
     for (const t of tryTables) {
       try {
-        const [rows] = await pool.execute(`SELECT * FROM \`${t}\` ORDER BY id DESC LIMIT 500`);
-        return res.json({ table: t, rows });
+        // Enrich known tables with related user/order info so admin UI can show customer
+        let rows = [];
+        if (t === 'orders') {
+          const r = await pool.execute(
+            `SELECT o.*, u.email AS user_email, u.role AS user_role, u.first_name, u.last_name
+             FROM \`orders\` o
+             LEFT JOIN users u ON o.user_id = u.id
+             ORDER BY o.id DESC LIMIT 500`
+          );
+          rows = r[0];
+        } else if (t === 'transactions') {
+          const r = await pool.execute(
+            `SELECT tr.*, o.email AS order_email, o.name AS order_name, u.email AS user_email, u.role AS user_role, u.first_name, u.last_name
+             FROM \`transactions\` tr
+             LEFT JOIN orders o ON tr.order_id = o.id
+             LEFT JOIN users u ON o.user_id = u.id
+             ORDER BY tr.id DESC LIMIT 500`
+          );
+          rows = r[0];
+        } else {
+          const r = await pool.execute(`SELECT * FROM \`${t}\` ORDER BY id DESC LIMIT 500`);
+          rows = r[0];
+        }
+
+        // If the table exists but has no rows, continue to next candidate so admins see orders when
+        // transactions is present but empty. Only return when we have actual rows.
+        if (rows && rows.length > 0) {
+          return res.json({ table: t, rows });
+        }
+        // otherwise fall through to try next table name
       } catch (err) {
         // table may not exist - continue to next
         if (err && err.code === 'ER_NO_SUCH_TABLE') continue;
@@ -159,3 +187,20 @@ router.get('/transactions', verifyToken, requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
+// Admin-only: update a transaction's status when it is stored in `transactions` table
+router.put('/transactions/:id/status', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body || {};
+  const allowed = ['Selesai', 'Menunggu', 'Gagal', 'Dikirim', 'Dalam Pengiriman'];
+  if (!status || !allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  try {
+    const [result] = await pool.execute('UPDATE transactions SET status = ? WHERE id = ?', [status, id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Transaction not found' });
+    const [rows] = await pool.execute('SELECT id, status FROM transactions WHERE id = ?', [id]);
+    return res.json({ ok: true, transaction: rows[0] });
+  } catch (err) {
+    console.error('Failed to update transaction status', err);
+    return res.status(500).json({ error: 'Failed to update status' });
+  }
+});

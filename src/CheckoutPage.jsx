@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "./contexts/CartContext";
 import { useAuth } from "./contexts/AuthContext";
+import formatPrice from "./utils/format";
 
 const ChevronRightIcon = () => (
   <svg
@@ -21,7 +22,7 @@ const ChevronRightIcon = () => (
 
 const CheckoutPage = () => {
   const { cartItems, clearCart } = useCart();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState("qris");
   const [shippingMethod, setShippingMethod] = useState("gosend");
@@ -33,6 +34,8 @@ const CheckoutPage = () => {
     city: "",
     postalCode: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [btnHover, setBtnHover] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -78,20 +81,55 @@ const CheckoutPage = () => {
   const deliveryFee = getDeliveryFee();
   const total = subtotal - discount + deliveryFee;
 
-  const handlePlaceOrder = (e) => {
+  const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
-    // Here you would typically process the payment based on method
-    console.log(
-      "Order placed with payment method:",
-      paymentMethod,
-      "and shipping method:",
-      shippingMethod
-    );
-    const orderId = Math.random().toString(36).substr(2, 9).toUpperCase();
-    clearCart();
-    navigate("/order-confirmation", {
-      state: { orderId, total, paymentMethod, shippingMethod },
-    });
+    setSubmitting(true);
+    try {
+      const payload = {
+        customer: {
+          name: formData.username,
+          email: formData.email,
+          phone: formData.phone,
+          address: formData.address,
+          city: formData.city,
+          province: formData.province || null,
+          postalCode: formData.postalCode,
+        },
+        items: cartItems.map((it) => ({ productId: it.id, name: it.name, unit_price: it.price, quantity: it.quantity, total_price: it.price * it.quantity, selected_options: { size: it.selectedSize, color: it.selectedColor } })),
+        subtotal,
+        discount,
+        deliveryFee,
+        total,
+        paymentMethod,
+        shippingMethod,
+      };
+
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch(`${API_BASE}/api/orders`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Failed to create order');
+      }
+      const data = await res.json();
+  const orderId = data.orderId || Math.random().toString(36).substr(2, 9).toUpperCase();
+  // create a lightweight items list for the confirmation page (id + name)
+  const purchasedItems = cartItems.map(it => ({ id: it.id, name: it.name, image: it.image || '' }));
+  clearCart();
+  navigate('/order-confirmation', { state: { orderId, total, paymentMethod, shippingMethod, items: purchasedItems } });
+    } catch (err) {
+      console.error('Place order error', err);
+      alert(err.message || 'Gagal membuat pesanan');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (cartItems.length === 0) {
@@ -243,7 +281,7 @@ const CheckoutPage = () => {
                       Pengiriman reguler 2-3 hari kerja
                     </div>
                     <div className="text-sm font-medium text-green-600">
-                      Rp5.00
+                      Rp{formatPrice(5)}
                     </div>
                   </div>
                 </label>
@@ -262,7 +300,7 @@ const CheckoutPage = () => {
                       Pengiriman express 1-2 hari kerja
                     </div>
                     <div className="text-sm font-medium text-green-600">
-                      Rp8.00
+                      Rp{formatPrice(8)}
                     </div>
                   </div>
                 </label>
@@ -331,7 +369,7 @@ const CheckoutPage = () => {
                     Scan kode QR ini dengan aplikasi e-wallet Anda untuk menyelesaikan pembayaran
                   </p>
                   <p className="text-lg font-bold mt-2">
-                    Total: Rp{total.toFixed(2)}
+                    Total: Rp{formatPrice(total)}
                   </p>
                 </div>
               )}
@@ -356,7 +394,7 @@ const CheckoutPage = () => {
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Jumlah:</span>
-                      <span className="font-bold">Rp{total.toFixed(2)}</span>
+                      <span className="font-bold">Rp{formatPrice(total)}</span>
                     </div>
                   </div>
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
@@ -379,9 +417,9 @@ const CheckoutPage = () => {
                       <span className="font-medium">Metode Pembayaran:</span>
                       <span>Bayar di Tempat</span>
                     </div>
-                    <div className="flex justify-between">
+                  <div className="flex justify-between">
                       <span className="font-medium">Total Pembayaran:</span>
-                      <span className="font-bold">Rp{total.toFixed(2)}</span>
+                      <span className="font-bold">Rp{formatPrice(total)}</span>
                     </div>
                   </div>
                   <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
@@ -397,7 +435,7 @@ const CheckoutPage = () => {
           </div>
 
           {/* Order Summary */}
-          <div className="bg-white p-8 rounded-lg shadow h-fit">
+          <div className="bg-amber-50 p-8 rounded-lg shadow h-fit border border-amber-100">
             <h2 className="text-2xl font-bold mb-6 border-b pb-4">
               Ringkasan Pesanan
             </h2>
@@ -411,7 +449,7 @@ const CheckoutPage = () => {
                     {item.name} x {item.quantity}
                   </span>
                   <span className="font-semibold">
-                    Rp{(item.price * item.quantity).toFixed(2)}
+                    Rp{formatPrice(item.price * item.quantity)}
                   </span>
                 </div>
               ))}
@@ -419,12 +457,12 @@ const CheckoutPage = () => {
             <div className="space-y-4 text-lg mt-6 border-t pt-4">
               <div className="flex justify-between">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="font-semibold">Rp{subtotal.toFixed(2)}</span>
+                <span className="font-semibold">Rp{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Diskon (-20%)</span>
                 <span className="font-semibold text-red-500">
-                  -Rp{discount.toFixed(2)}
+                  -Rp{formatPrice(discount)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -439,19 +477,23 @@ const CheckoutPage = () => {
                     : "Standard"}
                   )
                 </span>
-                <span className="font-semibold">Rp{deliveryFee.toFixed(2)}</span>
+                <span className="font-semibold">Rp{formatPrice(deliveryFee)}</span>
               </div>
             </div>
             <div className="flex justify-between text-2xl font-bold mt-6 border-t pt-4">
               <span>Total</span>
-              <span>Rp{total.toFixed(2)}</span>
+              <span>Rp{formatPrice(total)}</span>
             </div>
 
             <button
               type="submit"
-              className="w-full mt-6 bg-amber-500 text-white font-semibold py-4 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
+              onMouseEnter={() => setBtnHover(true)}
+              onMouseLeave={() => setBtnHover(false)}
+              className="w-full mt-6 text-white font-semibold py-4 px-8 rounded-full text-lg focus:outline-none transition duration-300 focus:ring-2 focus:ring-amber-300 disabled:opacity-80"
+              style={{ backgroundColor: submitting ? '#FFB380' : (btnHover ? '#E65A00' : '#FF6B00') }}
+              disabled={submitting}
             >
-              Buat Pesanan
+              {submitting ? 'Memproses...' : 'Buat Pesanan'}
             </button>
           </div>
         </form>

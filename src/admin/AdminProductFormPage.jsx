@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useProducts } from "../contexts/ProductContext";
+import formatPrice from "../utils/format";
 
 const AdminProductFormPage = () => {
   const { id } = useParams();
@@ -12,8 +13,6 @@ const AdminProductFormPage = () => {
     name: "",
     category: "",
     price: "",
-    rating: "",
-    reviewCount: "",
     images: [],
     description: "",
   });
@@ -100,6 +99,23 @@ const AdminProductFormPage = () => {
     });
   };
 
+  const parseCurrencyToNumber = (val) => {
+    if (val === null || typeof val === 'undefined') return null;
+    const raw = String(val).replace(/[^0-9\-,.]/g, '').trim();
+    let num = Number(raw.replace(/\./g, '').replace(/,/g, '.'));
+    if (Number.isNaN(num)) {
+      num = Number(String(val).replace(/[^0-9]/g, '')) || 0;
+    }
+    return num;
+  };
+
+  const handlePriceChange = (e) => {
+    const raw = e.target.value || '';
+    const num = parseCurrencyToNumber(raw);
+    // store numeric value (or empty string) so later we can coerce when saving
+    setProduct(prev => ({ ...prev, price: (raw === '' ? '' : num) }));
+  };
+
   
 
   const handleImagesTextChange = (e) => {
@@ -108,8 +124,9 @@ const AdminProductFormPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simple validation: require name, category, and a non-empty price string
-    if (!product.name || !product.category || !product.price || String(product.price).trim() === '') {
+    // Simple validation: require name, category, and a valid numeric price
+    const priceValid = product.price !== '' && product.price !== null && !Number.isNaN(Number(product.price));
+    if (!product.name || !product.category || !priceValid) {
       alert("Harap isi semua kolom yang diperlukan.");
       return;
     }
@@ -210,15 +227,16 @@ const AdminProductFormPage = () => {
             </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">Harga</label>
-            <textarea
+            <input
+              type="text"
               name="price"
-              value={product.price}
-              onChange={handleChange}
-              rows={2}
+              value={product.price === '' || product.price === null ? '' : formatPrice(product.price)}
+              onChange={handlePriceChange}
               className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
-              placeholder="Masukkan harga produk"
+              placeholder="Masukkan harga produk (contoh: 12000 atau 12.000)"
               required
             />
+            <p className="text-xs text-gray-500 mt-1">Masukkan nominal tanpa simbol. Tampilan akan diformat ke Rupiah.</p>
           </div>
 
           <div>
@@ -233,29 +251,7 @@ const AdminProductFormPage = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Rating (0-5)</label>
-            <textarea
-              name="rating"
-              value={product.rating || ''}
-              onChange={handleChange}
-              rows={1}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
-              placeholder="Masukkan rating"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Jumlah Review</label>
-            <textarea
-              name="reviewCount"
-              value={product.reviewCount || ''}
-              onChange={handleChange}
-              rows={1}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
-              placeholder="Masukkan jumlah review"
-            />
-          </div>
+          {/* Rating and review count are managed from customer checkout events and not editable here */}
           
         </div>
         <div>

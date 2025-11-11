@@ -6,6 +6,8 @@ const pool = require('./db');
 const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const adminRouter = require('./routes/admin');
+const ordersRouter = require('./routes/orders');
+const reviewsRouter = require('./routes/reviews');
 const uploadsRouter = require('./routes/uploads');
 
 const app = express();
@@ -40,6 +42,8 @@ app.get('/', (req, res) => res.json({ ok: true, message: 'Billsnack API running'
 app.use('/api/products', productsRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/orders', ordersRouter);
+app.use('/api/reviews', reviewsRouter);
 // serve uploaded files statically
 app.use('/uploads', express.static(require('path').join(__dirname, 'public', 'uploads')));
 app.use('/api/uploads', uploadsRouter);

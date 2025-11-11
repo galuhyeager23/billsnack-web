@@ -19,7 +19,7 @@ require('dotenv').config();
 
 const API_BASE = process.env.API_BASE || process.env.VITE_API_URL || 'http://localhost:4000';
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL || 'admin@billsnack.id';
-const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'admin123456';
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD || 'admin';
 
 async function runSeed() {
   console.log('Running seed_admin.js to ensure admin exists...');
