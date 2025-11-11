@@ -15,7 +15,10 @@ const { fetchCarrierStatus } = require('../services/trackingService');
 
 // Create an order and order items, then increment product review_count based on quantity purchased
 router.post('/', async (req, res) => {
-  const { customer, items, subtotal, discount, deliveryFee, total } = req.body || {};
+  const { customer, items } = req.body || {};
+  // allow discount and deliveryFee provided but we'll coerce them to numbers below
+  const discountInput = req.body && typeof req.body.discount !== 'undefined' ? Number(req.body.discount) : 0;
+  const deliveryFeeInput = req.body && typeof req.body.deliveryFee !== 'undefined' ? Number(req.body.deliveryFee) : 0;
   if (!items || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'No items provided' });
   }
@@ -24,34 +27,50 @@ router.post('/', async (req, res) => {
   try {
     await conn.beginTransaction();
 
+    // Generate an order identifier (human-friendly-ish). Clients may pass their own
+    // `orderNumber` (e.g. for gateways), otherwise we create one here.
+    const orderNumber = req.body.orderNumber || `ORD-${Date.now()}-${Math.floor(Math.random() * 9000) + 1000}`;
+    const paymentMethod = req.body.paymentMethod || null;
+
+    // Compute subtotal and per-item totals on the server to avoid trusting client values
+    let computedSubtotal = 0;
+    const normalizedItems = (items || []).map((it) => {
+      const pid = it.productId || it.id || null;
+      const name = it.name || '';
+      const unit_price = Number(it.unit_price || it.price || 0);
+      const quantity = Math.max(0, Number(it.quantity || 1));
+      const total_price = Number(Number(unit_price * quantity).toFixed(2));
+      computedSubtotal += total_price;
+      const selected_options = it.selected_options ? JSON.stringify(it.selected_options) : null;
+      return { pid, name, unit_price, quantity, total_price, selected_options };
+    });
+
+    const subtotal = Number(Number(computedSubtotal).toFixed(2));
+    const discount = Number(Number(discountInput || 0).toFixed(2));
+    const deliveryFee = Number(Number(deliveryFeeInput || 0).toFixed(2));
+    const total = Number(Number(subtotal - discount + deliveryFee).toFixed(2));
+
     const [orderResult] = await conn.execute(
-      'INSERT INTO orders (user_id, email, name, phone, address, city, province, postal_code, subtotal, discount, delivery_fee, total, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [ (req.user && req.user.id) || null, customer && customer.email || null, customer && customer.name || null, customer && customer.phone || null, customer && customer.address || null, customer && customer.city || null, customer && customer.province || null, customer && customer.postalCode || null, subtotal || 0, discount || 0, deliveryFee || 0, total || 0, JSON.stringify({ payment: req.body.paymentMethod || null }) ]
+      'INSERT INTO orders (order_number, user_id, email, name, phone, address, city, province, postal_code, payment_method, subtotal, discount, delivery_fee, total, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [ orderNumber, (req.user && req.user.id) || null, customer && customer.email || null, customer && customer.name || null, customer && customer.phone || null, customer && customer.address || null, customer && customer.city || null, customer && customer.province || null, customer && customer.postalCode || null, paymentMethod, subtotal, discount, deliveryFee, total, JSON.stringify({ payment: paymentMethod }) ]
     );
     const orderId = orderResult.insertId;
 
     // insert items and update product review_count
-    for (const it of items) {
-      const pid = it.productId || it.id || null;
-      const name = it.name || '';
-      const unit_price = Number(it.unit_price || it.price || 0);
-      const quantity = Number(it.quantity || 1);
-      const total_price = Number(it.total_price || unit_price * quantity || 0);
-      const selected_options = it.selected_options ? JSON.stringify(it.selected_options) : null;
-
+    for (const it of normalizedItems) {
       await conn.execute(
         'INSERT INTO order_items (order_id, product_id, name, unit_price, quantity, total_price, selected_options) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [orderId, pid, name, unit_price, quantity, total_price, selected_options]
+        [orderId, it.pid, it.name, it.unit_price, it.quantity, it.total_price, it.selected_options]
       );
 
-      if (pid) {
+      if (it.pid) {
         // increment review_count by quantity (treating purchases as reviews count)
-        await conn.execute('UPDATE products SET review_count = IFNULL(review_count,0) + ? WHERE id = ?', [quantity, pid]);
+        await conn.execute('UPDATE products SET review_count = IFNULL(review_count,0) + ? WHERE id = ?', [it.quantity, it.pid]);
       }
     }
 
-    await conn.commit();
-    res.status(201).json({ ok: true, orderId });
+  await conn.commit();
+  res.status(201).json({ ok: true, orderId, orderNumber, subtotal, discount, deliveryFee, total });
   } catch (err) {
     await conn.rollback().catch(() => {});
     console.error('Create order error', err);

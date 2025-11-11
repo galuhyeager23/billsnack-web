@@ -144,19 +144,35 @@ router.get('/transactions', verifyToken, requireAdmin, async (req, res) => {
         // Enrich known tables with related user/order info so admin UI can show customer
         let rows = [];
         if (t === 'orders') {
+          // compute amount from order_items.total_price when possible so the admin UI
+          // shows the sum of product prices the customer actually ordered. Fall back
+          // to o.total when no items present.
           const r = await pool.execute(
-            `SELECT o.*, u.email AS user_email, u.role AS user_role, u.first_name, u.last_name
+            `SELECT o.*, o.id AS order_id, o.order_number AS order_number,
+                    COALESCE(o.payment_method, JSON_UNQUOTE(JSON_EXTRACT(o.metadata, '$.payment'))) AS payment_method,
+                    u.email AS user_email, u.role AS user_role, u.first_name, u.last_name,
+                    COALESCE(o.total, SUM(oi.total_price)) AS amount
              FROM \`orders\` o
+             LEFT JOIN order_items oi ON oi.order_id = o.id
              LEFT JOIN users u ON o.user_id = u.id
+             GROUP BY o.id
              ORDER BY o.id DESC LIMIT 500`
           );
           rows = r[0];
         } else if (t === 'transactions') {
+          // Return a consistent `amount` for transactions by falling back to
+          // transaction amount, then linked order.total, then sum of order_items
+          // so admin UI shows the real billed amount.
           const r = await pool.execute(
-            `SELECT tr.*, o.email AS order_email, o.name AS order_name, u.email AS user_email, u.role AS user_role, u.first_name, u.last_name
+      `SELECT tr.*, o.id AS order_id, o.order_number AS order_number, o.total AS order_total,
+        COALESCE(tr.amount, o.total, SUM(oi.total_price)) AS amount,
+        COALESCE(o.payment_method, JSON_UNQUOTE(JSON_EXTRACT(o.metadata, '$.payment'))) AS payment_method,
+        o.email AS order_email, o.name AS order_name, u.email AS user_email, u.role AS user_role, u.first_name, u.last_name
              FROM \`transactions\` tr
              LEFT JOIN orders o ON tr.order_id = o.id
+             LEFT JOIN order_items oi ON o.id = oi.order_id
              LEFT JOIN users u ON o.user_id = u.id
+             GROUP BY tr.id
              ORDER BY tr.id DESC LIMIT 500`
           );
           rows = r[0];

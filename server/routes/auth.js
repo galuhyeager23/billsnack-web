@@ -10,6 +10,9 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_in_production';
 const SALT_ROUNDS = process.env.SALT_ROUNDS ? Number(process.env.SALT_ROUNDS) : 10;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@billsnack.id';
+// Maximum allowed length for an inlined/base64 profile image string.
+// Keep reasonable to avoid very large DB inserts. Prefer storing images in object storage and saving a URL.
+const MAX_PROFILE_IMAGE_LEN = 2_000_000; // ~2 million characters (~1.5MB base64)
 
 // Register
 router.post('/register', async (req, res) => {
@@ -20,6 +23,11 @@ router.post('/register', async (req, res) => {
     // check if exists
     const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
     if (exists.length > 0) return res.status(409).json({ error: 'Email already registered' });
+
+    // Validate profile image size if provided
+    if (profileImage && profileImage.length > MAX_PROFILE_IMAGE_LEN) {
+      return res.status(400).json({ error: 'Profile image too large. Use a smaller image or provide a profileImageUrl instead.' });
+    }
 
     const hash = await bcrypt.hash(password, SALT_ROUNDS);
     const [result] = await pool.execute(
@@ -143,6 +151,10 @@ router.put('/profile', verifyToken, async (req, res) => {
 
   const sets = [];
   const params = [];
+  // Protect against huge inlined profile images
+  if (req.body && req.body.profileImage && req.body.profileImage.length > MAX_PROFILE_IMAGE_LEN) {
+    return res.status(400).json({ error: 'Profile image too large. Use a smaller image or provide a profileImageUrl instead.' });
+  }
   for (const key of Object.keys(req.body || {})) {
     if (allowedMap[key]) {
       sets.push(`${allowedMap[key]} = ?`);

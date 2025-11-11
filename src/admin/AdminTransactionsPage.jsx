@@ -87,11 +87,16 @@ const AdminTransactionsPage = () => {
 
   const filteredTransactions = transactions.filter(transaction => {
     const statusMatch = filterStatus === "All" || String(transaction.status) === filterStatus;
-    const paymentMatch = filterPaymentMethod === "All" || String(transaction.paymentMethod) === filterPaymentMethod;
+    const paymentField = transaction.payment_method || transaction.paymentMethod || transaction.paymentMethod;
+    const paymentMatch = filterPaymentMethod === "All" || String(paymentField) === filterPaymentMethod;
     return statusMatch && paymentMatch;
   });
 
-  const totalAmount = filteredTransactions.reduce((sum, transaction) => sum + (Number(transaction.amount) || Number(transaction.total) || 0), 0);
+  const totalAmount = filteredTransactions.reduce((sum, transaction) => {
+    // prefer explicit order_total when available (canonical order total), then amount, then total
+    const val = Number(transaction.order_total ?? transaction.amount ?? transaction.total ?? 0);
+    return sum + (Number.isFinite(val) ? val : 0);
+  }, 0);
 
   const openTrackingModal = (order) => {
     setSelectedOrder(order);
@@ -281,7 +286,8 @@ const AdminTransactionsPage = () => {
                     {transaction.user_role || transaction.role || transaction.user_status || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    Rp {formatPrice(transaction.amount || transaction.total || 0)}
+                    {/* Prefer order_total when available so displayed nominal matches order's stored total */}
+                    Rp {formatPrice(transaction.order_total ?? transaction.amount ?? transaction.total ?? 0)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {transaction.payment_method || transaction.paymentMethod || ''}
