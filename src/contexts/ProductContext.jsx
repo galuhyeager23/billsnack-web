@@ -9,6 +9,7 @@ const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && impor
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState(PRODUCTS || []);
+  const [topSelling, setTopSelling] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchProducts = async () => {
@@ -28,6 +29,18 @@ export const ProductProvider = ({ children }) => {
 
   useEffect(() => {
     fetchProducts();
+    // also fetch top-selling for convenience
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/products/top-selling?limit=8`);
+        if (res.ok) {
+          const ds = await res.json();
+          setTopSelling(ds || []);
+        }
+      } catch {
+        // ignore, optional
+      }
+    })();
   }, []);
 
   const getProductById = (id) => products.find((p) => Number(p.id) === Number(id));
@@ -120,6 +133,7 @@ export const ProductProvider = ({ children }) => {
     <ProductContext.Provider
       value={{
         products,
+        topSelling,
         loading,
         getProductById,
         addProduct,
@@ -127,6 +141,11 @@ export const ProductProvider = ({ children }) => {
         deleteProduct,
         refresh: fetchProducts,
         uploadImages,
+        fetchTopSelling: async (limit = 8) => {
+          const res = await fetch(`${API_BASE}/api/products/top-selling?limit=${Number(limit)}`);
+          if (!res.ok) throw new Error('Failed to fetch top-selling');
+          return res.json();
+        },
       }}
     >
       {children}

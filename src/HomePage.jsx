@@ -5,11 +5,12 @@ import { useProducts } from "./contexts/ProductContext";
 import logo from "./assets/bilsnack.jpg";
 
 const HomePage = () => {
-  const { products } = useProducts();
-  const newArrivals = products.slice(0, 4);
-  const topSelling = products
-    .slice(4, 8)
-    .sort((a, b) => b.reviewCount - a.reviewCount);
+  const { products, topSelling: ctxTopSelling } = useProducts();
+  const newArrivals = (products || []).slice(0, 4);
+  // Prefer server-provided topSelling list when available, otherwise fall back to local calculation
+  const topSelling = (Array.isArray(ctxTopSelling) && ctxTopSelling.length > 0)
+    ? ctxTopSelling.slice(0, 4)
+    : (products || []).slice().sort((a, b) => (Number(b.reviewCount || 0) - Number(a.reviewCount || 0))).slice(0, 4);
 
   return (
     <div>

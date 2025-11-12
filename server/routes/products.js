@@ -45,6 +45,47 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get top-selling products (aggregated from order_items)
+router.get('/top-selling', async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 10));
+    const sql = `
+      SELECT p.*, COALESCE(SUM(oi.quantity), 0) AS sold_qty
+      FROM products p
+      LEFT JOIN order_items oi ON oi.product_id = p.id
+      GROUP BY p.id
+      ORDER BY sold_qty DESC
+      LIMIT ?`;
+    const [rows] = await pool.execute(sql, [limit]);
+
+    const parsed = rows.map((r) => {
+      const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
+      const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
+      const images = sanitizeImages(rawImages) || [];
+      const colors = sanitizeColors(rawColors) || [];
+      return {
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        price: Number(r.price),
+        stock: r.stock,
+        category: r.category,
+        images,
+        originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
+        rating: r.rating !== null ? Number(r.rating) : 0,
+        reviewCount: r.review_count || 0,
+        colors,
+        createdAt: r.created_at,
+        soldQty: Number(r.sold_qty || 0),
+      };
+    });
+    res.json(parsed);
+  } catch (err) {
+    console.error('Failed to fetch top-selling products', err);
+    res.status(500).json({ error: 'Failed to fetch top-selling products' });
+  }
+});
+
 // Get single product
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
