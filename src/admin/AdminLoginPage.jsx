@@ -43,13 +43,25 @@ const AdminLoginPage = () => {
       if (data && data.token) {
         // store token for admin API calls
         localStorage.setItem('adminToken', data.token);
+        // also persist admin user info so Admin dashboard can display the admin name
+        if (data.user) {
+          try {
+            localStorage.setItem('billsnack_user', JSON.stringify(data.user));
+          } catch {
+            // ignore storage errors
+          }
+          // also persist standard token so AuthProvider can pick it up after reload
+          try { localStorage.setItem('billsnack_token', data.token); } catch { /* ignore */ }
+        }
         // keep a simple adminAuth flag for layout checks
         localStorage.setItem(
           'adminAuth',
           JSON.stringify({ isLoggedIn: true, email: (data.user && data.user.email) || formData.email, loginTime: new Date().toISOString() })
         );
         setSubmitting(false);
+        // navigate then reload so AuthProvider reads the persisted user/token
         navigate('/admin');
+        window.location.reload();
       } else {
         setError('Login gagal - respon tidak valid');
       }

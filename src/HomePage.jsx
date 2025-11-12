@@ -82,7 +82,7 @@ const HomePage = () => {
 
               {/* Chips & Crisps */}
               <Link
-                to="/shop"
+                to={`/shop?category=${encodeURIComponent('Chips & Crisps')}`}
                 className="group"
               >
                 <div className="bg-blue-100 rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition-shadow duration-300">
@@ -95,7 +95,7 @@ const HomePage = () => {
 
               {/* Candies & Sweets */}
               <Link
-                to="/shop"
+                to={`/shop?category=${encodeURIComponent('Candies & Sweets')}`}
                 className="group"
               >
                 <div className="bg-pink-100 rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition-shadow duration-300">
@@ -108,7 +108,7 @@ const HomePage = () => {
 
               {/* Cookies */}
               <Link
-                to="/shop"
+                to={`/shop?category=${encodeURIComponent('Cookies')}`}
                 className="group"
               >
                 <div className="bg-orange-100 rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition-shadow duration-300">
@@ -121,7 +121,7 @@ const HomePage = () => {
 
               {/* Nuts & Dried Fruits */}
               <Link
-                to="/shop"
+                to={`/shop?category=${encodeURIComponent('Nuts & Dried Fruits')}`}
                 className="group"
               >
                 <div className="bg-purple-100 rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition-shadow duration-300">

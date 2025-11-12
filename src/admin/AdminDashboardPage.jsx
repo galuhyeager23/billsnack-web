@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useProducts } from "../contexts/ProductContext";
 import { useAuth } from "../contexts/AuthContext";
 import formatPrice from "../utils/format";
@@ -7,45 +7,96 @@ const AdminDashboardPage = () => {
   const { products } = useProducts();
   const { user } = useAuth();
 
-  // Mock transaction data
-  const transactions = [
-    {
-      id: "TXN001",
-      orderId: "ABC123",
-      customer: "John Doe",
-      amount: 125.00,
-      paymentMethod: "QRIS",
-      status: "Selesai",
-      date: "2025-10-18"
-    },
-    {
-      id: "TXN002",
-      orderId: "DEF456",
-      customer: "Jane Smith",
-      amount: 89.50,
-      paymentMethod: "Transfer Bank",
-      status: "Menunggu",
-      date: "2025-10-17"
-    },
-    {
-      id: "TXN003",
-      orderId: "GHI789",
-      customer: "Bob Johnson",
-      amount: 245.75,
-      paymentMethod: "QRIS",
-      status: "Selesai",
-      date: "2025-10-16"
-    },
-    {
-      id: "TXN004",
-      orderId: "JKL012",
-      customer: "Alice Brown",
-      amount: 67.25,
-      paymentMethod: "Transfer Bank",
-      status: "Selesai",
-      date: "2025-10-15"
+  // derive a friendly display name for the admin and avatar
+  const { displayName, displayAvatar, displayInitials } = (() => {
+    let name = null;
+    let avatar = null;
+    // prefer in-memory user from context
+    if (user) {
+      if (user.name) name = user.name;
+      const fn = user.firstName || user.first_name || '';
+      const ln = user.lastName || user.last_name || '';
+      const combined = `${fn} ${ln}`.trim();
+      if (!name && combined) name = combined;
+      if (!name && user.email) name = String(user.email).split('@')[0];
+      if (user.profileImage) avatar = user.profileImage;
+      if (!avatar && user.profileImageUrl) avatar = user.profileImageUrl;
     }
-  ];
+
+    // fallback to persisted user in localStorage (if any)
+    if ((!name || !avatar) && typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('billsnack_user');
+        if (raw) {
+          const lu = JSON.parse(raw);
+          if (lu) {
+            if (!name && lu.name) name = lu.name;
+            const fn = lu.firstName || lu.first_name || '';
+            const ln = lu.lastName || lu.last_name || '';
+            const combined = `${fn} ${ln}`.trim();
+            if (!name && combined) name = combined;
+            if (!name && lu.email) name = String(lu.email).split('@')[0];
+            if (!avatar && (lu.profileImage || lu.profile_image || lu.profileImageUrl || lu.profile_image_url)) {
+              avatar = lu.profileImage || lu.profile_image || lu.profileImageUrl || lu.profile_image_url;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    // initials fallback
+    let initials = null;
+    if (name) {
+      const parts = name.split(/\s+/).filter(Boolean);
+      initials = parts.length === 0 ? null : ((parts[0][0] || '') + (parts[1] ? (parts[1][0] || '') : '')).toUpperCase();
+    }
+
+    return { displayName: name, displayAvatar: avatar, displayInitials: initials };
+  })();
+
+  // Live transactions fetched from server (show a short recent list)
+  const [transactions, setTransactions] = useState([]);
+  const [loadingTx, setLoadingTx] = useState(false);
+  const [txError, setTxError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+    const token = adminToken || null;
+
+    const fetchTx = async () => {
+      setLoadingTx(true);
+      setTxError(null);
+      try {
+        const res = await fetch('/api/admin/transactions', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('Gagal mengambil transaksi');
+        const data = await res.json();
+        const rows = Array.isArray(data.rows) ? data.rows : [];
+        if (!mounted) return;
+        const normalized = rows.map(r => ({
+          id: r.id || r.transaction_id || r.txn_id || null,
+          orderId: r.order_number || r.order_id || r.orderId || null,
+          customer: r.name || (r.first_name ? `${r.first_name} ${r.last_name || ''}`.trim() : (r.email || r.order_email || r.user_email || '')),
+          amount: Number(r.amount ?? r.total ?? r.order_total ?? 0),
+          paymentMethod: r.payment_method || r.paymentMethod || null,
+          status: r.status || r.state || null,
+          date: r.created_at || r.date || null,
+        }));
+        setTransactions(normalized.slice(0, 5));
+      } catch (e) {
+        if (!mounted) return;
+        setTxError(e.message || 'Error');
+      } finally {
+        if (mounted) setLoadingTx(false);
+      }
+    };
+    fetchTx();
+    return () => { mounted = false; };
+  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -63,9 +114,21 @@ const AdminDashboardPage = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold mb-2">Dasbor</h1>
-      <p className="text-lg text-gray-600 mb-8">
-        Selamat datang kembali, {user?.name || "Admin"}!
-      </p>
+      <div className="flex items-center gap-4 mb-8">
+        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg font-semibold text-gray-700 overflow-hidden">
+          {displayAvatar ? (
+            // allow inlined base64 images or remote urls
+            <img src={displayAvatar} alt={`${displayName || 'Admin'} avatar`} className="w-full h-full object-cover" />
+          ) : (
+            <span className="select-none">{displayInitials || 'A'}</span>
+          )}
+        </div>
+        <div>
+          <p className="text-lg text-gray-600">
+            Selamat datang kembali, <span className="font-medium">{displayName || 'Admin'}</span>!
+          </p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-lg shadow-md">
@@ -96,6 +159,8 @@ const AdminDashboardPage = () => {
 
       <div className="mt-12">
         <h2 className="text-2xl font-bold mb-4">Transaksi Terbaru</h2>
+        {loadingTx && <div className="text-sm text-gray-600 mb-2">Memuat transaksi terbaru...</div>}
+        {txError && <div className="text-sm text-red-600 mb-2">Error: {txError}</div>}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">

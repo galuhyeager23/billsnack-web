@@ -1,10 +1,27 @@
 /* eslint-disable react-refresh/only-export-components */
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useContext, useEffect } from "react";
 
 const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState([]);
+  // initialize cart from localStorage so it persists across account changes
+  const [cartItems, setCartItems] = useState(() => {
+    try {
+      const raw = typeof window !== 'undefined' ? localStorage.getItem('billsnack_cart') : null;
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // persist cart to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('billsnack_cart', JSON.stringify(cartItems));
+    } catch {
+      // ignore storage errors
+    }
+  }, [cartItems]);
 
   const addToCart = (product, quantity) => {
     setCartItems((prevItems) => {
@@ -56,6 +73,7 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCartItems([]);
+  try { localStorage.removeItem('billsnack_cart'); } catch { /* ignore */ }
   };
 
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
