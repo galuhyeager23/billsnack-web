@@ -2,7 +2,15 @@
 const express = require('express');
 const pool = require('../db');
 const auth = require('./auth');
+const TelegramService = require('../services/telegramService');
 const verifyToken = auth && auth.verifyToken ? auth.verifyToken : (req, res, next) => next();
+
+// Initialize Telegram service
+const telegramService = new TelegramService(
+  process.env.TELEGRAM_BOT_TOKEN,
+  process.env.TELEGRAM_ADMIN_CHAT_ID
+);
+
 function requireAdmin(req, res, next) {
   const user = req.user || {};
   if (user.role && user.role === 'admin') return next();
@@ -70,6 +78,24 @@ router.post('/', async (req, res) => {
     }
 
   await conn.commit();
+
+  // Send Telegram notification to admin (async, don't wait for it)
+  const orderData = {
+    id: orderId,
+    order_number: orderNumber,
+    name: customer && customer.name || 'Unknown',
+    email: customer && customer.email || 'N/A',
+    phone: customer && customer.phone || 'N/A',
+    address: customer && customer.address || 'N/A',
+    city: customer && customer.city || 'N/A',
+    province: customer && customer.province || 'N/A',
+    total,
+    items: normalizedItems,
+  };
+  telegramService.notifyNewOrder(orderData).catch((err) => {
+    console.error('Failed to send Telegram notification:', err);
+  });
+
   res.status(201).json({ ok: true, orderId, orderNumber, subtotal, discount, deliveryFee, total });
   } catch (err) {
     await conn.rollback().catch(() => {});
@@ -213,12 +239,18 @@ router.put('/:id/status', verifyToken, requireAdmin, async (req, res) => {
   try {
     const [result] = await pool.execute('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Order not found' });
-    const [rows] = await pool.execute('SELECT id, status FROM orders WHERE id = ?', [id]);
-    return res.json({ ok: true, order: rows[0] });
+    const [rows] = await pool.execute('SELECT id, order_number, name, total, status FROM orders WHERE id = ?', [id]);
+    const order = rows[0];
+
+    // Send Telegram notification (async, don't wait for it)
+    telegramService.notifyOrderStatusUpdate(order, status).catch((err) => {
+      console.error('Failed to send status update notification:', err);
+    });
+
+    return res.json({ ok: true, order });
   } catch (err) {
     console.error('Failed to update order status', err);
     return res.status(500).json({ error: 'Failed to update status' });
   }
 });
-
 
