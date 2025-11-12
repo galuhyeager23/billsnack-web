@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from "../contexts/AuthContext";
 import formatPrice from "../utils/format";
 
@@ -8,6 +9,7 @@ const AdminTransactionsPage = () => {
   const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
   // prefer adminToken for admin API calls, but fall back to normal user token
   const token = adminToken || userToken;
+  const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [sourceTable, setSourceTable] = useState(null);
   const [rawResponse, setRawResponse] = useState(null);
@@ -28,6 +30,13 @@ const AdminTransactionsPage = () => {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         if (!res.ok) {
+          // If token is invalid or expired, redirect to admin login
+          if (res.status === 401) {
+            try { localStorage.removeItem('adminToken'); } catch { /* ignore */ }
+            try { localStorage.removeItem('adminAuth'); } catch { /* ignore */ }
+            navigate('/perloginan');
+            return;
+          }
           // try to surface JSON error body, or fallback to status text
           let msg = res.statusText || 'Failed to load transactions';
           try { const err = await res.json(); if (err && err.error) msg = err.error; } catch { /* ignore */ }
@@ -62,7 +71,7 @@ const AdminTransactionsPage = () => {
       }
     };
     fetchTransactions();
-  }, [token]);
+  }, [token, navigate]);
   
 
   const [filterStatus, setFilterStatus] = useState("All");
