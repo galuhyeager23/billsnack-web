@@ -1,27 +1,55 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { useAuth } from "./AuthContext";
 
 const CartContext = createContext(undefined);
 
 export const CartProvider = ({ children }) => {
-  // initialize cart from localStorage so it persists across account changes
-  const [cartItems, setCartItems] = useState(() => {
-    try {
-      const raw = typeof window !== 'undefined' ? localStorage.getItem('billsnack_cart') : null;
-      return raw ? JSON.parse(raw) : [];
-    } catch {
-      return [];
-    }
-  });
+  // cart is stored per authenticated user only. If not logged in, cart is kept in memory and not persisted.
+  const { user } = useAuth();
 
-  // persist cart to localStorage whenever it changes
+  // Build a cart key from available stable user identifiers. Prefer numeric id when present.
+  const getCartKey = (u) => {
+    if (!u) return null;
+    if (u.id) return `billsnack_cart_user_${u.id}`;
+    if (u.user_id) return `billsnack_cart_user_${u.user_id}`;
+    if (u.email) return `billsnack_cart_user_${u.email}`;
+    if (u.username) return `billsnack_cart_user_${u.username}`;
+    return null;
+  };
+
+  // Start with an empty cart and load the user's cart from storage once Auth is available.
+  const [cartItems, setCartItems] = useState([]);
+
+  // persist cart to localStorage whenever it changes, only when a user is logged in
   useEffect(() => {
     try {
-      localStorage.setItem('billsnack_cart', JSON.stringify(cartItems));
+      if (typeof window === 'undefined') return;
+      const key = getCartKey(user);
+      if (key) {
+        localStorage.setItem(key, JSON.stringify(cartItems));
+      }
     } catch {
       // ignore storage errors
     }
-  }, [cartItems]);
+  }, [cartItems, user]);
+
+  // When the authenticated user changes (login/logout), load or clear cart accordingly
+  useEffect(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      const key = getCartKey(user);
+      if (key) {
+        const raw = localStorage.getItem(key);
+        setCartItems(raw ? JSON.parse(raw) : []);
+      } else {
+        // logged out or no user -> clear in-memory cart (do not remove persisted per-user keys)
+        setCartItems([]);
+      }
+    } catch {
+      setCartItems([]);
+    }
+  }, [user]);
 
   const addToCart = (product, quantity) => {
     setCartItems((prevItems) => {
@@ -73,7 +101,10 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCartItems([]);
-  try { localStorage.removeItem('billsnack_cart'); } catch { /* ignore */ }
+    try {
+      const key = getCartKey(user);
+      if (key) localStorage.removeItem(key);
+    } catch { /* ignore */ }
   };
 
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
