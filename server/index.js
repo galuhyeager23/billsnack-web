@@ -9,6 +9,13 @@ const adminRouter = require('./routes/admin');
 const ordersRouter = require('./routes/orders');
 const reviewsRouter = require('./routes/reviews');
 const uploadsRouter = require('./routes/uploads');
+const telegramRouter = require('./routes/telegram');
+const telegramResellerRouter = require('./routes/telegramReseller');
+const telegramRegistrationRouter = require('./routes/telegramRegistration');
+const notificationsRouter = require('./routes/notifications');
+const TelegramPolling = require('./services/telegramPolling');
+const ResellerTelegramPolling = require('./services/resellerTelegramPolling');
+const NotificationService = require('./services/notificationService');
 
 const app = express();
 // allow larger JSON payloads because registration may include base64 image data URLs
@@ -37,6 +44,13 @@ if (isProd) {
   }, credentials: true }));
 }
 
+// Store database connection in app.locals for routes to access
+app.locals.db = pool;
+
+// Initialize notification service
+const notificationService = new NotificationService(pool);
+app.locals.notificationService = notificationService;
+
 app.get('/', (req, res) => res.json({ ok: true, message: 'Billsnack API running' }));
 
 app.use('/api/products', productsRouter);
@@ -44,9 +58,13 @@ app.use('/api/auth', authRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/notifications', notificationsRouter);
 // serve uploaded files statically
 app.use('/uploads', express.static(require('path').join(__dirname, 'public', 'uploads')));
 app.use('/api/uploads', uploadsRouter);
+app.use('/api/telegram', telegramRouter);
+app.use('/api/telegram', telegramResellerRouter);
+app.use('/api/telegram', telegramRegistrationRouter);
 
 // health check route that verifies DB connection
 app.get('/health', async (req, res) => {
@@ -62,6 +80,38 @@ app.get('/health', async (req, res) => {
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+
+  // Initialize Telegram polling for development/localhost
+  const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (telegramBotToken) {
+    const telegramPolling = new TelegramPolling(pool, telegramBotToken);
+    telegramPolling.startPolling();
+
+    // Graceful shutdown
+    process.on('SIGINT', () => {
+      console.log('\nShutting down gracefully...');
+      telegramPolling.stopPolling();
+      process.exit(0);
+    });
+  } else {
+    console.warn('TELEGRAM_BOT_TOKEN not set, Telegram bot polling disabled');
+  }
+
+  // Initialize Reseller Telegram polling for development/localhost
+  const telegramResellerBotToken = process.env.TELEGRAM_RESELLER_BOT_TOKEN;
+  if (telegramResellerBotToken) {
+    const resellerTelegramPolling = new ResellerTelegramPolling(pool);
+    resellerTelegramPolling.start();
+
+    // Graceful shutdown
+    process.on('SIGINT', () => {
+      console.log('\nShutting down Reseller bot gracefully...');
+      resellerTelegramPolling.stop();
+      process.exit(0);
+    });
+  } else {
+    console.warn('TELEGRAM_RESELLER_BOT_TOKEN not set, Reseller Telegram bot polling disabled');
+  }
 
   // Quick DB health check on startup to help debugging login/db issues
   (async () => {

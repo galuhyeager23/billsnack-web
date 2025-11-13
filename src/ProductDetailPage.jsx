@@ -36,17 +36,23 @@ const ProductDetailPage = () => {
   const [selectedImage, setSelectedImage] = useState(product ? normalizeImg(product.images[0]) : "");
   const [quantity, setQuantity] = useState(1);
   const [btnHover, setBtnHover] = useState(false);
+  const [outOfStock, setOutOfStock] = useState(false);
 
   useEffect(() => {
     if (product) {
       setSelectedImage(normalizeImg(product.images[0]));
       setQuantity(1);
+      setOutOfStock(!product.inStock || product.stock === 0);
       window.scrollTo(0, 0);
     }
   }, [product]);
 
 
   const handleAddToCart = () => {
+    if (quantity > product.stock) {
+      alert(`Maaf, stok hanya tersedia ${product.stock} unit. Tidak bisa menambahkan lebih dari itu.`);
+      return;
+    }
     addToCart(product, quantity);
     alert(`${quantity} x ${product.name} ditambahkan ke keranjang!`);
   };
@@ -177,7 +183,7 @@ const ProductDetailPage = () => {
                 return (
                   <div
                     key={index}
-                    className={`w-24 aspect-[3/2] rounded-md overflow-hidden cursor-pointer border-2 ${
+                    className={`w-24 aspect-3/2 rounded-md overflow-hidden cursor-pointer border-2 ${
                       selectedImage === url ? "border-black" : "border-gray-200"
                     }`}
                     onClick={() => setSelectedImage(url)}
@@ -210,7 +216,14 @@ const ProductDetailPage = () => {
                 <p className="text-2xl text-gray-400 line-through">Rp{formatPrice(product.originalPrice)}</p>
               )}
             </div>
-            <p className="text-gray-600">{product.description}</p>
+
+            <p className="text-gray-600 mb-6">
+              <span className="font-semibold">Ketersediaan Stok:</span> {product.stock} unit
+            </p>
+
+            <p className="text-gray-600 mb-6">
+              <span className="font-semibold">Deskripsi:</span> {product.description}
+            </p>
 
             <hr className="my-8" />
 
@@ -226,8 +239,9 @@ const ProductDetailPage = () => {
                   {quantity}
                 </span>
                 <button
-                  onClick={() => setQuantity((q) => q + 1)}
+                  onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
                   className="text-gray-500 text-xl font-bold w-6 h-6 flex items-center justify-center"
+                  disabled={quantity >= product.stock}
                 >
                   +
                 </button>
@@ -236,11 +250,12 @@ const ProductDetailPage = () => {
                 onClick={handleAddToCart}
                 onMouseEnter={() => setBtnHover(true)}
                 onMouseLeave={() => setBtnHover(false)}
-                className="flex-grow text-white font-semibold py-4 px-8 rounded-full text-lg focus:outline-none transition duration-300"
+                disabled={outOfStock}
+                className={`grow text-white font-semibold py-4 px-8 rounded-full text-lg focus:outline-none transition duration-300 ${outOfStock ? "bg-gray-400 cursor-not-allowed" : ""}`}
                 aria-label="Tambah ke Keranjang"
-                style={{ backgroundColor: btnHover ? '#E65A00' : '#FF6B00' }}
+                style={!outOfStock ? { backgroundColor: btnHover ? '#E65A00' : '#FF6B00' } : {}}
               >
-                Tambah ke Keranjang
+                {outOfStock ? "Stok Habis" : "Tambah ke Keranjang"}
               </button>
             </div>
 

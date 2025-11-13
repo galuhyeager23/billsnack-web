@@ -6,10 +6,51 @@ import formatPrice from "../utils/format";
 const AdminProductsPage = () => {
   const { products, deleteProduct, updateProduct } = useProducts();
   const [toggleStates, setToggleStates] = useState({});
+  const [allProducts, setAllProducts] = useState([]);
 
-  // keep toggleStates in sync when products change
+  // Dummy reseller products
+  const resellerProducts = [
+    {
+      id: "reseller-1",
+      name: "Keripik Singkong",
+      price: 25000,
+      image: "/product-1.jpg",
+      inStock: true,
+      category: "Keripik",
+      reseller: "PT Toko Cemilan",
+      resellerEmail: "tokocemilan@email.com",
+      stock: 60,
+    },
+    {
+      id: "reseller-2",
+      name: "Brownies Coklat",
+      price: 35000,
+      image: "/product-2.jpg",
+      inStock: true,
+      category: "Kue",
+      reseller: "Toko Kue Nikmat",
+      resellerEmail: "kuunikmat@email.com",
+      stock: 35,
+    },
+    {
+      id: "reseller-3",
+      name: "Kacang Goreng Pedas",
+      price: 20000,
+      image: "/product-3.jpg",
+      inStock: false,
+      category: "Kacang",
+      reseller: "Cemilan Nusantara",
+      resellerEmail: "cemilannusantara@email.com",
+      stock: 0,
+    },
+  ];
+
+  // Combine admin products with reseller products
   React.useEffect(() => {
-    const map = products.reduce((acc, product) => {
+    const combined = [...products, ...resellerProducts];
+    setAllProducts(combined);
+    
+    const map = combined.reduce((acc, product) => {
       acc[product.id] = product.inStock !== false;
       return acc;
     }, {});
@@ -57,13 +98,15 @@ const AdminProductsPage = () => {
               <th className="p-4 font-semibold">Nama</th>
               <th className="p-4 font-semibold">Kategori</th>
               <th className="p-4 font-semibold">Harga</th>
+              <th className="p-4 font-semibold">Stock</th>
+              <th className="p-4 font-semibold">Penjual</th>
               <th className="p-4 font-semibold">Status Stok</th>
               <th className="p-4 font-semibold">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {products.length > 0 ? (
-              products.map((product) => (
+            {allProducts.length > 0 ? (
+              allProducts.map((product) => (
                 <tr key={product.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     {(() => {
@@ -85,6 +128,15 @@ const AdminProductsPage = () => {
                   <td className="p-4 text-gray-600">{product.category}</td>
                   <td className="p-4 font-medium">
                     Rp {formatPrice(product.price)}
+                  </td>
+                  <td className="p-4">
+                    <span className="text-lg font-bold text-blue-600">{product.stock} unit</span>
+                  </td>
+                  <td className="p-4">
+                    <div className="text-sm">
+                      <p className="font-medium text-gray-900">{product.reseller || "Admin"}</p>
+                      <p className="text-gray-500">{product.resellerEmail || "admin@billsnack.id"}</p>
+                    </div>
                   </td>
                   <td className="p-4">
                     <button
@@ -125,7 +177,7 @@ const AdminProductsPage = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="text-center p-8 text-gray-500">
+                <td colSpan={7} className="text-center p-8 text-gray-500">
                   Tidak ada produk ditemukan.
                 </td>
               </tr>

@@ -119,6 +119,73 @@ ${emoji} <b>Order Status Update</b>
 
     return this.sendMessage(message);
   }
+
+  /**
+   * Send stock status message
+   * @param {Array} products - Array of products with stock info
+   * @returns {Promise<Object>} - Response from Telegram API
+   */
+  async sendStockStatus(products) {
+    if (!products || products.length === 0) {
+      return this.sendMessage('📦 <b>Stock Check</b>\n\nTidak ada produk ditemukan.');
+    }
+
+    // Categorize products by stock status
+    const inStock = products.filter(p => p.in_stock || p.stock > 0);
+    const outOfStock = products.filter(p => !p.in_stock && p.stock === 0);
+
+    let message = '<b>📦 Stock Status Update</b>\n\n';
+
+    if (inStock.length > 0) {
+      message += '<b>✅ Produk Tersedia:</b>\n';
+      inStock.slice(0, 10).forEach((product) => {
+        message += `• <b>${product.name}</b>\n  Stock: ${product.stock} | Harga: Rp${Number(product.price).toLocaleString('id-ID')}\n`;
+      });
+      if (inStock.length > 10) {
+        message += `... dan ${inStock.length - 10} produk lainnya\n`;
+      }
+      message += '\n';
+    }
+
+    if (outOfStock.length > 0) {
+      message += '<b>❌ Produk Habis:</b>\n';
+      outOfStock.slice(0, 5).forEach((product) => {
+        message += `• ${product.name}\n`;
+      });
+      if (outOfStock.length > 5) {
+        message += `... dan ${outOfStock.length - 5} produk lainnya\n`;
+      }
+    }
+
+    message += `\n<i>Total Produk: ${products.length} | Tersedia: ${inStock.length} | Habis: ${outOfStock.length}</i>`;
+
+    return this.sendMessage(message);
+  }
+
+  /**
+   * Send specific product stock info
+   * @param {Object} product - Product object
+   * @returns {Promise<Object>} - Response from Telegram API
+   */
+  async sendProductStock(product) {
+    const stockStatus = product.in_stock || product.stock > 0 ? '✅ Tersedia' : '❌ Habis';
+    const stockDisplay = product.stock > 0 ? product.stock : '0';
+
+    const message = `
+<b>📦 Informasi Produk</b>
+
+<b>Nama:</b> ${product.name}
+<b>Kategori:</b> ${product.category || 'N/A'}
+<b>Harga:</b> Rp${Number(product.price).toLocaleString('id-ID')}
+<b>Stock:</b> ${stockDisplay}
+<b>Status:</b> ${stockStatus}
+<b>Rating:</b> ${product.rating || '0'} (${product.review_count || '0'} reviews)
+
+<i>Last updated: ${new Date().toLocaleString('id-ID')}</i>
+`;
+
+    return this.sendMessage(message);
+  }
 }
 
 module.exports = TelegramService;

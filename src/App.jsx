@@ -26,6 +26,10 @@ import AdminProductsPage from "./admin/AdminProductsPage";
 import AdminProductFormPage from "./admin/AdminProductFormPage";
 import AdminTransactionsPage from "./admin/AdminTransactionsPage";
 
+// Reseller components
+import ResellerLoginPage from "./ResellerLoginPage";
+import ResellerLayout from "./components/reseller/ResellerLayout";
+
 const App = () => {
   return (
     <AuthProvider>
@@ -36,6 +40,10 @@ const App = () => {
               {/* Admin Routes - tanpa Header dan Footer */}
               <Route path="/perloginan" element={<AdminLoginPage />} />
               <Route path="/admin/*" element={<AdminLayout />} />
+
+              {/* Reseller Routes - tanpa Header dan Footer */}
+              <Route path="/reseller/login" element={<ResellerLoginPage />} />
+              <Route path="/reseller/*" element={<ResellerLayout />} />
 
               {/* Public Routes - dengan Header dan Footer */}
               <Route

@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, Link, Routes, Route, useNavigate } from "react-router-dom";
-import AdminDashboardPage from "../../admin/AdminDashboardPage";
-import AdminProductsPage from "../../admin/AdminProductsPage";
-import AdminProductFormPage from "../../admin/AdminProductFormPage";
-import AdminTransactionsPage from "../../admin/AdminTransactionsPage";
-import AdminResellersPage from "../../admin/AdminResellersPage";
-import AdminResellerFormPage from "../../admin/AdminResellerFormPage";
+import ResellerDashboardPage from "../../reseller/ResellerDashboardPage";
+import ResellerProductsPage from "../../reseller/ResellerProductsPage";
+import ResellerProductFormPage from "../../reseller/ResellerProductFormPage";
 
 const DashboardIcon = () => (
   <svg
@@ -24,6 +21,7 @@ const DashboardIcon = () => (
     <line x1="12" y1="22.08" x2="12" y2="12"></line>
   </svg>
 );
+
 const ProductIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -39,43 +37,6 @@ const ProductIcon = () => (
     <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
     <line x1="3" y1="6" x2="21" y2="6"></line>
     <path d="M16 10a4 4 0 0 1-8 0"></path>
-  </svg>
-);
-
-const TransactionIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-    <line x1="8" y1="21" x2="16" y2="21"></line>
-    <line x1="12" y1="17" x2="12" y2="21"></line>
-  </svg>
-);
-
-const ResellerIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-    <circle cx="9" cy="7" r="4"></circle>
-    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
   </svg>
 );
 
@@ -114,35 +75,37 @@ const CloseIcon = () => (
   </svg>
 );
 
-const AdminLayout = () => {
+const ResellerLayout = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [resellerEmail, setResellerEmail] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Check if admin is logged in
-    const adminAuth = localStorage.getItem("adminAuth");
-    if (adminAuth) {
+    // Check if reseller is logged in
+    const resellerAuth = localStorage.getItem("resellerAuth");
+    if (resellerAuth) {
       try {
-        const auth = JSON.parse(adminAuth);
+        const auth = JSON.parse(resellerAuth);
         if (auth.isLoggedIn) {
           setIsAuthenticated(true);
+          setResellerEmail(auth.email || "");
           setLoading(false);
           return;
         }
       } catch (e) {
-        console.error("Error parsing admin auth:", e);
+        console.error("Error parsing reseller auth:", e);
       }
     }
-    // Redirect to admin login if not authenticated
+    // Redirect to reseller login if not authenticated
     setLoading(false);
-    navigate("/perloginan");
+    navigate("/reseller/login");
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminAuth");
-    navigate("/perloginan");
+    localStorage.removeItem("resellerAuth");
+    navigate("/reseller/login");
   };
 
   if (loading) {
@@ -175,11 +138,11 @@ const AdminLayout = () => {
           >
             {sidebarOpen ? <CloseIcon /> : <MenuIcon />}
           </button>
-          <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+          <h1 className="text-xl font-bold text-white">Reseller Panel</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-300">
-            Logged in as Admin
+          <div className="text-sm text-gray-300 truncate">
+            {resellerEmail}
           </div>
           <button
             onClick={handleLogout}
@@ -213,7 +176,7 @@ const AdminLayout = () => {
           <ul>
             <li>
               <NavLink
-                to="/admin"
+                to="/reseller"
                 end
                 className={navLinkClasses}
                 onClick={() => setSidebarOpen(false)}
@@ -224,32 +187,12 @@ const AdminLayout = () => {
             </li>
             <li className="mt-2">
               <NavLink
-                to="/admin/products"
+                to="/reseller/products"
                 className={navLinkClasses}
                 onClick={() => setSidebarOpen(false)}
               >
                 <ProductIcon />
-                <span>Products</span>
-              </NavLink>
-            </li>
-            <li className="mt-2">
-              <NavLink
-                to="/admin/transactions"
-                className={navLinkClasses}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <TransactionIcon />
-                <span>Transactions</span>
-              </NavLink>
-            </li>
-            <li className="mt-2">
-              <NavLink
-                to="/admin/resellers"
-                className={navLinkClasses}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <ResellerIcon />
-                <span>Resseler</span>
+                <span>Produk Saya</span>
               </NavLink>
             </li>
           </ul>
@@ -261,18 +204,14 @@ const AdminLayout = () => {
         sidebarOpen ? "ml-64" : "ml-0"
       }`}>
         <Routes>
-          <Route index element={<AdminDashboardPage />} />
-          <Route path="products" element={<AdminProductsPage />} />
-          <Route path="products/new" element={<AdminProductFormPage />} />
-          <Route path="products/edit/:id" element={<AdminProductFormPage />} />
-          <Route path="transactions" element={<AdminTransactionsPage />} />
-          <Route path="resellers" element={<AdminResellersPage />} />
-          <Route path="resellers/new" element={<AdminResellerFormPage />} />
-          <Route path="resellers/edit/:id" element={<AdminResellerFormPage />} />
+          <Route index element={<ResellerDashboardPage />} />
+          <Route path="products" element={<ResellerProductsPage />} />
+          <Route path="products/new" element={<ResellerProductFormPage />} />
+          <Route path="products/edit/:id" element={<ResellerProductFormPage />} />
         </Routes>
       </main>
     </div>
   );
 };
 
-export default AdminLayout;
+export default ResellerLayout;
