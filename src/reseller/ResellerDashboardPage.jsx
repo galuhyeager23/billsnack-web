@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const ResellerDashboardPage = () => {
   const [stats, setStats] = useState({
@@ -18,6 +19,56 @@ const ResellerDashboardPage = () => {
       totalSold: 45,
     });
   }, []);
+
+  const { token, user } = useAuth();
+  const [resellers, setResellers] = useState([]);
+  const [connections, setConnections] = useState(new Set());
+
+  useEffect(() => {
+    // fetch other resellers and existing connections (only for reseller role)
+    const fetchResellers = async () => {
+      try {
+        const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+        const r1 = await fetch(`${base}/api/resellers?excludeSelf=1`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (r1.ok) {
+          const data = await r1.json();
+          setResellers(data || []);
+        }
+        const r2 = await fetch(`${base}/api/resellers/connections`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (r2.ok) {
+          const d2 = await r2.json();
+          setConnections(new Set(d2.connections || []));
+        }
+      } catch (e) {
+        console.error('Failed to fetch resellers or connections', e);
+      }
+    };
+    if (token && user && user.role === 'reseller') fetchResellers();
+  }, [token, user]);
+
+  const toggleConnect = async (targetId) => {
+    try {
+      const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+      const res = await fetch(`${base}/api/resellers/${targetId}/connect`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      });
+      if (!res.ok) throw new Error('Request failed');
+      const j = await res.json();
+      setConnections(prev => {
+        const next = new Set(prev);
+        if (j.connected) next.add(Number(targetId)); else next.delete(Number(targetId));
+        return next;
+      });
+    } catch (e) {
+      console.error('Toggle connect failed', e);
+      alert('Gagal menghubungkan reseller. Coba lagi.');
+    }
+  };
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat('id-ID', {
@@ -143,6 +194,40 @@ const ResellerDashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Connect with other resellers (only visible to reseller role) */}
+      {user && user.role === 'reseller' ? (
+        <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Terhubung dengan Reseller Lain</h2>
+        <p className="text-sm text-gray-600 mb-4">Temukan reseller lain dan bangun jaringan. Klik "Hubungkan" untuk saling terhubung.</p>
+        {resellers.length === 0 ? (
+          <p className="text-gray-500">Tidak ada reseller lain ditemukan.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {resellers.map(r => (
+              <div key={r.id} className="border rounded-lg p-4 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-gray-900">{r.store_name || `${r.first_name || ''} ${r.last_name || ''}`.trim() || r.username || r.email}</p>
+                  <p className="text-sm text-gray-500">{r.email}</p>
+                </div>
+                <div>
+                  <button
+                    onClick={() => toggleConnect(r.id)}
+                    className={`py-2 px-4 rounded-lg font-semibold ${connections.has(r.id) ? 'bg-green-600 text-white' : 'bg-blue-600 text-white'}`}>
+                    {connections.has(r.id) ? 'Terhubung' : 'Hubungkan'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">Koneksi Reseller</h2>
+          <p className="text-sm text-gray-600">Fitur koneksi hanya tersedia untuk akun dengan peran <strong>reseller</strong>. Jika Anda ingin menjadi reseller, minta admin untuk menandai akun Anda sebagai reseller.</p>
+        </div>
+      )}
     </div>
   );
 };

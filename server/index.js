@@ -13,6 +13,7 @@ const telegramRouter = require('./routes/telegram');
 const telegramResellerRouter = require('./routes/telegramReseller');
 const telegramRegistrationRouter = require('./routes/telegramRegistration');
 const notificationsRouter = require('./routes/notifications');
+const resellerRouter = require('./routes/reseller');
 const TelegramPolling = require('./services/telegramPolling');
 const ResellerTelegramPolling = require('./services/resellerTelegramPolling');
 const NotificationService = require('./services/notificationService');
@@ -59,6 +60,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/notifications', notificationsRouter);
+app.use('/api/resellers', resellerRouter);
 // serve uploaded files statically
 app.use('/uploads', express.static(require('path').join(__dirname, 'public', 'uploads')));
 app.use('/api/uploads', uploadsRouter);

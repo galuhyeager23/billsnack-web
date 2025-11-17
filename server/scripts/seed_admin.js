@@ -11,7 +11,8 @@ const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = process.env.SALT_ROUNDS ? Number(process.env.SALT_ROUNDS) : 10;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@billsnack.id';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+// Default password as requested: 'admin' — override with ADMIN_PASSWORD env var if you prefer
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
 
 async function upsertAdmin() {
   const conn = await pool.getConnection();
