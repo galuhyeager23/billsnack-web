@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
 
 const AdminResellerFormPage = () => {
   const navigate = useNavigate();
@@ -12,6 +14,7 @@ const AdminResellerFormPage = () => {
     phone: "",
     address: "",
     status: "active",
+    password: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -64,6 +67,33 @@ const AdminResellerFormPage = () => {
         ...prev,
         [name]: "",
       }));
+          const { token } = useAuth();
+
+          // If editing, load data from server
+          useEffect(() => {
+            if (!isEditing) return;
+            const load = async () => {
+              try {
+                const resp = await fetch(`/api/admin/users/${id}`, {
+                  headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!resp.ok) throw new Error('Failed to load user');
+                const data = await resp.json();
+                setFormData((prev) => ({
+                  ...prev,
+                  name: data.store_name || data.first_name || '',
+                  email: data.email || '',
+                  phone: data.phone || data.rp_phone || '',
+                  address: data.address || '',
+                  status: data.is_active ? 'active' : 'inactive',
+                }));
+              } catch (err) {
+                console.error('Failed to load reseller', err);
+                alert('Gagal memuat data reseller');
+              }
+            };
+            load();
+          }, [id, isEditing, token]);
     }
   };
 
@@ -111,17 +141,43 @@ const AdminResellerFormPage = () => {
 
       navigate("/admin/resellers");
     } catch (error) {
-      console.error("Error:", error);
-      alert("Terjadi kesalahan. Silakan coba lagi.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+              const payload = {
+                email: formData.email,
+                phone: formData.phone,
+                address: formData.address,
+                store_name: formData.name,
+              };
+              if (formData.password) payload.password = formData.password;
+              if (isEditing) {
+                payload.is_active = formData.status === 'active';
+                const resp = await fetch(`/api/admin/users/${id}`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(payload),
+                });
+                if (!resp.ok) throw new Error('Update failed');
+                alert('Reseller berhasil diupdate!');
+              } else {
+                payload.role = 'reseller';
+                const resp = await fetch('/api/admin/users', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: JSON.stringify(payload),
+                });
+                if (!resp.ok) {
+                  const err = await resp.json().catch(() => null);
+                  throw new Error(err && err.error ? err.error : 'Create failed');
+                }
+                alert('Reseller berhasil ditambahkan!');
+              }
 
-  return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">
+              navigate('/admin/resellers');
           {isEditing ? "Edit Reseller" : "Tambah Reseller Baru"}
         </h1>
         <p className="text-gray-600 mt-2">
@@ -247,6 +303,22 @@ const AdminResellerFormPage = () => {
                 ? isEditing
                   ? "Memperbarui..."
                   : "Menambahkan..."
+
+                  {/* Password (optional) */}
+                  <div className="mb-6">
+                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                      Password (opsional) 
+                    </label>
+                    <input
+                      type="password"
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder={isEditing ? 'Kosongkan jika tidak ingin mengubah password' : 'Password untuk reseller'}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-transparent border-gray-200`}
+                    />
+                  </div>
                 : isEditing
                 ? "Update Reseller"
                 : "Tambah Reseller"}

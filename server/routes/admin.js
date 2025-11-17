@@ -2,6 +2,7 @@
 const express = require('express');
 const pool = require('../db');
 const auth = require('./auth');
+const bcrypt = require('bcrypt');
 
 const router = express.Router();
 
@@ -131,6 +132,87 @@ router.get('/users', verifyToken, requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Admin get users error', err);
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Get a single user with optional reseller profile
+router.get('/users/:id', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.email, u.first_name, u.last_name, u.username, u.phone, u.address, u.role, u.is_active, rp.store_name, rp.phone AS rp_phone
+       FROM users u
+       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
+       WHERE u.id = ?`,
+      [id]
+    );
+    if (!rows || rows.length === 0) return res.status(404).json({ error: 'User not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('Admin get user error', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
+// Admin: create a user (admin creates reseller accounts)
+router.post('/users', verifyToken, requireAdmin, async (req, res) => {
+  const { email, password, first_name, last_name, phone, address, role, store_name } = req.body || {};
+  if (!email) return res.status(400).json({ error: 'Email required' });
+  try {
+    // optional password hashing
+    let hash = null;
+    if (password) {
+      hash = await bcrypt.hash(password, process.env.SALT_ROUNDS ? Number(process.env.SALT_ROUNDS) : 10);
+    }
+    const [result] = await pool.execute(
+      'INSERT INTO users (email, password_hash, first_name, last_name, phone, address, role, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
+      [email, hash, first_name || null, last_name || null, phone || null, address || null, role || 'reseller', 1]
+    );
+    const userId = result.insertId;
+    if (store_name) {
+      await pool.execute('INSERT INTO reseller_profiles (user_id, store_name, phone, address, created_at) VALUES (?, ?, ?, ?, NOW())', [userId, store_name, phone || null, address || null]);
+    }
+    const [rows] = await pool.execute('SELECT id, email, first_name, last_name, username, phone, address, role, created_at FROM users WHERE id = ?', [userId]);
+    res.status(201).json({ ok: true, user: rows[0] });
+  } catch (err) {
+    console.error('Admin create user error', err);
+    res.status(500).json({ error: 'Failed to create user' });
+  }
+});
+
+// Admin: update user fields and reseller profile
+router.put('/users/:id', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { email, first_name, last_name, phone, address, role, is_active, store_name } = req.body || {};
+  try {
+    const sets = [];
+    const params = [];
+    if (email) { sets.push('email = ?'); params.push(email); }
+    if (first_name) { sets.push('first_name = ?'); params.push(first_name); }
+    if (last_name) { sets.push('last_name = ?'); params.push(last_name); }
+    if (phone) { sets.push('phone = ?'); params.push(phone); }
+    if (address) { sets.push('address = ?'); params.push(address); }
+    if (role) { sets.push('role = ?'); params.push(role); }
+    if (typeof is_active !== 'undefined') { sets.push('is_active = ?'); params.push(is_active ? 1 : 0); }
+    if (sets.length > 0) {
+      params.push(id);
+      await pool.execute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, params);
+    }
+    // upsert reseller_profiles when store_name provided
+    if (typeof store_name !== 'undefined') {
+      // try update
+      const [r] = await pool.execute('SELECT user_id FROM reseller_profiles WHERE user_id = ?', [id]);
+      if (r && r.length > 0) {
+        await pool.execute('UPDATE reseller_profiles SET store_name = ?, phone = ?, address = ? WHERE user_id = ?', [store_name || null, phone || null, address || null, id]);
+      } else {
+        await pool.execute('INSERT INTO reseller_profiles (user_id, store_name, phone, address, created_at) VALUES (?, ?, ?, ?, NOW())', [id, store_name || null, phone || null, address || null]);
+      }
+    }
+    const [rows] = await pool.execute('SELECT id, email, first_name, last_name, username, phone, address, role, created_at FROM users WHERE id = ?', [id]);
+    res.json({ ok: true, user: rows[0] });
+  } catch (err) {
+    console.error('Admin update user error', err);
+    res.status(500).json({ error: 'Failed to update user' });
   }
 });
 
