@@ -1,77 +1,71 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const ResellerProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [toggleStates, setToggleStates] = useState({});
+  const { token } = useAuth();
 
   useEffect(() => {
-    // Dummy data untuk tampilan
-    const dummyProducts = [
-      {
-        id: 1,
-        name: "Keripik Nanas",
-        price: 35000,
-        image: "/product-1.jpg",
-        inStock: true,
-        category: "Keripik",
-        sales: 12,
-        stock: 45,
-      },
-      {
-        id: 2,
-        name: "Kacang Telur",
-        price: 45000,
-        image: "/product-2.jpg",
-        inStock: true,
-        category: "Kacang",
-        sales: 8,
-        stock: 28,
-      },
-      {
-        id: 3,
-        name: "Dodol Susu",
-        price: 28000,
-        image: "/product-3.jpg",
-        inStock: false,
-        category: "Dodol",
-        sales: 25,
-        stock: 0,
-      },
-    ];
-    setProducts(dummyProducts);
-
-    // Initialize toggle states
-    const map = dummyProducts.reduce((acc, product) => {
-      acc[product.id] = product.inStock !== false;
-      return acc;
-    }, {});
-    setToggleStates(map);
-  }, []);
+    // fetch reseller's products from API
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch('/api/products/reseller', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('Failed to fetch products');
+        const data = await res.json();
+        setProducts(data || []);
+        const map = (data || []).reduce((acc, product) => {
+          acc[product.id] = product.inStock !== false;
+          return acc;
+        }, {});
+        setToggleStates(map);
+      } catch (err) {
+        console.error('Error fetching reseller products:', err);
+      }
+    };
+    fetchProducts();
+  }, [token]);
 
   const handleDelete = (id) => {
-    if (
-      window.confirm(
-        "Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan."
-      )
-    ) {
-      setProducts(products.filter((p) => p.id !== id));
-    }
+    if (!window.confirm('Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.')) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/reseller/${id}`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) throw new Error('Failed to delete');
+        setProducts((prev) => prev.filter((p) => p.id !== id));
+      } catch (err) {
+        console.error('Delete failed', err);
+        alert('Gagal menghapus produk.');
+      }
+    })();
   };
 
   const handleToggleStock = (product) => {
     const newStockStatus = !toggleStates[product.id];
-    setToggleStates((prev) => ({
-      ...prev,
-      [product.id]: newStockStatus,
-    }));
-
-    // Update local state
-    setProducts(
-      products.map((p) =>
-        p.id === product.id ? { ...p, inStock: newStockStatus } : p
-      )
-    );
+    setToggleStates((prev) => ({ ...prev, [product.id]: newStockStatus }));
+    // Update backend
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/reseller/${product.id}`, {
+          method: 'PUT',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ in_stock: newStockStatus ? 1 : 0, stock: product.stock }),
+        });
+        if (!res.ok) throw new Error('Failed to update stock');
+        setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, inStock: newStockStatus } : p)));
+      } catch (err) {
+        console.error('Failed to update stock', err);
+        alert('Gagal memperbarui status stok');
+        // revert toggle
+        setToggleStates((prev) => ({ ...prev, [product.id]: !newStockStatus }));
+      }
+    })();
   };
 
   const formatPrice = (price) => {

@@ -49,9 +49,9 @@ class ResellerTelegramCommandHandler {
    * @returns {Promise<void>}
    */
   async handleMessage(message, chatId) {
-    const text = message.text || '';
-    const command = text.split(' ')[0].toLowerCase();
-    const args = text.split(' ').slice(1).join(' ');
+  const text = message.text || '';
+  const command = text.split(' ')[0].toLowerCase();
+  const _args = text.split(' ').slice(1).join(' ');
 
     try {
       switch (command) {
@@ -59,7 +59,7 @@ class ResellerTelegramCommandHandler {
           await this.handleStart(chatId);
           break;
         case '/produk_saya':
-          await this.handleMyProducts(chatId, args);
+          await this.handleMyProducts(chatId, _args);
           break;
         case '/stok':
           await this.handleMyStock(chatId);
@@ -153,7 +153,7 @@ Saya adalah bot untuk mengelola produk dan penjualan Anda di Bilsnack.
   /**
    * Handle /produk_saya command - Show reseller's products ONLY
    */
-  async handleMyProducts(chatId, args) {
+  async handleMyProducts(chatId) {
     const resellerId = await this.getResellerIdFromChatId(chatId);
     
     if (!resellerId) {

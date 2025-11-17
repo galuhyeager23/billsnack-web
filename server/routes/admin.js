@@ -134,6 +134,24 @@ router.get('/users', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Admin: set or update a user's role (e.g., mark as 'reseller')
+router.put('/users/:id/role', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body || {};
+  if (!role) return res.status(400).json({ error: 'Missing role in body' });
+  const allowed = ['user', 'reseller', 'admin'];
+  if (!allowed.includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  try {
+    const [result] = await pool.execute('UPDATE users SET role = ? WHERE id = ?', [role, id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found' });
+    const [rows] = await pool.execute('SELECT id, email, first_name, last_name, username, phone, gender, role, created_at FROM users WHERE id = ?', [id]);
+    return res.json({ ok: true, user: rows[0] });
+  } catch (err) {
+    console.error('Admin update user role error', err);
+    res.status(500).json({ error: 'Failed to update user role' });
+  }
+});
+
 // Transactions: best-effort read (returns [] if no table exists)
 router.get('/transactions', verifyToken, requireAdmin, async (req, res) => {
   try {
@@ -203,6 +221,19 @@ router.get('/transactions', verifyToken, requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
+// Admin: delete a user
+router.delete('/users/:id', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [result] = await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Failed to delete user', err);
+    res.status(500).json({ error: 'Failed to delete user' });
+  }
+});
 
 // Admin-only: update a transaction's status when it is stored in `transactions` table
 router.put('/transactions/:id/status', verifyToken, requireAdmin, async (req, res) => {

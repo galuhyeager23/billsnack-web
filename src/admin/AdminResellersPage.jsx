@@ -1,61 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const AdminResellersPage = () => {
   const [resellers, setResellers] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // Dummy data for resselers
+  const { token } = useAuth();
+
   useEffect(() => {
-    const dummyResellers = [
-      {
-        id: 1,
-        name: "Toko Cemilan Jaya",
-        email: "toko.jaya@email.com",
-        phone: "0812345678",
-        address: "Jl. Merdeka No. 10, Bandung",
-        status: "active",
-        totalProducts: 12,
-        totalSales: 156,
-        joinDate: "2024-01-15",
-      },
-      {
-        id: 2,
-        name: "Reseller Snack Mantap",
-        email: "snack.mantap@email.com",
-        phone: "0823456789",
-        address: "Jl. Sudirman No. 25, Jakarta",
-        status: "active",
-        totalProducts: 8,
-        totalSales: 89,
-        joinDate: "2024-02-20",
-      },
-      {
-        id: 3,
-        name: "Cemilan Nusantara",
-        email: "cemilan.nusantara@email.com",
-        phone: "0834567890",
-        address: "Jl. Ahmad Yani No. 5, Surabaya",
-        status: "inactive",
-        totalProducts: 5,
-        totalSales: 45,
-        joinDate: "2024-03-10",
-      },
-      {
-        id: 4,
-        name: "Snack Pilihan Terbaik",
-        email: "snack.terbaik@email.com",
-        phone: "0845678901",
-        address: "Jl. Gatot Subroto No. 30, Medan",
-        status: "active",
-        totalProducts: 15,
-        totalSales: 234,
-        joinDate: "2024-01-05",
-      },
-    ];
-    setResellers(dummyResellers);
-  }, []);
+    // Fetch users from admin API and map to reseller-like view
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('/api/admin/users', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error('Failed to fetch users');
+        const data = await res.json();
+        // Map users to reseller-like shape for the table
+        const mapped = data.map((u) => ({
+          id: u.id,
+          name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || u.email,
+          email: u.email,
+          phone: u.phone || '-',
+          address: u.address || '-',
+          status: u.role === 'reseller' ? 'active' : 'inactive',
+          role: u.role || 'user',
+          totalProducts: u.totalProducts || 0,
+          totalSales: u.totalSales || 0,
+          joinDate: u.created_at || null,
+        }));
+        setResellers(mapped);
+      } catch (err) {
+        console.error('Failed to load users', err);
+      }
+    };
+    fetchUsers();
+  }, [token]);
 
   // Filter resellers based on search and status
   const filteredResellers = resellers.filter((reseller) => {
@@ -68,30 +50,50 @@ const AdminResellersPage = () => {
   });
 
   const handleDelete = (id, name) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus resseler "${name}"?`)) {
-      setResellers(resellers.filter((reseller) => reseller.id !== id));
-      alert("Resseler berhasil dihapus!");
-    }
+    if (!window.confirm(`Apakah Anda yakin ingin menghapus reseller "${name}"?`)) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/admin/users/${id}`, {
+          method: 'DELETE',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+        });
+        if (!res.ok) throw new Error('Failed to delete user');
+        setResellers((prev) => prev.filter((r) => r.id !== id));
+        alert('Reseller berhasil dihapus!');
+      } catch (err) {
+        console.error('Delete user failed', err);
+        alert('Gagal menghapus user');
+      }
+    })();
   };
 
   const toggleStatus = (id) => {
-    setResellers(
-      resellers.map((reseller) =>
-        reseller.id === id
-          ? {
-              ...reseller,
-              status: reseller.status === "active" ? "inactive" : "active",
-            }
-          : reseller
-      )
-    );
+    // Toggle role via admin API
+    (async () => {
+      try {
+        const target = resellers.find((r) => r.id === id);
+        if (!target) return;
+        const newRole = target.role === 'reseller' ? 'user' : 'reseller';
+        const res = await fetch(`/api/admin/users/${id}/role`, {
+          method: 'PUT',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role: newRole }),
+        });
+        if (!res.ok) throw new Error('Failed to update role');
+        const data = await res.json();
+        setResellers((prev) => prev.map((r) => (r.id === id ? { ...r, role: data.user.role, status: data.user.role === 'reseller' ? 'active' : 'inactive' } : r)));
+      } catch (err) {
+        console.error('Failed to toggle role', err);
+        alert('Gagal memperbarui status reseller');
+      }
+    })();
   };
 
   return (
     <div>
       <div className="mb-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">Kelola Resseler</h1>
+          <h1 className="text-3xl font-bold">Kelola Reseller</h1>
           <Link
             to="/admin/resellers/new"
             className="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-md font-semibold transition-colors flex items-center gap-2"
@@ -99,7 +101,7 @@ const AdminResellersPage = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Tambah Resseler
+            Tambah Reseller
           </Link>
         </div>
 
@@ -107,7 +109,7 @@ const AdminResellersPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <input
             type="text"
-            placeholder="Cari nama atau email resseler..."
+            placeholder="Cari nama atau email reseller..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -131,7 +133,7 @@ const AdminResellersPage = () => {
       <div className="bg-white rounded-lg shadow-md overflow-x-auto">
         {filteredResellers.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-gray-500 text-lg">Tidak ada resseler ditemukan</p>
+            <p className="text-gray-500 text-lg">Tidak ada reseller ditemukan</p>
           </div>
         ) : (
           <table className="w-full text-left table-auto">

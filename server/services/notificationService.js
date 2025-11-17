@@ -24,8 +24,9 @@ class NotificationService {
         return;
       }
 
-      const order = orders[0];
-      const buyerUserId = order.user_id;
+  const order = orders[0];
+  // buyerUserId not used currently
+  const _buyerUserId = order.user_id;
 
       // For each product in order, notify the reseller
       if (orderItems && orderItems.length > 0) {

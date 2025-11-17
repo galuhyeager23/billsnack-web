@@ -113,7 +113,7 @@ const AdminDashboardPage = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-2">Dasbor</h1>
+      <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
       <div className="flex items-center gap-4 mb-8">
         <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg font-semibold text-gray-700 overflow-hidden">
           {displayAvatar ? (

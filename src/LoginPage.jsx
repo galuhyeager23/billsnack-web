@@ -134,13 +134,13 @@ const LoginPage = () => {
 
               <div className="mt-6 pt-6 border-t border-gray-200">
                 <p className="text-center text-gray-600 text-sm mb-3">
-                  Masuk sebagai Resseler?
+                  Masuk sebagai Reseller?
                 </p>
                 <Link 
                   to="/reseller/login" 
                   className="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
                 >
-                  Masuk Sebagai Resseler
+                  Masuk Sebagai Reseller
                 </Link>
               </div>
             </div>

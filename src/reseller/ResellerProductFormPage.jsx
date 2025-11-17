@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../contexts/AuthContext";
 
 const ResellerProductFormPage = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const ResellerProductFormPage = () => {
     category: "",
     description: "",
     image: null,
+    imageUrl: null,
     quantity: "",
   });
 
@@ -52,6 +54,31 @@ const ResellerProductFormPage = () => {
     }
   };
 
+  const { token } = useAuth();
+
+  useEffect(() => {
+    if (!isEditing) return;
+    // fetch product data to populate form
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/${id}`);
+        if (!res.ok) throw new Error('Failed to fetch product');
+        const data = await res.json();
+        setFormData({
+          name: data.name || '',
+          price: data.price || '',
+          category: data.category || '',
+          description: data.description || '',
+          image: null,
+          imageUrl: data.images && data.images.length > 0 ? data.images[0] : null,
+          quantity: data.stock || '',
+        });
+      } catch (err) {
+        console.error('Failed to load product', err);
+      }
+    })();
+  }, [isEditing, id]);
+
   const validateForm = () => {
     const newErrors = {};
 
@@ -88,20 +115,53 @@ const ResellerProductFormPage = () => {
     setSubmitting(true);
 
     try {
-      // Simulasi submit - hanya tampilan saja
-      console.log("Form Data:", formData);
+      // If there is an image file selected, upload it first
+      let images = [];
+      if (formData.image) {
+        const fd = new FormData();
+        fd.append('files', formData.image);
+        const upRes = await fetch('/api/uploads', {
+          method: 'POST',
+          body: fd,
+        });
+        if (!upRes.ok) throw new Error('Upload failed');
+        const upData = await upRes.json();
+        images = upData.files || [];
+      } else if (formData.imageUrl) {
+        images = [formData.imageUrl];
+      }
 
-      // Tampilkan notifikasi sukses
-      alert(
-        isEditing
-          ? "Produk berhasil diupdate!"
-          : "Produk berhasil ditambahkan!"
-      );
+      const payload = {
+        name: formData.name,
+        price: Number(formData.price),
+        stock: Number(formData.quantity),
+        category: formData.category,
+        description: formData.description,
+        images: images,
+      };
 
-      navigate("/reseller/products");
+      if (isEditing) {
+        const res = await fetch(`/api/products/reseller/${id}`, {
+          method: 'PUT',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to update product');
+        alert('Produk berhasil diupdate!');
+      } else {
+        const res = await fetch('/api/products/reseller', {
+          method: 'POST',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('Failed to create product');
+        alert('Produk berhasil ditambahkan!');
+      }
+
+      navigate('/reseller/products');
     } catch (error) {
-      console.error("Error:", error);
-      alert("Terjadi kesalahan. Silakan coba lagi.");
+      console.error('Error:', error);
+      alert('Terjadi kesalahan. Silakan coba lagi.');
     } finally {
       setSubmitting(false);
     }

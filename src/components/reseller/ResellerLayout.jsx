@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, Link, Routes, Route, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 import ResellerDashboardPage from "../../reseller/ResellerDashboardPage";
 import ResellerProductsPage from "../../reseller/ResellerProductsPage";
 import ResellerProductFormPage from "../../reseller/ResellerProductFormPage";
@@ -77,34 +78,32 @@ const CloseIcon = () => (
 
 const ResellerLayout = () => {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [resellerEmail, setResellerEmail] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    // Check if reseller is logged in
-    const resellerAuth = localStorage.getItem("resellerAuth");
-    if (resellerAuth) {
-      try {
-        const auth = JSON.parse(resellerAuth);
-        if (auth.isLoggedIn) {
-          setIsAuthenticated(true);
-          setResellerEmail(auth.email || "");
-          setLoading(false);
-          return;
-        }
-      } catch (e) {
-        console.error("Error parsing reseller auth:", e);
-      }
+    // Use AuthContext user to determine authentication and role
+    if (user && user.role === 'reseller') {
+      setIsAuthenticated(true);
+      setResellerEmail(user.email || '');
+      setLoading(false);
+      return;
     }
-    // Redirect to reseller login if not authenticated
+    // Not authenticated as reseller -> redirect
     setLoading(false);
     navigate("/reseller/login");
-  }, [navigate]);
+  }, [navigate, user]);
 
   const handleLogout = () => {
-    localStorage.removeItem("resellerAuth");
+    // Use AuthContext logout to clear token and user
+    try {
+      logout();
+    } catch (e) {
+      console.error('Logout error', e);
+    }
     navigate("/reseller/login");
   };
 

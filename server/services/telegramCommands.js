@@ -13,9 +13,9 @@ class TelegramCommandHandler {
    * @returns {Promise<void>}
    */
   async handleMessage(message, chatId) {
-    const text = message.text || '';
-    const command = text.split(' ')[0].toLowerCase();
-    const args = text.split(' ').slice(1).join(' ');
+  const text = message.text || '';
+  const command = text.split(' ')[0].toLowerCase();
+  const _args = text.split(' ').slice(1).join(' ');
 
     try {
       switch (command) {
@@ -23,13 +23,13 @@ class TelegramCommandHandler {
           await this.handleStart(chatId);
           break;
         case '/stock':
-          await this.handleStock(chatId, args);
+          await this.handleStock(chatId);
           break;
         case '/harga':
-          await this.handlePrice(chatId, args);
+          await this.handlePrice(chatId, _args);
           break;
         case '/cek_barang':
-          await this.handleCheckProduct(chatId, args);
+          await this.handleCheckProduct(chatId, _args);
           break;
         case '/stock_tersedia':
           await this.handleAvailableStock(chatId);
@@ -102,7 +102,7 @@ Saya adalah bot untuk cek informasi produk dan stock barang Bilsnack.
   /**
    * Handle /stock command - Show all products with stock
    */
-  async handleStock(chatId, args) {
+  async handleStock(chatId) {
     try {
       const [rows] = await this.db.query(
         'SELECT id, name, price, stock, category, in_stock FROM products WHERE stock > 0 OR in_stock = 1 ORDER BY name LIMIT 20'

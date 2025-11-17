@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
 
 const ResellerLoginPage = () => {
   const [email, setEmail] = useState("");
@@ -8,6 +9,7 @@ const ResellerLoginPage = () => {
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,13 +20,14 @@ const ResellerLoginPage = () => {
     }
     setSubmitting(true);
     try {
-      // Dummy login - tampilan saja untuk sekarang
-      // Simulasi login berhasil
-      localStorage.setItem("resellerAuth", JSON.stringify({
-        isLoggedIn: true,
-        email: email,
-        role: "reseller"
-      }));
+      // Call real login via AuthContext which will persist token/user in localStorage
+      const data = await login({ email, password });
+      // Ensure the logged-in user has reseller role
+      if (!data || !data.user || data.user.role !== 'reseller') {
+        setError('Akun ini bukan reseller. Jika Anda seorang reseller, minta admin untuk menandai akun Anda sebagai reseller.');
+        setSubmitting(false);
+        return;
+      }
       navigate('/reseller');
     } catch (err) {
       console.error('Login failed', err);

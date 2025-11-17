@@ -106,7 +106,7 @@ router.delete('/unregister-reseller', verifyToken, async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const result = await db.query(
+    await db.query(
       'DELETE FROM telegram_users WHERE user_id = ? AND bot_type = "reseller"',
       [user.id]
     );

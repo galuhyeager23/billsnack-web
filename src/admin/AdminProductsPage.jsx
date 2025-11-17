@@ -8,46 +8,11 @@ const AdminProductsPage = () => {
   const [toggleStates, setToggleStates] = useState({});
   const [allProducts, setAllProducts] = useState([]);
 
-  // Dummy reseller products
-  const resellerProducts = [
-    {
-      id: "reseller-1",
-      name: "Keripik Singkong",
-      price: 25000,
-      image: "/product-1.jpg",
-      inStock: true,
-      category: "Keripik",
-      reseller: "PT Toko Cemilan",
-      resellerEmail: "tokocemilan@email.com",
-      stock: 60,
-    },
-    {
-      id: "reseller-2",
-      name: "Brownies Coklat",
-      price: 35000,
-      image: "/product-2.jpg",
-      inStock: true,
-      category: "Kue",
-      reseller: "Toko Kue Nikmat",
-      resellerEmail: "kuunikmat@email.com",
-      stock: 35,
-    },
-    {
-      id: "reseller-3",
-      name: "Kacang Goreng Pedas",
-      price: 20000,
-      image: "/product-3.jpg",
-      inStock: false,
-      category: "Kacang",
-      reseller: "Cemilan Nusantara",
-      resellerEmail: "cemilannusantara@email.com",
-      stock: 0,
-    },
-  ];
+  
 
   // Combine admin products with reseller products
   React.useEffect(() => {
-    const combined = [...products, ...resellerProducts];
+    const combined = [...products];
     setAllProducts(combined);
     
     const map = combined.reduce((acc, product) => {

@@ -249,7 +249,7 @@ const AdminLayout = () => {
                 onClick={() => setSidebarOpen(false)}
               >
                 <ResellerIcon />
-                <span>Resseler</span>
+                <span>Reseller</span>
               </NavLink>
             </li>
           </ul>

@@ -105,8 +105,8 @@ const AdminResellerFormPage = () => {
       // Tampilkan notifikasi sukses
       alert(
         isEditing
-          ? "Resseler berhasil diupdate!"
-          : "Resseler berhasil ditambahkan!"
+          ? "Reseller berhasil diupdate!"
+          : "Reseller berhasil ditambahkan!"
       );
 
       navigate("/admin/resellers");
@@ -122,12 +122,12 @@ const AdminResellerFormPage = () => {
     <div>
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">
-          {isEditing ? "Edit Resseler" : "Tambah Resseler Baru"}
+          {isEditing ? "Edit Reseller" : "Tambah Reseller Baru"}
         </h1>
         <p className="text-gray-600 mt-2">
           {isEditing
-            ? "Perbarui informasi resseler"
-            : "Isi formulir di bawah untuk menambahkan resseler baru"}
+            ? "Perbarui informasi reseller"
+            : "Isi formulir di bawah untuk menambahkan reseller baru"}
         </p>
       </div>
 
@@ -248,8 +248,8 @@ const AdminResellerFormPage = () => {
                   ? "Memperbarui..."
                   : "Menambahkan..."
                 : isEditing
-                ? "Update Resseler"
-                : "Tambah Resseler"}
+                ? "Update Reseller"
+                : "Tambah Reseller"}
             </button>
             <button
               type="button"
@@ -264,7 +264,7 @@ const AdminResellerFormPage = () => {
         {/* Info Box */}
         <div className="bg-green-50 border-l-4 border-green-600 rounded-lg p-4 mt-6">
           <p className="text-sm text-green-800">
-            <strong>Catatan:</strong> Pastikan semua data resseler yang Anda input sudah benar sebelum menyimpan.
+            <strong>Catatan:</strong> Pastikan semua data reseller yang Anda input sudah benar sebelum menyimpan.
           </p>
         </div>
       </form>
