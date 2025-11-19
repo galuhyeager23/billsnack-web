@@ -11,6 +11,9 @@ const ResellerLoginPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const { login } = useAuth();
 
+  // Prefilled message for WhatsApp contact. It will include the email if the user entered one.
+  const prefillResellerMessage = `Halo Admin, saya ingin mendaftar sebagai reseller.\nEmail: ${email || ''}\nNama Lengkap: \nNama Toko: \nLokasi: \nTerima kasih.`;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -112,7 +115,12 @@ const ResellerLoginPage = () => {
 
               <p className="text-center text-gray-500 text-sm mt-4">
                 Belum terdaftar sebagai reseller?
-                <a href="mailto:admin@billsnack.id" className="ml-2 inline-block text-yellow-700 font-semibold px-3 py-1 border border-yellow-200 rounded-full hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-300">
+                <a
+                  href={`https://wa.me/6289524452716?text=${encodeURIComponent(prefillResellerMessage)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 inline-block text-yellow-700 font-semibold px-3 py-1 border border-yellow-200 rounded-full hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-300"
+                >
                   Hubungi Admin
                 </a>
               </p>
