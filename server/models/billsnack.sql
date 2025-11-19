@@ -44,10 +44,27 @@ CREATE TABLE IF NOT EXISTS `products` (
   `rating` DECIMAL(4,2) DEFAULT 0,
   `review_count` INT DEFAULT 0,
   `colors` LONGTEXT DEFAULT NULL,
-  `in_stock` TINYINT(1) DEFAULT 0,
+  `in_stock` TINYINT(1) NOT NULL DEFAULT 0,
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Trigger: keep `in_stock` consistent with `stock` on insert/update
+DELIMITER $$
+DROP TRIGGER IF EXISTS `trg_products_set_in_stock`$$
+CREATE TRIGGER `trg_products_set_in_stock` BEFORE INSERT ON `products`
+FOR EACH ROW
+BEGIN
+  SET NEW.in_stock = IF(NEW.stock IS NOT NULL AND NEW.stock > 0, 1, 0);
+END$$
+
+DROP TRIGGER IF EXISTS `trg_products_update_in_stock`$$
+CREATE TRIGGER `trg_products_update_in_stock` BEFORE UPDATE ON `products`
+FOR EACH ROW
+BEGIN
+  SET NEW.in_stock = IF(NEW.stock IS NOT NULL AND NEW.stock > 0, 1, 0);
+END$$
+DELIMITER ;
 
 -- orders table
 CREATE TABLE IF NOT EXISTS `orders` (

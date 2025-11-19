@@ -119,6 +119,22 @@ const OrderConfirmationPage = () => {
               Please complete your QRIS payment using your preferred e-wallet
               app. Your order will be processed once payment is confirmed.
             </p>
+            <div className="mt-4 flex items-center justify-center">
+              <div className="w-56 h-56 bg-white rounded-lg p-3 flex items-center justify-center">
+                <img
+                  src="/assets/qrisbillsnack.jpg"
+                  alt="QRIS BillSnack"
+                  className="w-full h-full object-contain"
+                  onError={(e) => {
+                    try {
+                      if (e && e.target) e.target.src = '/qris-billsnack.svg';
+                    } catch {
+                      /* ignore */
+                    }
+                  }}
+                />
+              </div>
+            </div>
           </div>
         );
       case "bank":

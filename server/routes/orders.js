@@ -74,6 +74,12 @@ router.post('/', async (req, res) => {
       if (it.pid) {
         // increment review_count by quantity (treating purchases as reviews count)
         await conn.execute('UPDATE products SET review_count = IFNULL(review_count,0) + ? WHERE id = ?', [it.quantity, it.pid]);
+        // decrement stock by quantity and update in_stock flag
+        // Use GREATEST to avoid negative stock values and ensure in_stock is 0 when stock reaches 0
+        await conn.execute(
+          'UPDATE products SET stock = GREATEST(stock - ?, 0), in_stock = IF(GREATEST(stock - ?, 0) > 0, 1, 0) WHERE id = ?',
+          [it.quantity, it.quantity, it.pid]
+        );
       }
     }
 

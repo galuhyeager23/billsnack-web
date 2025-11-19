@@ -8,13 +8,15 @@ const AdminResellersPage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
 
   const { token } = useAuth();
+  const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+  const authHeaderToken = adminToken || token || null;
 
   useEffect(() => {
     // Fetch users from admin API and map to reseller-like view
     const fetchUsers = async () => {
       try {
         const res = await fetch('/api/admin/users', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: authHeaderToken ? { Authorization: `Bearer ${authHeaderToken}` } : {},
         });
         if (!res.ok) throw new Error('Failed to fetch users');
         const data = await res.json();
@@ -37,7 +39,7 @@ const AdminResellersPage = () => {
       }
     };
     fetchUsers();
-  }, [token]);
+  }, [authHeaderToken]);
 
   // Filter resellers based on search and status
   const filteredResellers = resellers.filter((reseller) => {
@@ -55,7 +57,7 @@ const AdminResellersPage = () => {
       try {
         const res = await fetch(`/api/admin/users/${id}`, {
           method: 'DELETE',
-          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          headers: authHeaderToken ? { Authorization: `Bearer ${authHeaderToken}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
         });
         if (!res.ok) throw new Error('Failed to delete user');
         setResellers((prev) => prev.filter((r) => r.id !== id));
@@ -76,7 +78,7 @@ const AdminResellersPage = () => {
         const newRole = target.role === 'reseller' ? 'user' : 'reseller';
         const res = await fetch(`/api/admin/users/${id}/role`, {
           method: 'PUT',
-          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          headers: authHeaderToken ? { Authorization: `Bearer ${authHeaderToken}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
           body: JSON.stringify({ role: newRole }),
         });
         if (!res.ok) throw new Error('Failed to update role');

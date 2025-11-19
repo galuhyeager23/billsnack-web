@@ -360,9 +360,20 @@ const CheckoutPage = () => {
                     Scan Kode QR untuk Membayar
                   </h3>
                   <div className="bg-white p-4 rounded-lg inline-block">
-                    {/* Placeholder for QR Code */}
-                    <div className="w-48 h-48 bg-gray-200 flex items-center justify-center rounded-lg">
-                      <span className="text-gray-500">Kode QRIS</span>
+                    {/* QR Code image for Billsnack (place file `public/qris-billsnack.png`) */}
+                    <div className="w-48 h-48 flex items-center justify-center rounded-lg overflow-hidden bg-white">
+                      <img
+                        src="/assets/qrisbillsnack.jpg"
+                        alt="QRIS BillSnack"
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          try {
+                            if (e && e.target) e.target.src = '/qrisbillsnack.jpg';
+                          } catch {
+                            if (e && e.target) e.target.src = '/qris-billsnack.svg';
+                          }
+                        }}
+                      />
                     </div>
                   </div>
                   <p className="text-sm text-gray-600 mt-4">
@@ -382,15 +393,15 @@ const CheckoutPage = () => {
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span className="font-medium">Bank:</span>
-                      <span>BCA</span>
+                      <span>Mandiri</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Nomor Rekening:</span>
-                      <span className="font-mono">1234567890</span>
+                      <span className="font-mono">1110024781714</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Nama Rekening:</span>
-                      <span>BillSnack Store</span>
+                      <span>BilSnack Store</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Jumlah:</span>

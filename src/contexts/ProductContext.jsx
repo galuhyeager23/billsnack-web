@@ -18,7 +18,19 @@ export const ProductProvider = ({ children }) => {
       const res = await fetch(`${API_BASE}/api/products`);
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       const data = await res.json();
-      setProducts(data);
+      // Normalize server product fields to consistent client-side shape
+      // - map `in_stock` -> `inStock`
+      // - if `inStock` is missing, derive it from `stock` (>0)
+      const normalized = Array.isArray(data)
+        ? data.map((p) => ({
+            ...p,
+            stock: typeof p.stock === 'number' ? p.stock : (p.quantity || 0),
+            inStock: typeof p.inStock !== 'undefined'
+              ? p.inStock
+              : (typeof p.in_stock !== 'undefined' ? Boolean(p.in_stock) : ( (typeof p.stock === 'number') ? p.stock > 0 : true )),
+          }))
+        : data;
+      setProducts(normalized);
     } catch (err) {
       console.error('Failed to fetch products from API, falling back to local constants', err);
       // keep existing PRODUCTS as fallback
@@ -60,8 +72,16 @@ export const ProductProvider = ({ children }) => {
       });
       if (!res.ok) throw new Error('Failed to create product');
       const created = await res.json();
-      setProducts((prev) => [created, ...prev]);
-      return created;
+      // normalize created product
+      const normCreated = {
+        ...created,
+        stock: typeof created.stock === 'number' ? created.stock : (created.quantity || 0),
+        inStock: typeof created.inStock !== 'undefined'
+          ? created.inStock
+          : (typeof created.in_stock !== 'undefined' ? Boolean(created.in_stock) : ( (typeof created.stock === 'number') ? created.stock > 0 : true )),
+      };
+      setProducts((prev) => [normCreated, ...prev]);
+      return normCreated;
     } catch (err) {
       console.error(err);
       throw err;
@@ -88,6 +108,11 @@ export const ProductProvider = ({ children }) => {
       Object.keys(updatedProduct).forEach((k) => {
         if (!(k in merged)) merged[k] = updatedProduct[k];
       });
+      // ensure merged.inStock is defined and consistent
+      merged.stock = typeof merged.stock === 'number' ? merged.stock : (merged.quantity || 0);
+      if (typeof merged.inStock === 'undefined') {
+        merged.inStock = typeof merged.in_stock !== 'undefined' ? Boolean(merged.in_stock) : (merged.stock > 0);
+      }
       setProducts((prev) => prev.map((p) => (Number(p.id) === Number(merged.id) ? merged : p)));
       return merged;
     } catch (err) {
