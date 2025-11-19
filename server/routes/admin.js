@@ -17,11 +17,60 @@ function requireAdmin(req, res, next) {
 }
 
 // All admin routes should use verifyToken + requireAdmin
-// Products (admin CRUD)
+// Products (admin CRUD) - show ALL products including unapproved reseller products
 router.get('/products', verifyToken, requireAdmin, async (req, res) => {
   try {
-    const [rows] = await pool.execute('SELECT * FROM products ORDER BY id DESC');
-    res.json(rows);
+    // Admin should see ALL products, including unapproved reseller products
+    // Join with users and reseller_profiles to include seller info
+    const [rows] = await pool.execute(
+      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
+       FROM products p
+       LEFT JOIN users u ON p.reseller_id = u.id
+       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
+       ORDER BY p.id DESC`
+    );
+    
+    // Parse JSON fields and normalize to camelCase
+    const { sanitizeImages, sanitizeColors } = require('../utils/validate');
+    const normalized = rows.map((r) => {
+      const rawImages = (() => { 
+        try { 
+          return r.images ? JSON.parse(r.images) : []; 
+        } catch (e) { 
+          console.warn('Failed to parse images for product', r.id, e);
+          return []; 
+        } 
+      })();
+      const rawColors = (() => { 
+        try { 
+          return r.colors ? JSON.parse(r.colors) : []; 
+        } catch (e) { 
+          console.warn('Failed to parse colors for product', r.id, e);
+          return []; 
+        } 
+      })();
+      const images = sanitizeImages(rawImages) || [];
+      const colors = sanitizeColors(rawColors) || [];
+      return {
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        price: Number(r.price),
+        stock: r.stock,
+        category: r.category,
+        images: images && images.length > 0 ? images : [],
+        originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
+        rating: r.rating !== null ? Number(r.rating) : 0,
+        reviewCount: r.review_count || 0,
+        is_approved: r.is_approved !== undefined ? !!Number(r.is_approved) : true,
+        colors,
+        sellerName: (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Admin',
+        resellerId: r.reseller_id,
+        resellerEmail: r.reseller_email,
+        createdAt: r.created_at,
+      };
+    });
+    res.json(normalized);
   } catch (err) {
     console.error('Admin get products error', err);
     res.status(500).json({ error: 'Failed to fetch products' });
@@ -72,17 +121,30 @@ router.post('/products', verifyToken, requireAdmin, async (req, res) => {
 
 router.put('/products/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
+  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, is_approved, isApproved } = req.body;
   // accept camelCase `inStock` or snake_case `in_stock`
   const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
   const in_stock = typeof inStockInput !== 'undefined' ? (inStockInput ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
   try {
     const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
     const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
-    const [result] = await pool.execute(
-      'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ? WHERE id = ?',
-      [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, id]
-    );
+    
+    // Handle is_approved field (accept both camelCase and snake_case)
+    const isApprovedVal = typeof is_approved !== 'undefined' ? is_approved : (typeof isApproved !== 'undefined' ? isApproved : undefined);
+    
+    let updateSql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ?';
+    const params = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock];
+    
+    // Add is_approved to UPDATE if provided
+    if (typeof isApprovedVal !== 'undefined') {
+      updateSql += ', is_approved = ?';
+      params.push(isApprovedVal ? 1 : 0);
+    }
+    
+    updateSql += ' WHERE id = ?';
+    params.push(id);
+    
+    const [result] = await pool.execute(updateSql, params);
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
     const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
     const r = rows[0];
@@ -101,6 +163,7 @@ router.put('/products/:id', verifyToken, requireAdmin, async (req, res) => {
       rating: r.rating !== null ? Number(r.rating) : 0,
       reviewCount: r.review_count || 0,
       colors,
+      is_approved: r.is_approved !== undefined ? !!Number(r.is_approved) : undefined,
       createdAt: r.created_at,
     };
     res.json(out);
@@ -119,6 +182,26 @@ router.delete('/products/:id', verifyToken, requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Admin delete product error', err);
     res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Approve/reject reseller product
+router.put('/products/:id/approve', verifyToken, requireAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { is_approved, isApproved } = req.body;
+  const approved = typeof is_approved !== 'undefined' ? is_approved : (typeof isApproved !== 'undefined' ? isApproved : true);
+  try {
+    const [result] = await pool.execute(
+      'UPDATE products SET is_approved = ? WHERE id = ?',
+      [approved ? 1 : 0, id]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
+    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
+    const r = rows[0];
+    res.json({ ok: true, is_approved: !!Number(r.is_approved) });
+  } catch (err) {
+    console.error('Admin approve product error', err);
+    res.status(500).json({ error: 'Failed to approve product' });
   }
 });
 

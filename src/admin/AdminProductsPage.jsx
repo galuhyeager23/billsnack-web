@@ -5,27 +5,58 @@ import formatPrice from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
 
 const AdminProductsPage = () => {
-  const { products, deleteProduct, updateProduct } = useProducts();
+  const { deleteProduct, updateProduct } = useProducts();
   const [toggleStates, setToggleStates] = useState({});
   const [allProducts, setAllProducts] = useState([]);
   const { token } = useAuth();
   const [resellers, setResellers] = useState([]);
   const [selectedReseller, setSelectedReseller] = useState('all');
   const [sellerSort, setSellerSort] = useState('none'); // 'none' | 'asc' | 'desc'
+  const [loading, setLoading] = useState(true);
 
-  
+  // Fetch admin products from /api/admin/products endpoint
+  React.useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await fetch('/api/admin/products', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) throw new Error(`Failed to fetch admin products: ${res.status}`);
+        const data = await res.json();
+        // Normalize data
+        const normalized = Array.isArray(data)
+          ? data.map((p) => ({
+              ...p,
+              stock: typeof p.stock === 'number' ? p.stock : (p.quantity || 0),
+              inStock: typeof p.inStock !== 'undefined'
+                ? p.inStock
+                : (typeof p.in_stock !== 'undefined' ? Boolean(p.in_stock) : ( (typeof p.stock === 'number') ? p.stock > 0 : true )),
+            }))
+          : data;
+        setAllProducts(normalized);
+        
+        const map = normalized.reduce((acc, product) => {
+          acc[product.id] = product.inStock !== false;
+          return acc;
+        }, {});
+        setToggleStates(map);
+      } catch (e) {
+        console.error('Failed to fetch admin products', e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [token]);
 
   // Combine admin products with reseller products
   React.useEffect(() => {
-    const combined = [...products];
-    setAllProducts(combined);
-    
-    const map = combined.reduce((acc, product) => {
+    const map = allProducts.reduce((acc, product) => {
       acc[product.id] = product.inStock !== false;
       return acc;
     }, {});
     setToggleStates(map);
-  }, [products]);
+  }, [allProducts]);
 
   // fetch resellers for filter dropdown
   React.useEffect(() => {
@@ -76,6 +107,12 @@ const AdminProductsPage = () => {
           Tambah Produk Baru
         </Link>
       </div>
+      
+      {loading ? (
+        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+          <p className="text-gray-500">Memuat produk...</p>
+        </div>
+      ) : (
       <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
         <table className="w-full text-left table-auto">
           <thead>
@@ -134,13 +171,28 @@ const AdminProductsPage = () => {
                       const src = img
                         ? (typeof img === 'string' ? img : (img.thumb || img.original || ''))
                         : '';
-                      return (
+                      return src ? (
                         <img
                           src={src}
                           alt={product.name}
                           className="w-16 h-16 object-cover rounded-md"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                          }}
                         />
-                      );
+                      ) : null;
+                    })()}
+                    {(() => {
+                      const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+                      const src = img
+                        ? (typeof img === 'string' ? img : (img.thumb || img.original || ''))
+                        : '';
+                      return !src ? (
+                        <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
+                          No image
+                        </div>
+                      ) : null;
                     })()}
                   </td>
                   <td className="p-4 font-medium">{product.name}</td>
@@ -213,12 +265,33 @@ const AdminProductsPage = () => {
                       <button
                         onClick={async () => {
                           try {
-                            const newVal = product.is_approved ? 0 : 1;
-                            // call context updateProduct which will call admin endpoint when adminToken is present
-                            await updateProduct({ ...product, is_approved: newVal });
+                            const newVal = !product.is_approved;
+                            const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+                            if (!adminToken) {
+                              alert('Anda perlu login sebagai admin terlebih dahulu.');
+                              return;
+                            }
+                            console.log('Approving product', product.id, 'newVal=', newVal);
+                            // Call admin approve endpoint directly
+                            const res = await fetch(`/api/admin/products/${product.id}/approve`, {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${adminToken}`
+                              },
+                              body: JSON.stringify({ is_approved: newVal })
+                            });
+                            if (!res.ok) {
+                              const err = await res.json();
+                              throw new Error(err.error || 'Failed to approve');
+                            }
+                            // Update local state
+                            const updated = { ...product, is_approved: newVal };
+                            setAllProducts(prev => prev.map(p => p.id === product.id ? updated : p));
+                            alert(newVal ? 'Produk disetujui!' : 'Persetujuan produk dibatalkan!');
                           } catch (err) {
                             console.error('Approve toggle failed', err);
-                            alert('Gagal mengubah status persetujuan.');
+                            alert(`Gagal mengubah status persetujuan: ${err.message}`);
                           }
                         }}
                         className={`inline-flex items-center px-3 py-1 rounded-md font-semibold ${product.is_approved ? 'bg-gray-200 text-gray-800' : 'bg-green-600 text-white'}`}
@@ -240,6 +313,7 @@ const AdminProductsPage = () => {
           </tbody>
         </table>
       </div>
+      )}
     </div>
   );
 };

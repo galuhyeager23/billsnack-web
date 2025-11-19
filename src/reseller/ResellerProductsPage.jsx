@@ -149,9 +149,26 @@ const ResellerProductsPage = () => {
                     {(() => {
                       const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
                       const src = img ? (typeof img === 'string' ? img : (img.thumb || img.original || '')) : '';
-                      return (
-                        <img src={src} alt={product.name} className="w-16 h-16 object-cover rounded-md" />
-                      );
+                      return src ? (
+                        <img 
+                          src={src} 
+                          alt={product.name} 
+                          className="w-16 h-16 object-cover rounded-md"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
+                          }}
+                        />
+                      ) : null;
+                    })()}
+                    {(() => {
+                      const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+                      const src = img ? (typeof img === 'string' ? img : (img.thumb || img.original || '')) : '';
+                      return !src ? (
+                        <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
+                          No image
+                        </div>
+                      ) : null;
                     })()}
                   </td>
                   <td className="p-4 font-medium">

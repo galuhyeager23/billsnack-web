@@ -120,6 +120,154 @@ router.get('/top-selling', async (req, res) => {
   }
 });
 
+// ===== RESELLER ROUTES (MUST BE BEFORE /:id) =====
+function requireReseller(req, res, next) {
+  const user = req.user || {};
+  if (user.role && user.role === 'reseller') return next();
+  return res.status(403).json({ error: 'Reseller privileges required' });
+}
+
+// List reseller products
+router.get('/reseller', verifyToken, requireReseller, async (req, res) => {
+  try {
+    const userId = req.user && req.user.id;
+    const [rows] = await pool.execute(
+      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
+       FROM products p
+       LEFT JOIN users u ON p.reseller_id = u.id
+       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
+       WHERE p.reseller_id = ? ORDER BY p.id DESC`,
+      [userId]
+    );
+    const hasIsReseller = await hasIsApprovedColumn();
+    const parsed = rows.map((r) => {
+      const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : []; } catch { return []; } })();
+      const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : []; } catch { return []; } })();
+      const images = sanitizeImages(rawImages) || [];
+      const colors = sanitizeColors(rawColors) || [];
+      const sellerName = (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Reseller';
+      return {
+        id: r.id,
+        name: r.name,
+        description: r.description,
+        price: Number(r.price),
+        stock: r.stock,
+        inStock: !!Number(r.in_stock),
+        category: r.category,
+        images,
+        originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
+        rating: r.rating !== null ? Number(r.rating) : 0,
+        reviewCount: r.review_count || 0,
+        colors,
+        is_approved: hasIsReseller ? Number(r.is_approved) === 1 : true,
+        sellerName,
+        resellerId: r.reseller_id,
+        createdAt: r.created_at,
+      };
+    });
+    res.json(parsed);
+  } catch (err) {
+    console.error('Failed to fetch reseller products', err);
+    res.status(500).json({ error: 'Failed to fetch reseller products' });
+  }
+});
+
+// Create product as reseller
+router.post('/reseller', verifyToken, requireReseller, async (req, res) => {
+  const userId = req.user && req.user.id;
+  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
+  if (!name || typeof price === 'undefined') return res.status(400).json({ error: 'Missing required fields: name, price' });
+  try {
+    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
+    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
+    const in_stock = Number(stock) > 0 ? 1 : 0;
+    const is_approved = 0;
+    const hasIsInsert = await hasIsApprovedColumn();
+    let insertSql;
+    let insertParams;
+    if (hasIsInsert) {
+      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, userId, is_approved];
+    } else {
+      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, userId];
+    }
+    const [result] = await pool.execute(insertSql, insertParams);
+    const [rows2] = await pool.execute(
+      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
+       FROM products p
+       LEFT JOIN users u ON p.reseller_id = u.id
+       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
+       WHERE p.id = ?`,
+      [result.insertId]
+    );
+    const r = rows2[0];
+    const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
+    const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
+    const parsed = {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      price: Number(r.price),
+      stock: r.stock,
+      inStock: !!Number(r.in_stock),
+      category: r.category,
+      images: rawImages,
+      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
+      rating: r.rating !== null ? Number(r.rating) : 0,
+      reviewCount: r.review_count || 0,
+      colors: rawColors,
+      is_approved: Number(r.is_approved) === 1,
+      resellerId: r.reseller_id,
+      sellerName: (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Reseller',
+      createdAt: r.created_at,
+    };
+    res.status(201).json(parsed);
+  } catch (err) {
+    console.error('Failed to create reseller product', err);
+    res.status(500).json({ error: 'Failed to create product' });
+  }
+});
+
+// Update product as reseller
+router.put('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
+  const userId = req.user && req.user.id;
+  const { id } = req.params;
+  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, in_stock } = req.body;
+  try {
+    const [rows] = await pool.execute('SELECT reseller_id FROM products WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
+    if (rows[0].reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to update this product' });
+    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
+    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
+    const inStockVal = typeof in_stock !== 'undefined' ? (in_stock ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
+    const sql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ? WHERE id = ?';
+    const params = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, inStockVal, id];
+    const [result] = await pool.execute(sql, params);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Failed to update reseller product', err);
+    res.status(500).json({ error: 'Failed to update product' });
+  }
+});
+
+// Delete product as reseller
+router.delete('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
+  const userId = req.user && req.user.id;
+  const { id } = req.params;
+  try {
+    const [rows] = await pool.execute('SELECT reseller_id FROM products WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
+    if (rows[0].reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to delete this product' });
+    await pool.execute('DELETE FROM products WHERE id = ?', [id]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Failed to delete reseller product', err);
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
 // Get single product
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
@@ -301,10 +449,6 @@ router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
 
 module.exports = router;
 
-// Reseller-specific endpoints: list/create/update/delete products owned by reseller
-// These are protected by JWT and require role='reseller'
-const { verifyToken: verify } = require('./auth');
-
 function requireReseller(req, res, next) {
   const user = req.user || {};
   if (user.role && user.role === 'reseller') return next();
@@ -312,7 +456,7 @@ function requireReseller(req, res, next) {
 }
 
 // List reseller products
-router.get('/reseller', verify, requireReseller, async (req, res) => {
+router.get('/reseller', verifyToken, requireReseller, async (req, res) => {
   try {
     const userId = req.user && req.user.id;
     // join with users and reseller_profiles to include seller/store name
@@ -356,7 +500,7 @@ router.get('/reseller', verify, requireReseller, async (req, res) => {
 });
 
 // Create product as reseller
-router.post('/reseller', verify, requireReseller, async (req, res) => {
+router.post('/reseller', verifyToken, requireReseller, async (req, res) => {
   const userId = req.user && req.user.id;
   const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
   if (!name || typeof price === 'undefined') return res.status(400).json({ error: 'Missing required fields: name, price' });
@@ -415,7 +559,7 @@ router.post('/reseller', verify, requireReseller, async (req, res) => {
 });
 
 // Update product as reseller
-router.put('/reseller/:id', verify, requireReseller, async (req, res) => {
+router.put('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
   const userId = req.user && req.user.id;
   const { id } = req.params;
   const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, in_stock } = req.body;
@@ -439,7 +583,7 @@ router.put('/reseller/:id', verify, requireReseller, async (req, res) => {
 });
 
 // Delete product as reseller
-router.delete('/reseller/:id', verify, requireReseller, async (req, res) => {
+router.delete('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
   const userId = req.user && req.user.id;
   const { id } = req.params;
   try {
