@@ -20,11 +20,14 @@ export const CartProvider = ({ children }) => {
 
   // Start with an empty cart and load the user's cart from storage once Auth is available.
   const [cartItems, setCartItems] = useState([]);
+  const initializedRef = React.useRef(false);
 
   // persist cart to localStorage whenever it changes, only when a user is logged in
+  // Skip persisting until we've loaded the initial cart from storage to avoid overwriting it with an empty array.
   useEffect(() => {
     try {
       if (typeof window === 'undefined') return;
+      if (!initializedRef.current) return;
       const key = getCartKey(user);
       if (key) {
         localStorage.setItem(key, JSON.stringify(cartItems));
@@ -40,14 +43,34 @@ export const CartProvider = ({ children }) => {
       if (typeof window === 'undefined') return;
       const key = getCartKey(user);
       if (key) {
+        // If user just logged in, merge any existing in-memory guest cart with the persisted user cart.
         const raw = localStorage.getItem(key);
-        setCartItems(raw ? JSON.parse(raw) : []);
+        const persisted = raw ? JSON.parse(raw) : [];
+        setCartItems((currentGuestCart) => {
+          // Merge by product id: sum quantities for duplicates, prefer persisted metadata when present
+          const map = new Map();
+          persisted.forEach((it) => map.set(String(it.id), { ...it }));
+          (currentGuestCart || []).forEach((it) => {
+            const k = String(it.id);
+            if (map.has(k)) {
+              map.get(k).quantity = (map.get(k).quantity || 0) + (it.quantity || 0);
+            } else {
+              map.set(k, { ...it });
+            }
+          });
+          const merged = Array.from(map.values());
+          try { localStorage.setItem(key, JSON.stringify(merged)); } catch (e) { /* ignore */ }
+          return merged;
+        });
+        // mark initialized after loading/merging so the persist effect may run
+        initializedRef.current = true;
       } else {
-        // logged out or no user -> clear in-memory cart (do not remove persisted per-user keys)
+        // logged out or no user -> clear in-memory cart (returning to previous behavior)
         setCartItems([]);
+        initializedRef.current = true;
       }
     } catch {
-      setCartItems([]);
+      // leave as-is on error
     }
   }, [user]);
 

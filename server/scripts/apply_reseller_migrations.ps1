@@ -22,6 +22,7 @@ $files = @(
   'create_reseller_profiles.sql',
   'create_telegram_users.sql',
   'add_reseller_id.sql',
+  'add_is_approved.sql',
   'create_reseller_connections.sql'
 )
 

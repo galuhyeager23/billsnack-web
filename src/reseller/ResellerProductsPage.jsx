@@ -1,33 +1,37 @@
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import formatPrice from "../utils/format";
 import { useAuth } from "../contexts/AuthContext";
 
 const ResellerProductsPage = () => {
   const [products, setProducts] = useState([]);
   const [toggleStates, setToggleStates] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [statusCode, setStatusCode] = useState(null);
   const { token } = useAuth();
+  const location = useLocation();
 
-  useEffect(() => {
-    // fetch reseller's products from API
-    const fetchProducts = async () => {
+  // Toggle stock state locally and persist to backend
+  const handleToggleStock = (product) => {
+    const newStockStatus = !toggleStates[product.id];
+    setToggleStates((prev) => ({ ...prev, [product.id]: newStockStatus }));
+    (async () => {
       try {
-        const res = await fetch('/api/products/reseller', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        const res = await fetch(`/api/products/reseller/${product.id}`, {
+          method: 'PUT',
+          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ in_stock: newStockStatus ? 1 : 0, stock: product.stock }),
         });
-        if (!res.ok) throw new Error('Failed to fetch products');
-        const data = await res.json();
-        setProducts(data || []);
-        const map = (data || []).reduce((acc, product) => {
-          acc[product.id] = product.inStock !== false;
-          return acc;
-        }, {});
-        setToggleStates(map);
+        if (!res.ok) throw new Error('Failed to update stock');
+        setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, inStock: newStockStatus } : p)));
       } catch (err) {
-        console.error('Error fetching reseller products:', err);
+        console.error('Failed to update stock', err);
+        alert('Gagal memperbarui status stok');
+        setToggleStates((prev) => ({ ...prev, [product.id]: !newStockStatus }));
       }
-    };
-    fetchProducts();
-  }, [token]);
+    })();
+  };
 
   const handleDelete = (id) => {
     if (!window.confirm('Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.')) return;
@@ -46,38 +50,68 @@ const ResellerProductsPage = () => {
     })();
   };
 
-  const handleToggleStock = (product) => {
-    const newStockStatus = !toggleStates[product.id];
-    setToggleStates((prev) => ({ ...prev, [product.id]: newStockStatus }));
-    // Update backend
-    (async () => {
-      try {
-        const res = await fetch(`/api/products/reseller/${product.id}`, {
-          method: 'PUT',
-          headers: token ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ in_stock: newStockStatus ? 1 : 0, stock: product.stock }),
-        });
-        if (!res.ok) throw new Error('Failed to update stock');
-        setProducts((prev) => prev.map((p) => (p.id === product.id ? { ...p, inStock: newStockStatus } : p)));
-      } catch (err) {
-        console.error('Failed to update stock', err);
-        alert('Gagal memperbarui status stok');
-        // revert toggle
-        setToggleStates((prev) => ({ ...prev, [product.id]: !newStockStatus }));
-      }
-    })();
-  };
+  // Fetch using relative endpoint first, then fallback to explicit backend origin
+  useEffect(() => {
+    let cancelled = false;
+    const API_FALLBACK = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+    const endpoints = ['/api/products/reseller', `${API_FALLBACK.replace(/\/$/, '')}/api/products/reseller`];
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-    }).format(price);
-  };
+    const doFetch = async () => {
+      setLoading(true);
+      setErrorMsg(null);
+      setStatusCode(null);
+      let lastErr = null;
+      for (const ep of endpoints) {
+        try {
+          const res = await fetch(ep, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+          setStatusCode(res.status);
+          if (res.status === 401 || res.status === 403) {
+            const txt = await res.text().catch(() => '');
+            setErrorMsg(`Autorisasi gagal (${res.status}). ${txt || ''}`.trim());
+            setProducts([]);
+            setToggleStates({});
+            setLoading(false);
+            return;
+          }
+          if (!res.ok) {
+            lastErr = new Error(`HTTP ${res.status} from ${ep}`);
+            continue;
+          }
+          const data = await res.json();
+          if (cancelled) return;
+          let list = data || [];
+          const newProduct = location && location.state && location.state.newProduct;
+          if (newProduct) {
+            const exists = list.some(p => Number(p.id) === Number(newProduct.id));
+            if (!exists) list = [newProduct, ...list];
+          }
+          setProducts(list);
+          const map = (list || []).reduce((acc, product) => {
+            acc[product.id] = product.inStock !== false;
+            return acc;
+          }, {});
+          setToggleStates(map);
+          setLoading(false);
+          return;
+        } catch (err) {
+          console.warn('Fetch attempt failed for', ep, err);
+          lastErr = err;
+          continue;
+        }
+      }
+      setErrorMsg(lastErr ? String(lastErr) : 'Gagal mengambil data');
+      setProducts([]);
+      setToggleStates({});
+      setLoading(false);
+    };
+
+    doFetch();
+    return () => { cancelled = true; };
+  }, [token, location]);
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center p-6 mb-6">
         <h1 className="text-3xl font-bold">Produk Saya</h1>
         <Link
           to="/reseller/products/new"
@@ -87,102 +121,71 @@ const ResellerProductsPage = () => {
         </Link>
       </div>
 
-      {products.length === 0 ? (
-        <div className="bg-white rounded-lg shadow-md p-12 text-center">
-          <svg className="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-          </svg>
-          <p className="text-gray-600 text-lg">Belum ada produk</p>
-          <p className="text-gray-500 text-sm mt-2">Mulai dengan menambahkan produk pertama Anda</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {products.map((product) => (
-            <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="flex items-center p-6">
-                {/* Product Image */}
-                <div className="w-32 h-32 bg-gray-200 rounded-lg mr-6 flex items-center justify-center">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-full object-cover rounded-lg"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                    }}
-                  />
-                </div>
+      {loading && <div className="p-4 text-sm text-gray-600">Memuat produk...</div>}
+      {errorMsg && (
+        <div className="p-4 mb-4 bg-red-50 text-red-700 border border-red-100 rounded">{errorMsg} (status: {statusCode})</div>
+      )}
 
-                {/* Product Info */}
-                <div className="flex-1">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{product.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1">Kategori: {product.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-blue-600">{formatPrice(product.price)}</p>
-                      <p className="text-sm text-gray-500 mt-1">Terjual: {product.sales}</p>
-                    </div>
-                  </div>
-
-                  {/* Stock Status */}
-                  <div className="flex items-center gap-6 mb-4">
-                    {/* Stock Quantity */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-600">Stock:</span>
-                      <span className="text-lg font-bold text-blue-600">{product.stock} unit</span>
-                    </div>
-
-                    {/* Stock Status Toggle */}
-                    <div className="flex items-center gap-2">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={toggleStates[product.id]}
-                          onChange={() => handleToggleStock(product)}
-                          className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-300"
-                        />
-                        <span className="ml-2 text-sm text-gray-700">
-                          {toggleStates[product.id] ? "Tersedia" : "Habis"}
-                        </span>
+      <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+        {products.length === 0 && !loading ? (
+          <div className="p-12 text-center text-gray-500">Belum ada produk</div>
+        ) : (
+          <table className="w-full table-auto text-left">
+            <thead>
+              <tr className="border-b bg-gray-50">
+                <th className="p-4 font-semibold">Gambar</th>
+                <th className="p-4 font-semibold">Nama</th>
+                <th className="p-4 font-semibold">Kategori</th>
+                <th className="p-4 font-semibold">Harga</th>
+                <th className="p-4 font-semibold">Stock</th>
+                <th className="p-4 font-semibold">Approval</th>
+                <th className="p-4 font-semibold">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product) => (
+                <tr key={product.id} className="border-b hover:bg-gray-50">
+                  <td className="p-4">
+                    {(() => {
+                      const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
+                      const src = img ? (typeof img === 'string' ? img : (img.thumb || img.original || '')) : '';
+                      return (
+                        <img src={src} alt={product.name} className="w-16 h-16 object-cover rounded-md" />
+                      );
+                    })()}
+                  </td>
+                  <td className="p-4 font-medium">
+                    {product.name}
+                    <div className="text-sm text-gray-500">{product.sellerName || ''}</div>
+                  </td>
+                  <td className="p-4 text-gray-600">{product.category}</td>
+                  <td className="p-4 font-medium">{formatPrice(product.price)}</td>
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <span className="font-bold text-blue-600">{product.stock} unit</span>
+                      <label className="inline-flex items-center">
+                        <input type="checkbox" checked={!!toggleStates[product.id]} onChange={() => handleToggleStock(product)} />
+                        <span className="ml-2 text-sm">Tersedia</span>
                       </label>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      toggleStates[product.id]
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {toggleStates[product.id] ? "Aktif" : "Nonaktif"}
-                    </span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3">
-                    <Link
-                      to={`/reseller/products/edit/${product.id}`}
-                      className="inline-flex items-center gap-2 bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-2 rounded-md font-semibold transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit
-                    </Link>
-                    <button
-                      onClick={() => handleDelete(product.id)}
-                      className="inline-flex items-center gap-2 bg-red-100 hover:bg-red-200 text-red-700 px-4 py-2 rounded-md font-semibold transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
-                      Hapus
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                  </td>
+                  <td className="p-4">
+                    {product.is_approved ? (
+                      <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">Disetujui</span>
+                    ) : (
+                      <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full">Menunggu</span>
+                    )}
+                  </td>
+                  <td className="p-4">
+                    <Link to={`/reseller/products/edit/${product.id}`} className="text-blue-600 hover:underline mr-4">Edit</Link>
+                    <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:underline">Hapus</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 };

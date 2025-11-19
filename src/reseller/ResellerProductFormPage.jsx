@@ -155,9 +155,12 @@ const ResellerProductFormPage = () => {
           body: JSON.stringify(payload),
         });
         if (!res.ok) throw new Error('Failed to create product');
+        const newProd = await res.json();
         alert('Produk berhasil ditambahkan!');
+        // navigate back to reseller products and pass new product in state for immediate display
+        navigate('/reseller/products', { state: { newProduct: newProd } });
+        return;
       }
-
       navigate('/reseller/products');
     } catch (error) {
       console.error('Error:', error);

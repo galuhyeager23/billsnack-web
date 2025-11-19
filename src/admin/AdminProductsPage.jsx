@@ -2,11 +2,16 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useProducts } from "../contexts/ProductContext";
 import formatPrice from "../utils/format";
+import { useAuth } from "../contexts/AuthContext";
 
 const AdminProductsPage = () => {
   const { products, deleteProduct, updateProduct } = useProducts();
   const [toggleStates, setToggleStates] = useState({});
   const [allProducts, setAllProducts] = useState([]);
+  const { token } = useAuth();
+  const [resellers, setResellers] = useState([]);
+  const [selectedReseller, setSelectedReseller] = useState('all');
+  const [sellerSort, setSellerSort] = useState('none'); // 'none' | 'asc' | 'desc'
 
   
 
@@ -21,6 +26,22 @@ const AdminProductsPage = () => {
     }, {});
     setToggleStates(map);
   }, [products]);
+
+  // fetch resellers for filter dropdown
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/resellers', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        setResellers(data || []);
+      } catch (e) {
+        console.error('Failed to fetch resellers for filter', e);
+      }
+    })();
+  }, [token]);
 
   const handleDelete = (id) => {
     if (
@@ -58,6 +79,27 @@ const AdminProductsPage = () => {
       <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
         <table className="w-full text-left table-auto">
           <thead>
+            <tr>
+              <th colSpan={9} className="p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium">Filter Penjual:</label>
+                    <select value={selectedReseller} onChange={(e) => setSelectedReseller(e.target.value)} className="border rounded px-3 py-1">
+                      <option value="all">Semua</option>
+                      {resellers.map(r => (
+                        <option key={r.id} value={r.id}>{r.store_name || `${r.first_name || ''} ${r.last_name || ''}`.trim() || r.email}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium">Urutkan Penjual:</label>
+                    <button onClick={() => setSellerSort(s => s === 'asc' ? 'desc' : 'asc')} className="px-3 py-1 bg-gray-100 rounded">
+                      {sellerSort === 'asc' ? 'A → Z' : sellerSort === 'desc' ? 'Z → A' : 'Tidak'}
+                    </button>
+                  </div>
+                </div>
+              </th>
+            </tr>
             <tr className="border-b bg-gray-50">
               <th className="p-4 font-semibold">Gambar</th>
               <th className="p-4 font-semibold">Nama</th>
@@ -65,13 +107,25 @@ const AdminProductsPage = () => {
               <th className="p-4 font-semibold">Harga</th>
               <th className="p-4 font-semibold">Stock</th>
               <th className="p-4 font-semibold">Penjual</th>
+              <th className="p-4 font-semibold">Approval</th>
               <th className="p-4 font-semibold">Status Stok</th>
               <th className="p-4 font-semibold">Aksi</th>
             </tr>
           </thead>
           <tbody>
-            {allProducts.length > 0 ? (
-              allProducts.map((product) => (
+            {(() => {
+              // apply reseller filter and optional sort
+              let displayed = allProducts.slice();
+              if (selectedReseller !== 'all') {
+                displayed = displayed.filter(p => String(p.resellerId) === String(selectedReseller));
+              }
+              if (sellerSort === 'asc') {
+                displayed.sort((a,b) => (a.sellerName || '').localeCompare(b.sellerName || ''));
+              } else if (sellerSort === 'desc') {
+                displayed.sort((a,b) => (b.sellerName || '').localeCompare(a.sellerName || ''));
+              }
+              return displayed.length > 0 ? (
+                displayed.map((product) => (
                 <tr key={product.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     {(() => {
@@ -99,9 +153,26 @@ const AdminProductsPage = () => {
                   </td>
                   <td className="p-4">
                     <div className="text-sm">
-                      <p className="font-medium text-gray-900">{product.reseller || "Admin"}</p>
-                      <p className="text-gray-500">{product.resellerEmail || "admin@billsnack.id"}</p>
+                      {product.resellerId ? (
+                        <Link to={`/admin/resellers/edit/${product.resellerId}`} className="font-medium text-blue-700 hover:underline">
+                          {product.sellerName || product.reseller || "Reseller"}
+                        </Link>
+                      ) : (
+                        <p className="font-medium text-gray-900">{product.sellerName || product.reseller || "Admin"}</p>
+                      )}
+                      <p className="text-gray-500">{product.resellerEmail || product.resellerEmail || "admin@billsnack.id"}</p>
                     </div>
+                  </td>
+                  <td className="p-4">
+                    {product.resellerId ? (
+                      product.is_approved ? (
+                        <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full font-semibold">Disetujui</span>
+                      ) : (
+                        <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full font-semibold">Menunggu</span>
+                      )
+                    ) : (
+                      <span className="inline-block bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-semibold">Admin</span>
+                    )}
                   </td>
                   <td className="p-4">
                     <button
@@ -133,20 +204,39 @@ const AdminProductsPage = () => {
                     </Link>
                     <button
                       onClick={() => handleDelete(product.id)}
-                      className="text-red-600 hover:underline font-semibold"
+                      className="text-red-600 hover:underline mr-4 font-semibold"
                     >
                       Hapus
                     </button>
+                    {/* Approve / Unapprove for reseller products */}
+                    {product.resellerId && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            const newVal = product.is_approved ? 0 : 1;
+                            // call context updateProduct which will call admin endpoint when adminToken is present
+                            await updateProduct({ ...product, is_approved: newVal });
+                          } catch (err) {
+                            console.error('Approve toggle failed', err);
+                            alert('Gagal mengubah status persetujuan.');
+                          }
+                        }}
+                        className={`inline-flex items-center px-3 py-1 rounded-md font-semibold ${product.is_approved ? 'bg-gray-200 text-gray-800' : 'bg-green-600 text-white'}`}
+                      >
+                        {product.is_approved ? 'Batalkan Persetujuan' : 'Setujui'}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="text-center p-8 text-gray-500">
+                <td colSpan={9} className="text-center p-8 text-gray-500">
                   Tidak ada produk ditemukan.
                 </td>
               </tr>
-            )}
+            );
+          })()}
           </tbody>
         </table>
       </div>

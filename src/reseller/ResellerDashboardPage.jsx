@@ -13,16 +13,17 @@ const ResellerDashboardPage = () => {
   useEffect(() => {
     // Dummy data untuk tampilan
     setStats({
-      totalProducts: 12,
-      activeProducts: 10,
-      totalEarnings: 1250000,
-      totalSold: 45,
+      totalProducts: 0,
+      activeProducts: 0,
+      totalEarnings: 0,
+      totalSold: 0,
     });
   }, []);
 
   const { token, user } = useAuth();
   const [resellers, setResellers] = useState([]);
   const [connections, setConnections] = useState(new Set());
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     // fetch other resellers and existing connections (only for reseller role)
@@ -48,6 +49,27 @@ const ResellerDashboardPage = () => {
       }
     };
     if (token && user && user.role === 'reseller') fetchResellers();
+  }, [token, user]);
+
+  // fetch reseller metrics (counts) to populate dashboard stats
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+        const res = await fetch(`${base}/api/products/reseller`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        if (!res.ok) return;
+        const data = await res.json();
+        const totalProducts = data.length;
+        const activeProducts = data.filter(p => p.is_approved === 1 || p.is_approved === true).length;
+        const pending = data.filter(p => !p.is_approved || p.is_approved === 0).length;
+        setStats((s) => ({ ...s, totalProducts, activeProducts, totalSold: data.reduce((sum, p) => sum + (p.sales || 0), 0) || 0 }));
+        // Optionally show pending count somewhere — for now update a small badge in the UI
+        setPendingCount(pending);
+      } catch (e) {
+        console.error('Failed to fetch reseller stats', e);
+      }
+    };
+    if (token && user && user.role === 'reseller') fetchStats();
   }, [token, user]);
 
   const toggleConnect = async (targetId) => {
@@ -172,9 +194,14 @@ const ResellerDashboardPage = () => {
               <p className="font-semibold text-green-900">Kelola Produk</p>
               <p className="text-sm text-green-700">Edit atau hapus produk Anda</p>
             </div>
-            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="flex items-center gap-3">
+              {pendingCount > 0 && (
+                <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full font-semibold">{pendingCount} Menunggu</span>
+              )}
+              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
+            </div>
           </Link>
         </div>
       </div>
