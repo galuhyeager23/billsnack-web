@@ -31,6 +31,8 @@ const ProductDetailPage = () => {
 
   const product = getProductById(Number(id));
 
+  const shopName = product && (product.storeName || product.shopName || product.sellerName || product.seller || product.vendor || product.resellerName || (product.reseller && product.reseller.name)) || 'Bilsnack Store';
+
   // selectedImage will store a URL string (normalize objects -> url)
   const normalizeImg = (img) => (typeof img === 'string' ? img : (img && (img.thumb || img.original)) || '');
   const [selectedImage, setSelectedImage] = useState(product ? normalizeImg(product.images[0]) : "");
@@ -204,6 +206,7 @@ const ProductDetailPage = () => {
           {/* Product Details */}
           <div className="bg-white">
             <h1 className="text-4xl font-bold">{product.name}</h1>
+            <p className="text-sm text-gray-600 mt-2">Penjual: {shopName}</p>
             <div className="flex items-center my-4">
               <StarRating rating={product.rating} />
               <span className="text-gray-500 ml-2">

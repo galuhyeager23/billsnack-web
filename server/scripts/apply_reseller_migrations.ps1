@@ -19,6 +19,7 @@ $dbPass = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstr)
 $base = Join-Path -Path (Get-Location) -ChildPath 'server/models/reseller'
 
 $files = @(
+  'create_reseller_profiles.sql',
   'create_telegram_users.sql',
   'add_reseller_id.sql',
   'create_reseller_connections.sql'

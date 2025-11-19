@@ -25,6 +25,7 @@ const ProductCard = ({ product }) => {
       </div>
       <div className="mt-4">
         <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
+        <p className="text-sm text-gray-500 mt-1">{product.storeName || product.shopName || product.sellerName || product.seller || product.vendor || (product.reseller && product.reseller.name) || 'BilSnack Store'}</p>
         <div className="flex items-center mt-1">
           <StarRating rating={product.rating} />
           <span className="text-sm text-gray-500 ml-2">{product.rating}/5</span>
