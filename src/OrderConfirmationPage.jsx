@@ -116,21 +116,18 @@ const OrderConfirmationPage = () => {
               QRIS Payment Instructions
             </h3>
             <p className="text-sm text-blue-700 mt-2">
-              Please complete your QRIS payment using your preferred e-wallet
-              app. Your order will be processed once payment is confirmed.
+              Silakan selesaikan pembayaran QRIS Anda menggunakan aplikasi e-wallet pilihan Anda.
+              Pesanan akan diproses setelah pembayaran dikonfirmasi.
             </p>
-            <div className="mt-4 flex items-center justify-center">
-              <div className="w-56 h-56 bg-white rounded-lg p-3 flex items-center justify-center">
+            <div className="mt-4 flex flex-col items-center justify-center">
+              <p className="text-sm font-medium text-blue-800 mb-2">Scan QRIS Code:</p>
+              <div className="w-64 h-64 bg-white rounded-lg p-3 shadow-md border border-gray-200">
                 <img
-                  src="/assets/qrisbillsnack.jpg"
+                  src="/qrisbillsnack.jpg"
                   alt="QRIS BillSnack"
                   className="w-full h-full object-contain"
                   onError={(e) => {
-                    try {
-                      if (e && e.target) e.target.src = '/qris-billsnack.svg';
-                    } catch {
-                      /* ignore */
-                    }
+                    console.error('Failed to load QRIS image');
                   }}
                 />
               </div>

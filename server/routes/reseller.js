@@ -80,4 +80,72 @@ router.post('/:id/connect', verifyToken, requireReseller, async (req, res) => {
   }
 });
 
+// Get reseller statistics (products sold and total earnings)
+router.get('/stats', verifyToken, requireReseller, async (req, res) => {
+  const userId = req.user && req.user.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    // Calculate total products sold and earnings from order_items
+    const [orderStats] = await pool.execute(
+      `SELECT 
+        COALESCE(SUM(oi.quantity), 0) as totalSold,
+        COALESCE(SUM(oi.total_price), 0) as totalEarnings
+       FROM order_items oi
+       INNER JOIN products p ON oi.product_id = p.id
+       INNER JOIN orders o ON oi.order_id = o.id
+       WHERE p.reseller_id = ? 
+       AND o.status IN ('Sedang Dikirim', 'Selesai')`,
+      [userId]
+    );
+
+    const stats = {
+      totalSold: orderStats[0]?.totalSold || 0,
+      totalEarnings: parseFloat(orderStats[0]?.totalEarnings || 0)
+    };
+
+    res.json(stats);
+  } catch (err) {
+    console.error('Failed to fetch reseller stats', err);
+    res.status(500).json({ error: 'Failed to fetch reseller stats' });
+  }
+});
+
+// Get list of sold products with details
+router.get('/sold-products', verifyToken, requireReseller, async (req, res) => {
+  const userId = req.user && req.user.id;
+  if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const [soldProducts] = await pool.execute(
+      `SELECT 
+        p.id,
+        p.name,
+        p.price,
+        SUM(oi.quantity) as totalQuantitySold,
+        SUM(oi.total_price) as totalRevenue,
+        COUNT(DISTINCT oi.order_id) as orderCount
+       FROM order_items oi
+       INNER JOIN products p ON oi.product_id = p.id
+       INNER JOIN orders o ON oi.order_id = o.id
+       WHERE p.reseller_id = ? 
+       AND o.status IN ('Sedang Dikirim', 'Selesai')
+       GROUP BY p.id, p.name, p.price
+       ORDER BY totalQuantitySold DESC`,
+      [userId]
+    );
+
+    const formatted = soldProducts.map(item => ({
+      ...item,
+      totalRevenue: parseFloat(item.totalRevenue || 0),
+      price: parseFloat(item.price || 0)
+    }));
+
+    res.json(formatted);
+  } catch (err) {
+    console.error('Failed to fetch sold products', err);
+    res.status(500).json({ error: 'Failed to fetch sold products' });
+  }
+});
+
 module.exports = router;

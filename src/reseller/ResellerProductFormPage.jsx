@@ -21,13 +21,11 @@ const ResellerProductFormPage = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const categories = [
-    "Keripik",
-    "Kacang",
-    "Dodol",
-    "Cokelat",
-    "Permen",
-    "Minuman",
-    "Lainnya",
+    "All",
+    "Chips & Crisps",
+    "Candies & Sweets",
+    "Cookies",
+    "Nuts & Dried Fruits",
   ];
 
   const handleChange = (e) => {

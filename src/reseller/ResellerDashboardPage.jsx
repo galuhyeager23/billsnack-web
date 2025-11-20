@@ -9,6 +9,7 @@ const ResellerDashboardPage = () => {
     totalEarnings: 0,
     totalSold: 0,
   });
+  const [soldProducts, setSoldProducts] = useState([]);
 
   useEffect(() => {
     // Dummy data untuk tampilan
@@ -62,8 +63,26 @@ const ResellerDashboardPage = () => {
         const totalProducts = data.length;
         const activeProducts = data.filter(p => p.is_approved === 1 || p.is_approved === true).length;
         const pending = data.filter(p => !p.is_approved || p.is_approved === 0).length;
-        setStats((s) => ({ ...s, totalProducts, activeProducts, totalSold: data.reduce((sum, p) => sum + (p.sales || 0), 0) || 0 }));
-        // Optionally show pending count somewhere — for now update a small badge in the UI
+        
+        // Fetch sales statistics from the new endpoint
+        const statsRes = await fetch(`${base}/api/resellers/stats`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        let totalSold = 0;
+        let totalEarnings = 0;
+        
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          totalSold = statsData.totalSold || 0;
+          totalEarnings = statsData.totalEarnings || 0;
+        }
+        
+        // Fetch sold products details
+        const soldRes = await fetch(`${base}/api/resellers/sold-products`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+        if (soldRes.ok) {
+          const soldData = await soldRes.json();
+          setSoldProducts(soldData || []);
+        }
+        
+        setStats({ totalProducts, activeProducts, totalSold, totalEarnings });
         setPendingCount(pending);
       } catch (e) {
         console.error('Failed to fetch reseller stats', e);
@@ -96,6 +115,8 @@ const ResellerDashboardPage = () => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(price);
   };
 
@@ -207,7 +228,7 @@ const ResellerDashboardPage = () => {
       </div>
 
       {/* Information Box */}
-      <div className="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-6">
+      <div className="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-6 mb-8">
         <div className="flex">
           <div className="flex-shrink-0">
             <svg className="h-5 w-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
@@ -221,6 +242,57 @@ const ResellerDashboardPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Sold Products Table */}
+      {soldProducts.length > 0 && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Produk Terjual</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Nama Produk
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Harga Satuan
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Jumlah Terjual
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Pesanan
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Total Pendapatan
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {soldProducts.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{formatPrice(product.price)}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{product.totalQuantitySold}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{product.orderCount}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-semibold text-green-600">{formatPrice(product.totalRevenue)}</div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Connect with other resellers (only visible to reseller role) */}
       {user && user.role === 'reseller' ? (
