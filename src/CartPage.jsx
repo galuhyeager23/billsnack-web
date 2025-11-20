@@ -81,15 +81,22 @@ const CartItemRow = ({ item }) => {
 };
 
 const CartPage = () => {
-  const { cartItems } = useCart();
+  const { cartItems, getCartItemsBySeller } = useCart();
 
-  const subtotal = cartItems.reduce(
+  const cartsBySeller = getCartItemsBySeller();
+
+  const calculateTotalBySeller = (items) => {
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const discount = subtotal * 0.2;
+    return { subtotal, discount, total: subtotal - discount };
+  };
+
+  const grandTotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const discount = subtotal * 0.2; // 20% discount
-  // Shipping fee is calculated at checkout; do not show it on cart page.
-  const total = subtotal - discount;
+  const grandDiscount = grandTotal * 0.2;
+  const finalTotal = grandTotal - grandDiscount;
 
   return (
     <div className="bg-white">
@@ -116,42 +123,80 @@ const CartPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2 rounded-lg p-8">
-              {cartItems.map((item) => (
-                <CartItemRow
-                  key={`${item.id}-${item.selectedSize}-${item.selectedColor}`}
-                  item={item}
-                />
-              ))}
+            <div className="lg:col-span-2">
+              {/* Group items by seller */}
+              {cartsBySeller.map((sellerCart, index) => {
+                const { subtotal, discount, total } = calculateTotalBySeller(sellerCart.items);
+                return (
+                  <div key={sellerCart.sellerId} className={`bg-white rounded-lg p-6 shadow-md ${index > 0 ? 'mt-6' : ''}`}>
+                    {/* Seller Header */}
+                    <div className="flex items-center justify-between border-b pb-4 mb-4">
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">{sellerCart.sellerName}</h2>
+                        {sellerCart.resellerEmail && (
+                          <p className="text-sm text-gray-500">{sellerCart.resellerEmail}</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">Subtotal Toko</p>
+                        <p className="text-lg font-bold text-blue-600">Rp {formatPrice(total)}</p>
+                      </div>
+                    </div>
+
+                    {/* Cart Items for this seller */}
+                    {sellerCart.items.map((item) => (
+                      <CartItemRow key={`${item.id}-${item.selectedSize}-${item.selectedColor}`} item={item} />
+                    ))}
+
+                    {/* Seller Summary */}
+                    <div className="mt-4 pt-4 border-t space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Subtotal</span>
+                        <span className="font-semibold">Rp {formatPrice(subtotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">Diskon (-20%)</span>
+                        <span className="font-semibold text-red-500">-Rp {formatPrice(discount)}</span>
+                      </div>
+                      <div className="flex justify-between font-bold">
+                        <span>Total Toko</span>
+                        <span className="text-blue-600">Rp {formatPrice(total)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            <div className="rounded-lg p-8 h-fit">
+            <div className="rounded-lg p-8 h-fit bg-gray-50 shadow-md">
               <h2 className="text-2xl font-bold mb-6 border-b pb-4">
                 Ringkasan Pesanan
               </h2>
               <div className="space-y-4 text-lg">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold">Rp {formatPrice(subtotal)}</span>
+                  <span className="text-gray-600">Total Belanja</span>
+                  <span className="font-semibold">Rp {formatPrice(grandTotal)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Diskon (-20%)</span>
-                  <span className="font-semibold text-red-500">-Rp {formatPrice(
-                    discount
-                  )}</span>
+                  <span className="text-gray-600">Total Diskon (-20%)</span>
+                  <span className="font-semibold text-red-500">-Rp {formatPrice(grandDiscount)}</span>
                 </div>
-                {/* Shipping cost will be shown during checkout */}
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    <strong>Info:</strong> Anda berbelanja dari {cartsBySeller.length} toko
+                  </p>
+                </div>
               </div>
               <div className="flex justify-between text-2xl font-bold mt-6 border-t pt-4">
-                <span>Total</span>
-                <span>Rp {formatPrice(total)}</span>
+                <span>Total Keseluruhan</span>
+                <span>Rp {formatPrice(finalTotal)}</span>
               </div>
 
               <div className="mt-8 flex">
                 <input
                   type="text"
                   placeholder="Tambahkan kode promo"
-                  className="flex-grow bg-gray-100 rounded-l-full px-4 py-3 focus:outline-none"
+                  className="flex-grow bg-white rounded-l-full px-4 py-3 border focus:outline-none focus:ring-2 focus:ring-amber-300"
                 />
                 <button className="bg-amber-500 text-white font-semibold px-6 rounded-r-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition">
                   Terapkan

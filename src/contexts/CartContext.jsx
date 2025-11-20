@@ -97,6 +97,10 @@ export const CartProvider = ({ children }) => {
           price: product.price,
           image: imageUrl,
           quantity,
+          // Store seller information
+          resellerId: product.resellerId || product.reseller_id || null,
+          sellerName: product.sellerName || product.seller || product.storeName || product.store_name || 'BillSnack Store',
+          resellerEmail: product.resellerEmail || product.reseller_email || null,
         },
       ];
     });
@@ -132,6 +136,24 @@ export const CartProvider = ({ children }) => {
 
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Group cart items by seller
+  const getCartItemsBySeller = () => {
+    const grouped = {};
+    cartItems.forEach(item => {
+      const sellerId = item.resellerId || 'admin';
+      if (!grouped[sellerId]) {
+        grouped[sellerId] = {
+          sellerId,
+          sellerName: item.sellerName || 'BillSnack Store',
+          resellerEmail: item.resellerEmail || null,
+          items: [],
+        };
+      }
+      grouped[sellerId].items.push(item);
+    });
+    return Object.values(grouped);
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -141,6 +163,7 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         clearCart,
         itemCount,
+        getCartItemsBySeller,
       }}
     >
       {children}

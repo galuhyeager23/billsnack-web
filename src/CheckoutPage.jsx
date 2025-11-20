@@ -21,7 +21,7 @@ const ChevronRightIcon = () => (
 );
 
 const CheckoutPage = () => {
-  const { cartItems, clearCart } = useCart();
+  const { cartItems, clearCart, getCartItemsBySeller } = useCart();
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState("qris");
@@ -36,6 +36,8 @@ const CheckoutPage = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
+
+  const cartsBySeller = getCartItemsBySeller();
 
   useEffect(() => {
     if (user) {
@@ -87,43 +89,79 @@ const CheckoutPage = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const payload = {
-        customer: {
-          name: formData.username,
-          email: formData.email,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.city,
-          province: formData.province || null,
-          postalCode: formData.postalCode,
-        },
-        items: cartItems.map((it) => ({ productId: it.id, name: it.name, unit_price: it.price, quantity: it.quantity, total_price: it.price * it.quantity, selected_options: { size: it.selectedSize, color: it.selectedColor } })),
-        subtotal,
-        discount,
-        deliveryFee,
-        total,
-        paymentMethod,
-        shippingMethod,
-      };
-
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch(`${API_BASE}/api/orders`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+      // Create separate order for each seller
+      const orderPromises = cartsBySeller.map(async (sellerCart) => {
+        const items = sellerCart.items;
+        const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+        const discount = subtotal * 0.2;
+        const deliveryFee = getDeliveryFee();
+        const total = subtotal - discount + deliveryFee;
+
+        const payload = {
+          customer: {
+            name: formData.username,
+            email: formData.email,
+            phone: formData.phone,
+            address: formData.address,
+            city: formData.city,
+            province: formData.province || null,
+            postalCode: formData.postalCode,
+          },
+          items: items.map((it) => ({ 
+            productId: it.id, 
+            name: it.name, 
+            unit_price: it.price, 
+            quantity: it.quantity, 
+            total_price: it.price * it.quantity, 
+            selected_options: { size: it.selectedSize, color: it.selectedColor } 
+          })),
+          subtotal,
+          discount,
+          deliveryFee,
+          total,
+          paymentMethod,
+          shippingMethod,
+          sellerId: sellerCart.sellerId !== 'admin' ? sellerCart.sellerId : null,
+          sellerName: sellerCart.sellerName,
+        };
+
+        const res = await fetch(`${API_BASE}/api/orders`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+        
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Failed to create order for ${sellerCart.sellerName}`);
+        }
+        
+        return res.json();
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || 'Failed to create order');
-      }
-      const data = await res.json();
-  const orderId = data.orderId || Math.random().toString(36).substr(2, 9).toUpperCase();
-  // create a lightweight items list for the confirmation page (id + name)
-  const purchasedItems = cartItems.map(it => ({ id: it.id, name: it.name, image: it.image || '' }));
-  clearCart();
-  navigate('/order-confirmation', { state: { orderId, total, paymentMethod, shippingMethod, items: purchasedItems } });
+
+      const orders = await Promise.all(orderPromises);
+      
+      // Collect all order IDs and total amount
+      const orderIds = orders.map(o => o.orderId || Math.random().toString(36).substr(2, 9).toUpperCase()).join(', ');
+      const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - (cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 0.2) + (getDeliveryFee() * cartsBySeller.length);
+      
+      // Create lightweight items list for confirmation page
+      const purchasedItems = cartItems.map(it => ({ id: it.id, name: it.name, image: it.image || '' }));
+      
+      clearCart();
+      navigate('/order-confirmation', { 
+        state: { 
+          orderId: orderIds, 
+          total: totalAmount, 
+          paymentMethod, 
+          shippingMethod, 
+          items: purchasedItems,
+          orderCount: orders.length,
+        } 
+      });
     } catch (err) {
       console.error('Place order error', err);
       alert(err.message || 'Gagal membuat pesanan');
@@ -450,50 +488,74 @@ const CheckoutPage = () => {
             <h2 className="text-2xl font-bold mb-6 border-b pb-4">
               Ringkasan Pesanan
             </h2>
-            <div className="space-y-3">
-              {cartItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex justify-between items-center text-sm"
-                >
-                  <span className="text-gray-600">
-                    {item.name} x {item.quantity}
-                  </span>
-                  <span className="font-semibold">
-                    Rp{formatPrice(item.price * item.quantity)}
-                  </span>
+            
+            {/* Show items grouped by seller */}
+            {cartsBySeller.map((sellerCart, index) => {
+              const sellerSubtotal = sellerCart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+              const sellerDiscount = sellerSubtotal * 0.2;
+              const sellerTotal = sellerSubtotal - sellerDiscount;
+              
+              return (
+                <div key={sellerCart.sellerId} className={`${index > 0 ? 'mt-6 pt-6 border-t' : ''}`}>
+                  <div className="mb-3">
+                    <p className="font-bold text-gray-900">{sellerCart.sellerName}</p>
+                    {sellerCart.resellerEmail && (
+                      <p className="text-xs text-gray-500">{sellerCart.resellerEmail}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2 ml-2">
+                    {sellerCart.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex justify-between items-center text-sm"
+                      >
+                        <span className="text-gray-600">
+                          {item.name} x {item.quantity}
+                        </span>
+                        <span className="font-semibold">
+                          Rp{formatPrice(item.price * item.quantity)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-2 ml-2 text-sm text-right">
+                    <p className="text-gray-600">Subtotal: Rp{formatPrice(sellerSubtotal)}</p>
+                    <p className="text-red-500">Diskon: -Rp{formatPrice(sellerDiscount)}</p>
+                    <p className="font-bold text-blue-600">Total Toko: Rp{formatPrice(sellerTotal)}</p>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
+
             <div className="space-y-4 text-lg mt-6 border-t pt-4">
               <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
+                <span className="text-gray-600">Total Belanja</span>
                 <span className="font-semibold">Rp{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Diskon (-20%)</span>
+                <span className="text-gray-600">Total Diskon (-20%)</span>
                 <span className="font-semibold text-red-500">
                   -Rp{formatPrice(discount)}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  Biaya Pengiriman (
-                  {shippingMethod === "gosend"
-                    ? "GoSend"
-                    : shippingMethod === "jne"
-                    ? "JNE"
-                    : shippingMethod === "jnt"
-                    ? "JNT"
-                    : "Standard"}
-                  )
+                  Biaya Pengiriman {cartsBySeller.length > 1 && `(${cartsBySeller.length} toko)`}
                 </span>
-                <span className="font-semibold">Rp{formatPrice(deliveryFee)}</span>
+                <span className="font-semibold">Rp{formatPrice(deliveryFee * cartsBySeller.length)}</span>
               </div>
+              {cartsBySeller.length > 1 && (
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <p className="text-xs text-blue-800">
+                    <strong>Info:</strong> Anda berbelanja dari {cartsBySeller.length} toko berbeda. 
+                    Biaya pengiriman dikenakan per toko.
+                  </p>
+                </div>
+              )}
             </div>
             <div className="flex justify-between text-2xl font-bold mt-6 border-t pt-4">
-              <span>Total</span>
-              <span>Rp{formatPrice(total)}</span>
+              <span>Total Keseluruhan</span>
+              <span>Rp{formatPrice(subtotal - discount + (deliveryFee * cartsBySeller.length))}</span>
             </div>
 
             <button
@@ -504,7 +566,7 @@ const CheckoutPage = () => {
               style={{ backgroundColor: submitting ? '#FFB380' : (btnHover ? '#E65A00' : '#FF6B00') }}
               disabled={submitting}
             >
-              {submitting ? 'Memproses...' : 'Buat Pesanan'}
+              {submitting ? 'Memproses...' : `Buat Pesanan${cartsBySeller.length > 1 ? ` (${cartsBySeller.length} Toko)` : ''}`}
             </button>
           </div>
         </form>

@@ -2,13 +2,11 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useProducts } from "../contexts/ProductContext";
 import formatPrice from "../utils/format";
-import { useAuth } from "../contexts/AuthContext";
 
 const AdminProductsPage = () => {
   const { deleteProduct, updateProduct } = useProducts();
   const [toggleStates, setToggleStates] = useState({});
   const [allProducts, setAllProducts] = useState([]);
-  const { token } = useAuth();
   const [resellers, setResellers] = useState([]);
   const [selectedReseller, setSelectedReseller] = useState('all');
   const [sellerSort, setSellerSort] = useState('none'); // 'none' | 'asc' | 'desc'
@@ -19,11 +17,24 @@ const AdminProductsPage = () => {
     (async () => {
       try {
         setLoading(true);
+        const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+        console.log('Fetching admin products with token:', adminToken ? 'Present' : 'Missing');
+        
         const res = await fetch('/api/admin/products', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: adminToken ? { Authorization: `Bearer ${adminToken}` } : {},
         });
-        if (!res.ok) throw new Error(`Failed to fetch admin products: ${res.status}`);
+        
+        console.log('Admin products response status:', res.status);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error('Failed to fetch admin products:', res.status, errorText);
+          throw new Error(`Failed to fetch admin products: ${res.status}`);
+        }
+        
         const data = await res.json();
+        console.log('Admin products data:', data);
+        
         // Normalize data
         const normalized = Array.isArray(data)
           ? data.map((p) => ({
@@ -34,6 +45,8 @@ const AdminProductsPage = () => {
                 : (typeof p.in_stock !== 'undefined' ? Boolean(p.in_stock) : ( (typeof p.stock === 'number') ? p.stock > 0 : true )),
             }))
           : data;
+        
+        console.log('Normalized products:', normalized.length, 'items');
         setAllProducts(normalized);
         
         const map = normalized.reduce((acc, product) => {
@@ -43,11 +56,12 @@ const AdminProductsPage = () => {
         setToggleStates(map);
       } catch (e) {
         console.error('Failed to fetch admin products', e);
+        alert('Gagal memuat produk. Periksa console untuk detail error.');
       } finally {
         setLoading(false);
       }
     })();
-  }, [token]);
+  }, []); // Remove token dependency
 
   // Combine admin products with reseller products
   React.useEffect(() => {
@@ -62,8 +76,9 @@ const AdminProductsPage = () => {
   React.useEffect(() => {
     (async () => {
       try {
+        const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
         const res = await fetch('/api/resellers', {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: adminToken ? { Authorization: `Bearer ${adminToken}` } : {},
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -72,7 +87,7 @@ const AdminProductsPage = () => {
         console.error('Failed to fetch resellers for filter', e);
       }
     })();
-  }, [token]);
+  }, []);
 
   const handleDelete = (id) => {
     if (
