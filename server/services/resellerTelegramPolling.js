@@ -54,6 +54,7 @@ class ResellerTelegramPolling {
       const response = await fetch(`${apiUrl}?${params}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(35000), // 35 second timeout (5s more than API timeout)
       });
 
       if (!response.ok) {
@@ -80,7 +81,12 @@ class ResellerTelegramPolling {
         }
       }
     } catch (err) {
-      console.error('Error polling Telegram updates for Reseller:', err);
+      // Handle specific network errors more gracefully
+      if (err.cause?.code === 'ECONNRESET' || err.cause?.code === 'ETIMEDOUT' || err.name === 'AbortError') {
+        console.warn('[Reseller Bot] Network timeout or connection reset, will retry...');
+      } else {
+        console.error('Error polling Telegram updates for Reseller:', err.message);
+      }
     }
   }
 

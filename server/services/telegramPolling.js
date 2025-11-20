@@ -45,7 +45,12 @@ class TelegramPolling {
         // Small delay to avoid hammering the API
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (err) {
-        console.error('Telegram polling error:', err.message);
+        // Handle network errors more gracefully
+        if (err.cause?.code === 'ECONNRESET' || err.cause?.code === 'ETIMEDOUT') {
+          console.warn('[Telegram Bot] Connection error, retrying in 5 seconds...');
+        } else {
+          console.error('Telegram polling error:', err.message);
+        }
         // Wait before retrying
         await new Promise(resolve => setTimeout(resolve, 5000));
       }
@@ -65,6 +70,7 @@ class TelegramPolling {
           timeout: 30,
           allowed_updates: ['message'],
         }),
+        signal: AbortSignal.timeout(35000), // 35 second timeout
       });
 
       const result = await response.json();
@@ -85,7 +91,12 @@ class TelegramPolling {
         }
       }
     } catch (err) {
-      console.error('Error getting updates:', err.message);
+      // Handle network errors gracefully
+      if (err.cause?.code === 'ECONNRESET' || err.cause?.code === 'ETIMEDOUT' || err.name === 'AbortError') {
+        console.warn('[Telegram Bot] Network timeout or connection reset, will retry...');
+      } else {
+        console.error('Error getting updates:', err.message);
+      }
     }
   }
 

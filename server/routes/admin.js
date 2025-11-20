@@ -64,7 +64,7 @@ router.get('/products', verifyToken, requireAdmin, async (req, res) => {
         reviewCount: r.review_count || 0,
         is_approved: r.is_approved !== undefined ? !!Number(r.is_approved) : true,
         colors,
-        sellerName: (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Admin',
+        sellerName: r.seller_name || (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'BillSnack Store',
         resellerId: r.reseller_id,
         resellerEmail: r.reseller_email,
         createdAt: r.created_at,
@@ -78,7 +78,7 @@ router.get('/products', verifyToken, requireAdmin, async (req, res) => {
 });
 
 router.post('/products', verifyToken, requireAdmin, async (req, res) => {
-  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
+  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, sellerName } = req.body;
   if (!name || typeof price === 'undefined') return res.status(400).json({ error: 'Missing required fields' });
   // accept either camelCase `inStock` or snake_case `in_stock` and sanitize
   const { sanitizeInStock } = require('../utils/validate');
@@ -89,9 +89,10 @@ router.post('/products', verifyToken, requireAdmin, async (req, res) => {
     // stringify arrays for JSON/DB storage
     const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
     const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
+    const seller_name = sellerName || 'BillSnack Store';
     const [result] = await pool.execute(
-      'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock]
+      'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, seller_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, seller_name]
     );
     const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [result.insertId]);
     const r = rows[0];
@@ -110,6 +111,7 @@ router.post('/products', verifyToken, requireAdmin, async (req, res) => {
       rating: r.rating !== null ? Number(r.rating) : 0,
       reviewCount: r.review_count || 0,
       colors,
+      sellerName: r.seller_name || 'BillSnack Store',
       createdAt: r.created_at,
     };
     res.status(201).json(out);
@@ -121,7 +123,7 @@ router.post('/products', verifyToken, requireAdmin, async (req, res) => {
 
 router.put('/products/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, is_approved, isApproved } = req.body;
+  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, is_approved, isApproved, sellerName } = req.body;
   // accept camelCase `inStock` or snake_case `in_stock`
   const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
   const in_stock = typeof inStockInput !== 'undefined' ? (inStockInput ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
@@ -131,9 +133,10 @@ router.put('/products/:id', verifyToken, requireAdmin, async (req, res) => {
     
     // Handle is_approved field (accept both camelCase and snake_case)
     const isApprovedVal = typeof is_approved !== 'undefined' ? is_approved : (typeof isApproved !== 'undefined' ? isApproved : undefined);
+    const seller_name = sellerName || 'BillSnack Store';
     
-    let updateSql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ?';
-    const params = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock];
+    let updateSql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ?, seller_name = ?';
+    const params = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, seller_name];
     
     // Add is_approved to UPDATE if provided
     if (typeof isApprovedVal !== 'undefined') {

@@ -15,6 +15,7 @@ const AdminProductFormPage = () => {
     price: "",
     images: [],
     description: "",
+    sellerName: "BillSnack Store",
   });
 
   // allow admin to paste or type image URLs (one per line or comma separated)
@@ -248,6 +249,18 @@ const AdminProductFormPage = () => {
               rows={1}
               className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
               placeholder="Masukkan stok"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nama Toko</label>
+            <input
+              type="text"
+              name="sellerName"
+              value={product.sellerName || 'BillSnack Store'}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-black focus:border-black"
+              placeholder="Nama toko/penjual"
             />
           </div>
 

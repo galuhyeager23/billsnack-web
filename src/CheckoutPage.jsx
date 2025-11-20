@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "./contexts/CartContext";
 import { useAuth } from "./contexts/AuthContext";
 import formatPrice from "./utils/format";
@@ -24,6 +24,7 @@ const CheckoutPage = () => {
   const { cartItems, clearCart, getCartItemsBySeller } = useCart();
   const { user, token } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [paymentMethod, setPaymentMethod] = useState("qris");
   const [shippingMethod, setShippingMethod] = useState("gosend");
   const [formData, setFormData] = useState({
@@ -37,7 +38,15 @@ const CheckoutPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
 
+  // Get checkout seller ID from navigation state (if coming from specific seller checkout)
+  const checkoutSellerId = location.state?.checkoutSellerId;
+  
   const cartsBySeller = getCartItemsBySeller();
+  
+  // Filter to only show items from the selected seller if specified
+  const checkoutCarts = checkoutSellerId 
+    ? cartsBySeller.filter(cart => cart.sellerId === checkoutSellerId)
+    : cartsBySeller;
 
   useEffect(() => {
     if (user) {
@@ -60,10 +69,10 @@ const CheckoutPage = () => {
     }));
   };
 
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
+  // Calculate totals for checkout items only
+  const subtotal = checkoutCarts.reduce((sum, sellerCart) => {
+    return sum + sellerCart.items.reduce((itemSum, item) => itemSum + item.price * item.quantity, 0);
+  }, 0);
   const discount = subtotal * 0.2;
 
   // Calculate delivery fee based on shipping method
@@ -80,7 +89,7 @@ const CheckoutPage = () => {
     }
   };
 
-  const deliveryFee = getDeliveryFee();
+  const deliveryFee = getDeliveryFee() * checkoutCarts.length; // Multiply by number of sellers
   const total = subtotal - discount + deliveryFee;
 
   const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
@@ -92,8 +101,8 @@ const CheckoutPage = () => {
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      // Create separate order for each seller
-      const orderPromises = cartsBySeller.map(async (sellerCart) => {
+      // Create separate order for each seller in checkoutCarts
+      const orderPromises = checkoutCarts.map(async (sellerCart) => {
         const items = sellerCart.items;
         const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const discount = subtotal * 0.2;
@@ -144,12 +153,13 @@ const CheckoutPage = () => {
 
       const orders = await Promise.all(orderPromises);
       
-      // Collect all order IDs and total amount
+      // Collect all order IDs and items from checkout
       const orderIds = orders.map(o => o.orderId || Math.random().toString(36).substr(2, 9).toUpperCase()).join(', ');
-      const totalAmount = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) - (cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0) * 0.2) + (getDeliveryFee() * cartsBySeller.length);
+      const checkoutItems = checkoutCarts.flatMap(cart => cart.items);
+      const totalAmount = subtotal - discount + (getDeliveryFee() * checkoutCarts.length);
       
       // Create lightweight items list for confirmation page
-      const purchasedItems = cartItems.map(it => ({ id: it.id, name: it.name, image: it.image || '' }));
+      const purchasedItems = checkoutItems.map(it => ({ id: it.id, name: it.name, image: it.image || '' }));
       
       clearCart();
       navigate('/order-confirmation', { 
@@ -489,19 +499,24 @@ const CheckoutPage = () => {
               Ringkasan Pesanan
             </h2>
             
-            {/* Show items grouped by seller */}
-            {cartsBySeller.map((sellerCart, index) => {
+            {/* Show items grouped by seller - only for checkout items */}
+            {checkoutCarts.map((sellerCart, index) => {
               const sellerSubtotal = sellerCart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
               const sellerDiscount = sellerSubtotal * 0.2;
               const sellerTotal = sellerSubtotal - sellerDiscount;
               
               return (
                 <div key={sellerCart.sellerId} className={`${index > 0 ? 'mt-6 pt-6 border-t' : ''}`}>
-                  <div className="mb-3">
-                    <p className="font-bold text-gray-900">{sellerCart.sellerName}</p>
-                    {sellerCart.resellerEmail && (
-                      <p className="text-xs text-gray-500">{sellerCart.resellerEmail}</p>
-                    )}
+                  <div className="mb-3 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                    <div>
+                      <p className="font-bold text-gray-900">{sellerCart.sellerName}</p>
+                      {sellerCart.resellerEmail && (
+                        <p className="text-xs text-gray-500">{sellerCart.resellerEmail}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2 ml-2">
                     {sellerCart.items.map((item) => (
@@ -540,14 +555,14 @@ const CheckoutPage = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">
-                  Biaya Pengiriman {cartsBySeller.length > 1 && `(${cartsBySeller.length} toko)`}
+                  Biaya Pengiriman {checkoutCarts.length > 1 && `(${checkoutCarts.length} toko)`}
                 </span>
-                <span className="font-semibold">Rp{formatPrice(deliveryFee * cartsBySeller.length)}</span>
+                <span className="font-semibold">Rp{formatPrice(deliveryFee)}</span>
               </div>
-              {cartsBySeller.length > 1 && (
+              {checkoutCarts.length > 1 && (
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <p className="text-xs text-blue-800">
-                    <strong>Info:</strong> Anda berbelanja dari {cartsBySeller.length} toko berbeda. 
+                    <strong>Info:</strong> Anda berbelanja dari {checkoutCarts.length} toko berbeda. 
                     Biaya pengiriman dikenakan per toko.
                   </p>
                 </div>
@@ -555,7 +570,7 @@ const CheckoutPage = () => {
             </div>
             <div className="flex justify-between text-2xl font-bold mt-6 border-t pt-4">
               <span>Total Keseluruhan</span>
-              <span>Rp{formatPrice(subtotal - discount + (deliveryFee * cartsBySeller.length))}</span>
+              <span>Rp{formatPrice(total)}</span>
             </div>
 
             <button
@@ -566,7 +581,7 @@ const CheckoutPage = () => {
               style={{ backgroundColor: submitting ? '#FFB380' : (btnHover ? '#E65A00' : '#FF6B00') }}
               disabled={submitting}
             >
-              {submitting ? 'Memproses...' : `Buat Pesanan${cartsBySeller.length > 1 ? ` (${cartsBySeller.length} Toko)` : ''}`}
+              {submitting ? 'Memproses...' : `Buat Pesanan${checkoutCarts.length > 1 ? ` (${checkoutCarts.length} Toko)` : ''}`}
             </button>
           </div>
         </form>
