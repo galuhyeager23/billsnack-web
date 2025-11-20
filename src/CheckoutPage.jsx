@@ -21,7 +21,7 @@ const ChevronRightIcon = () => (
 );
 
 const CheckoutPage = () => {
-  const { cartItems, clearCart, getCartItemsBySeller } = useCart();
+  const { cartItems, clearCart, clearCartBySeller, getCartItemsBySeller } = useCart();
   const { user, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -161,7 +161,15 @@ const CheckoutPage = () => {
       // Create lightweight items list for confirmation page
       const purchasedItems = checkoutItems.map(it => ({ id: it.id, name: it.name, image: it.image || '' }));
       
-      clearCart();
+      // Clear only items from sellers that were checked out
+      if (checkoutSellerId) {
+        // If checking out specific seller, only clear that seller's items
+        clearCartBySeller(checkoutSellerId);
+      } else {
+        // If checking out all sellers, clear entire cart
+        clearCart();
+      }
+      
       navigate('/order-confirmation', { 
         state: { 
           orderId: orderIds, 

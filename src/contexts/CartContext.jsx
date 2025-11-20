@@ -134,6 +134,20 @@ export const CartProvider = ({ children }) => {
     } catch { /* ignore */ }
   };
 
+  // Clear cart items from specific seller only
+  const clearCartBySeller = (sellerId) => {
+    setCartItems((prevItems) => {
+      // Convert 'admin' string to null for matching
+      const targetSellerId = sellerId === 'admin' ? null : sellerId;
+      return prevItems.filter(item => {
+        // Item's resellerId is null for admin products, or a number for reseller products
+        const itemSellerId = item.resellerId || null;
+        // Keep items that DON'T match the target seller
+        return itemSellerId !== targetSellerId;
+      });
+    });
+  };
+
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   // Group cart items by seller
@@ -162,6 +176,7 @@ export const CartProvider = ({ children }) => {
         removeFromCart,
         updateQuantity,
         clearCart,
+        clearCartBySeller,
         itemCount,
         getCartItemsBySeller,
       }}
