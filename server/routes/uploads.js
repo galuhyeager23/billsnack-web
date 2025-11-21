@@ -1,4 +1,5 @@
 /* eslint-env node */
+// NOTE: This file does not use database, so no Supabase conversion needed
 const express = require('express');
 const multer = require('multer');
 let sharp;

@@ -7,9 +7,11 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "e2e:create": "node scripts/e2e_create_product.js"
+    "e2e:create": "node scripts/e2e_create_product.js",
+    "backfill:seller-names": "node scripts/backfill_seller_names.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -17,7 +19,6 @@
     "form-data": "^4.0.0",
     "jsonwebtoken": "^9.0.1",
     "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.2.0",
     "node-fetch": "^2.6.9",
     "sharp": "^0.32.1",
     "telegraf": "^4.14.0"

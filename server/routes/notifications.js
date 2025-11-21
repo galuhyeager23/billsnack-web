@@ -1,6 +1,7 @@
 /* eslint-env node */
 const express = require('express');
 const router = express.Router();
+const supabase = require('../supabase');
 const NotificationService = require('../services/notificationService');
 const auth = require('./auth');
 
@@ -106,13 +107,14 @@ router.patch('/:id/read', verifyToken, async (req, res) => {
     }
 
     // Verify notification belongs to user
-    const db = req.app.locals.db;
-    const [notifications] = await db.query(
-      'SELECT id FROM notifications WHERE id = ? AND user_id = ?',
-      [notificationId, user.id]
-    );
+    const { data: notifications, error } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('id', notificationId)
+      .eq('user_id', user.id)
+      .single();
 
-    if (notifications.length === 0) {
+    if (error || !notifications) {
       return res.status(404).json({ error: 'Notification not found' });
     }
 
@@ -165,18 +167,24 @@ router.delete('/:id', verifyToken, async (req, res) => {
     }
 
     // Verify notification belongs to user
-    const db = req.app.locals.db;
-    const [notifications] = await db.query(
-      'SELECT id FROM notifications WHERE id = ? AND user_id = ?',
-      [notificationId, user.id]
-    );
+    const { data: notifications, error: fetchError } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('id', notificationId)
+      .eq('user_id', user.id)
+      .single();
 
-    if (notifications.length === 0) {
+    if (fetchError || !notifications) {
       return res.status(404).json({ error: 'Notification not found' });
     }
 
     // Delete notification
-    await db.query('DELETE FROM notifications WHERE id = ?', [notificationId]);
+    const { error: deleteError } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', notificationId);
+
+    if (deleteError) throw deleteError;
 
     res.json({
       success: true,

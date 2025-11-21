@@ -1,6 +1,6 @@
 /* eslint-env node */
 const express = require('express');
-const pool = require('../db');
+const supabase = require('../supabase');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -10,9 +10,7 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'change_this_secret_in_production';
 const SALT_ROUNDS = process.env.SALT_ROUNDS ? Number(process.env.SALT_ROUNDS) : 10;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@billsnack.id';
-// Maximum allowed length for an inlined/base64 profile image string.
-// Keep reasonable to avoid very large DB inserts. Prefer storing images in object storage and saving a URL.
-const MAX_PROFILE_IMAGE_LEN = 2_000_000; // ~2 million characters (~1.5MB base64)
+const MAX_PROFILE_IMAGE_LEN = 2_000_000;
 
 // Register
 router.post('/register', async (req, res) => {
@@ -20,30 +18,48 @@ router.post('/register', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
   try {
-    // check if exists
-    const [exists] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
-    if (exists.length > 0) return res.status(409).json({ error: 'Email already registered' });
+    // Check if exists
+    const { data: exists } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+    
+    if (exists) return res.status(409).json({ error: 'Email already registered' });
 
-    // Validate profile image size if provided
+    // Validate profile image size
     if (profileImage && profileImage.length > MAX_PROFILE_IMAGE_LEN) {
       return res.status(400).json({ error: 'Profile image too large. Use a smaller image or provide a profileImageUrl instead.' });
     }
 
     const hash = await bcrypt.hash(password, SALT_ROUNDS);
-    const [result] = await pool.execute(
-      'INSERT INTO users (email, password_hash, first_name, last_name, username, phone, gender, profile_image, profile_image_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [email, hash, firstName || null, lastName || null, username || null, phone || null, gender || null, profileImage || null, profileImageUrl || null]
-    );
+    const { data, error } = await supabase
+      .from('users')
+      .insert({
+        email,
+        password_hash: hash,
+        first_name: firstName || null,
+        last_name: lastName || null,
+        username: username || null,
+        phone: phone || null,
+        gender: gender || null,
+        profile_image: profileImage || null,
+        profile_image_url: profileImageUrl || null
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
 
     const user = {
-      id: result.insertId,
-      email,
-      firstName: firstName || null,
-      lastName: lastName || null,
-      username: username || null,
-      phone: phone || null,
-      gender: gender || null,
-      profileImage: profileImage || profileImageUrl || null,
+      id: data.id,
+      email: data.email,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      username: data.username,
+      phone: data.phone,
+      gender: data.gender,
+      profileImage: data.profile_image || data.profile_image_url || null,
     };
     const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: '7d' });
     res.status(201).json({ user, token });
@@ -59,28 +75,25 @@ router.post('/login', async (req, res) => {
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
   try {
-    const [rows] = await pool.execute(
-      'SELECT id, email, password_hash, first_name, last_name, username, phone, gender, address, postal_code, city, province, profile_image, profile_image_url, role FROM users WHERE email = ?',
-      [email]
-    );
-    if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+    const { data: userRow, error } = await supabase
+      .from('users')
+      .select('id, email, password_hash, first_name, last_name, username, phone, gender, address, postal_code, city, province, profile_image, profile_image_url, role')
+      .eq('email', email)
+      .single();
 
-    const userRow = rows[0];
+    if (error || !userRow) return res.status(401).json({ error: 'Invalid credentials' });
+
     const ok = await bcrypt.compare(password, userRow.password_hash);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
 
-    // If this request is an admin login attempt (Admin UI sends admin: true),
-    // require that the user either has role 'admin' OR matches the configured ADMIN_EMAIL.
-    // This is intentionally slightly permissive to make local/dev admin login easier
-    // (e.g. when seed created the user but role may not be present). In production
-    // ensure ADMIN_EMAIL and roles are configured correctly.
+    // Admin login check
     const isAdminLogin = req.body && req.body.admin;
     if (isAdminLogin) {
       const emailLower = (userRow.email || '').toLowerCase();
       const configuredLower = ADMIN_EMAIL.toLowerCase();
       const isAdminRole = userRow.role === 'admin';
       const emailMatches = emailLower === configuredLower;
-      // helpful debug logging for failed admin attempts
+      
       if (!isAdminRole && !emailMatches) {
         console.error('Admin login rejected - role or email mismatch', {
           userEmail: userRow.email,
@@ -114,7 +127,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Simple JWT verification middleware for protected routes
+// JWT verification middleware
 function verifyToken(req, res, next) {
   const auth = req.headers.authorization || '';
   const parts = auth.split(' ');
@@ -130,7 +143,7 @@ function verifyToken(req, res, next) {
   }
 }
 
-// Update profile (protected) - accepts fields and updates users table
+// Update profile
 router.put('/profile', verifyToken, async (req, res) => {
   const userId = req.user && req.user.id;
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
@@ -149,53 +162,56 @@ router.put('/profile', verifyToken, async (req, res) => {
     profileImageUrl: 'profile_image_url',
   };
 
-  const sets = [];
-  const params = [];
-  // Protect against huge inlined profile images
   if (req.body && req.body.profileImage && req.body.profileImage.length > MAX_PROFILE_IMAGE_LEN) {
     return res.status(400).json({ error: 'Profile image too large. Use a smaller image or provide a profileImageUrl instead.' });
   }
+
+  const updates = {};
   for (const key of Object.keys(req.body || {})) {
     if (allowedMap[key]) {
-      sets.push(`${allowedMap[key]} = ?`);
-      params.push(req.body[key]);
+      updates[allowedMap[key]] = req.body[key];
     }
   }
-  if (sets.length === 0) return res.status(400).json({ error: 'No valid fields to update' });
+  
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: 'No valid fields to update' });
 
   try {
-    const sql = `UPDATE users SET ${sets.join(', ')} WHERE id = ?`;
-    params.push(userId);
-    await pool.execute(sql, params);
+    const { error: updateError } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId);
 
-    const [rows] = await pool.execute(
-      'SELECT id, email, first_name, last_name, username, phone, gender, address, postal_code, city, province, profile_image, profile_image_url, role FROM users WHERE id = ?',
-      [userId]
-    );
-    if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    const r = rows[0];
-    const updated = {
-      id: r.id,
-      email: r.email,
-      firstName: r.first_name,
-      lastName: r.last_name,
-      username: r.username,
-      phone: r.phone,
-      gender: r.gender,
-      address: r.address,
-      postalCode: r.postal_code,
-      city: r.city,
-      province: r.province,
-      profileImage: r.profile_image || r.profile_image_url || null,
-      role: r.role,
+    if (updateError) throw updateError;
+
+    const { data: updated, error: fetchError } = await supabase
+      .from('users')
+      .select('id, email, first_name, last_name, username, phone, gender, address, postal_code, city, province, profile_image, profile_image_url, role')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError || !updated) return res.status(404).json({ error: 'User not found' });
+
+    const user = {
+      id: updated.id,
+      email: updated.email,
+      firstName: updated.first_name,
+      lastName: updated.last_name,
+      username: updated.username,
+      phone: updated.phone,
+      gender: updated.gender,
+      address: updated.address,
+      postalCode: updated.postal_code,
+      city: updated.city,
+      province: updated.province,
+      profileImage: updated.profile_image || updated.profile_image_url || null,
+      role: updated.role,
     };
-    res.json({ user: updated });
+    res.json({ user });
   } catch (err) {
     console.error('Profile update error', err);
     res.status(500).json({ error: 'Failed to update profile' });
   }
 });
 
-// expose verifyToken for other route modules (attach to router function object)
 module.exports = router;
 module.exports.verifyToken = verifyToken;

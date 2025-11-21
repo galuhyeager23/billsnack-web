@@ -17,7 +17,7 @@ const verifyToken = auth && auth.verifyToken ? auth.verifyToken : (req, res, nex
 router.post('/register-reseller', verifyToken, async (req, res) => {
   try {
     const user = req.user;
-    const db = req.app.locals.db;
+    const supabase = req.app.locals.supabase;
 
     // Check if user is reseller
     if (!user || user.role !== 'reseller') {
@@ -31,23 +31,45 @@ router.post('/register-reseller', verifyToken, async (req, res) => {
     }
 
     // Check if chat ID already registered
-    const [existing] = await db.query(
-      'SELECT id FROM telegram_users WHERE chat_id = ?',
-      [chatId]
-    );
+    const { data: existing, error: existingError } = await supabase
+      .from('telegram_users')
+      .select('id')
+      .eq('chat_id', chatId)
+      .single();
 
-    if (existing.length > 0) {
+    if (existingError && existingError.code !== 'PGRST116') {
+      throw existingError;
+    }
+
+    if (existing) {
       // Update existing registration
-      await db.query(
-        'UPDATE telegram_users SET user_id = ?, username = ?, first_name = ?, last_name = ?, verified_at = NOW() WHERE chat_id = ?',
-        [user.id, username, firstName, lastName, chatId]
-      );
+      const { error: updateError } = await supabase
+        .from('telegram_users')
+        .update({
+          user_id: user.id,
+          username,
+          first_name: firstName,
+          last_name: lastName,
+          verified_at: new Date().toISOString(),
+        })
+        .eq('chat_id', chatId);
+
+      if (updateError) throw updateError;
     } else {
       // Create new registration
-      await db.query(
-        'INSERT INTO telegram_users (chat_id, user_id, bot_type, username, first_name, last_name, verified_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-        [chatId, user.id, 'reseller', username, firstName, lastName]
-      );
+      const { error: insertError } = await supabase
+        .from('telegram_users')
+        .insert({
+          chat_id: chatId,
+          user_id: user.id,
+          bot_type: 'reseller',
+          username,
+          first_name: firstName,
+          last_name: lastName,
+          verified_at: new Date().toISOString(),
+        });
+
+      if (insertError) throw insertError;
     }
 
     res.json({
@@ -69,22 +91,28 @@ router.post('/register-reseller', verifyToken, async (req, res) => {
 router.get('/reseller-status', verifyToken, async (req, res) => {
   try {
     const user = req.user;
-    const db = req.app.locals.db;
+    const supabase = req.app.locals.supabase;
 
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const [rows] = await db.query(
-      'SELECT chat_id, bot_type, verified_at FROM telegram_users WHERE user_id = ? AND bot_type = "reseller"',
-      [user.id]
-    );
+    const { data: rows, error } = await supabase
+      .from('telegram_users')
+      .select('chat_id, bot_type, verified_at')
+      .eq('user_id', user.id)
+      .eq('bot_type', 'reseller')
+      .single();
 
-    const isRegistered = rows.length > 0;
+    if (error && error.code !== 'PGRST116') {
+      throw error;
+    }
+
+    const isRegistered = !!rows;
     res.json({
       isRegistered,
-      chatId: isRegistered ? rows[0].chat_id : null,
-      verifiedAt: isRegistered ? rows[0].verified_at : null,
+      chatId: isRegistered ? rows.chat_id : null,
+      verifiedAt: isRegistered ? rows.verified_at : null,
     });
   } catch (err) {
     console.error('Error checking Telegram status:', err);
@@ -100,16 +128,19 @@ router.get('/reseller-status', verifyToken, async (req, res) => {
 router.delete('/unregister-reseller', verifyToken, async (req, res) => {
   try {
     const user = req.user;
-    const db = req.app.locals.db;
+    const supabase = req.app.locals.supabase;
 
     if (!user) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    await db.query(
-      'DELETE FROM telegram_users WHERE user_id = ? AND bot_type = "reseller"',
-      [user.id]
-    );
+    const { error } = await supabase
+      .from('telegram_users')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('bot_type', 'reseller');
+
+    if (error) throw error;
 
     res.json({
       success: true,

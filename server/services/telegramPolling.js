@@ -1,13 +1,12 @@
 /* eslint-env node */
-const fetch = require('node-fetch');
 const TelegramCommandHandler = require('./telegramCommands');
 
 class TelegramPolling {
-  constructor(db, botToken) {
-    this.db = db;
+  constructor(supabase, botToken) {
+    this.supabase = supabase;
     this.botToken = botToken;
     this.apiUrl = `https://api.telegram.org/bot${botToken}`;
-    this.commandHandler = new TelegramCommandHandler(db, null);
+    this.commandHandler = new TelegramCommandHandler(supabase, null);
     this.offset = 0;
     this.isRunning = false;
   }

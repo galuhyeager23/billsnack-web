@@ -9,8 +9,8 @@ let commandHandler;
  * Initialize Telegram webhook
  * This should be called once when the server starts
  */
-async function initTelegramWebhook(db) {
-  commandHandler = new TelegramCommandHandler(db, null);
+async function initTelegramWebhook(supabase) {
+  commandHandler = new TelegramCommandHandler(supabase, null);
 }
 
 /**

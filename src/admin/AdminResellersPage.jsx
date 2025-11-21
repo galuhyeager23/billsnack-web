@@ -23,7 +23,7 @@ const AdminResellersPage = () => {
         // Map users to reseller-like shape for the table
         const mapped = data.map((u) => ({
           id: u.id,
-          name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || u.email,
+          name: u.store_name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username || u.email,
           email: u.email,
           phone: u.phone || '-',
           address: u.address || '-',

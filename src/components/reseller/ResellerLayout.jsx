@@ -97,6 +97,11 @@ const ResellerLayout = () => {
     navigate("/reseller/login");
   }, [navigate, user]);
 
+  // Force light mode for reseller area
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
   const handleLogout = () => {
     // Use AuthContext logout to clear token and user
     try {

@@ -2,7 +2,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db');
+const supabase = require('./supabase');
 const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const adminRouter = require('./routes/admin');
@@ -14,25 +14,22 @@ const telegramResellerRouter = require('./routes/telegramReseller');
 const telegramRegistrationRouter = require('./routes/telegramRegistration');
 const notificationsRouter = require('./routes/notifications');
 const resellerRouter = require('./routes/reseller');
+const shippingRouter = require('./routes/shipping');
 const TelegramPolling = require('./services/telegramPolling');
 const ResellerTelegramPolling = require('./services/resellerTelegramPolling');
 const NotificationService = require('./services/notificationService');
 
 const app = express();
-// allow larger JSON payloads because registration may include base64 image data URLs
 app.use(express.json({ limit: '10mb' }));
-// also accept urlencoded bodies for form submissions if needed
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// CORS: in development allow local frontend origins; in production use CORS_ORIGIN env
+// CORS configuration
 const isProd = process.env.NODE_ENV === 'production';
 if (isProd) {
   const allowedOrigin = process.env.CORS_ORIGIN || '';
   app.use(cors({ origin: allowedOrigin, credentials: true }));
 } else {
-  // during development be permissive for localhost variants
   app.use(cors({ origin: (origin, cb) => {
-    // allow non-browser requests (e.g., curl) with no origin
     if (!origin) return cb(null, true);
     const allowed = [
       'http://localhost:5173',
@@ -40,19 +37,18 @@ if (isProd) {
       'http://localhost:3000'
     ];
     if (allowed.includes(origin)) return cb(null, true);
-    // reflect origin to allow e.g. different hosts during dev
     return cb(null, true);
   }, credentials: true }));
 }
 
-// Store database connection in app.locals for routes to access
-app.locals.db = pool;
+// Store Supabase client in app.locals
+app.locals.supabase = supabase;
 
-// Initialize notification service
-const notificationService = new NotificationService(pool);
+// Initialize notification service with Supabase
+const notificationService = new NotificationService(supabase);
 app.locals.notificationService = notificationService;
 
-app.get('/', (req, res) => res.json({ ok: true, message: 'Billsnack API running' }));
+app.get('/', (req, res) => res.json({ ok: true, message: 'Billsnack API running with Supabase' }));
 
 app.use('/api/products', productsRouter);
 app.use('/api/auth', authRouter);
@@ -61,35 +57,36 @@ app.use('/api/orders', ordersRouter);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/resellers', resellerRouter);
-// serve uploaded files statically
+app.use('/api/shipping', shippingRouter);
 app.use('/uploads', express.static(require('path').join(__dirname, 'public', 'uploads')));
 app.use('/api/uploads', uploadsRouter);
 app.use('/api/telegram', telegramRouter);
 app.use('/api/telegram', telegramResellerRouter);
 app.use('/api/telegram', telegramRegistrationRouter);
 
-// health check route that verifies DB connection
+// Health check
 app.get('/health', async (req, res) => {
   try {
-    await pool.query('SELECT 1');
-    res.json({ ok: true, db: 'connected' });
+    const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+    if (error) throw error;
+    res.json({ ok: true, database: 'connected', provider: 'supabase' });
   } catch (err) {
     console.error('DB health error', err);
-    res.status(500).json({ ok: false, db: 'error', error: err.message });
+    res.status(500).json({ ok: false, database: 'error', error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  console.log(`Using Supabase at: ${process.env.SUPABASE_URL || 'default-url'}`);
 
-  // Initialize Telegram polling for development/localhost
+  // Initialize Telegram polling
   const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
   if (telegramBotToken) {
-    const telegramPolling = new TelegramPolling(pool, telegramBotToken);
+    const telegramPolling = new TelegramPolling(supabase, telegramBotToken);
     telegramPolling.startPolling();
 
-    // Graceful shutdown
     process.on('SIGINT', () => {
       console.log('\nShutting down gracefully...');
       telegramPolling.stopPolling();
@@ -99,13 +96,12 @@ app.listen(PORT, () => {
     console.warn('TELEGRAM_BOT_TOKEN not set, Telegram bot polling disabled');
   }
 
-  // Initialize Reseller Telegram polling for development/localhost
+  // Initialize Reseller Telegram polling
   const telegramResellerBotToken = process.env.TELEGRAM_RESELLER_BOT_TOKEN;
   if (telegramResellerBotToken) {
-    const resellerTelegramPolling = new ResellerTelegramPolling(pool);
+    const resellerTelegramPolling = new ResellerTelegramPolling(supabase);
     resellerTelegramPolling.start();
 
-    // Graceful shutdown
     process.on('SIGINT', () => {
       console.log('\nShutting down Reseller bot gracefully...');
       resellerTelegramPolling.stop();
@@ -115,20 +111,17 @@ app.listen(PORT, () => {
     console.warn('TELEGRAM_RESELLER_BOT_TOKEN not set, Reseller Telegram bot polling disabled');
   }
 
-  // Quick DB health check on startup to help debugging login/db issues
+  // Quick health check on startup
   (async () => {
     try {
-      // show effective DB connection config (mask password)
-      const host = process.env.DB_HOST || '127.0.0.1';
-      const port = process.env.DB_PORT || 3306;
-      const user = process.env.DB_USER || 'billsnack';
-      const db = process.env.DB_DATABASE || 'billsnack';
-      console.log(`Attempting DB connection to ${user}@${host}:${port}/${db} ...`);
-      await pool.query('SELECT 1');
-      console.log('DB connection OK');
+      console.log('Testing Supabase connection...');
+      const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+      if (error) throw error;
+      console.log('✓ Supabase connection OK');
     } catch (err) {
-      console.error('DB connection failed on startup — login will fail until DB is reachable.');
+      console.error('✗ Supabase connection failed on startup');
       console.error(err && err.message ? err.message : err);
+      console.error('Please check your SUPABASE_URL and SUPABASE_KEY in .env');
     }
   })();
 });

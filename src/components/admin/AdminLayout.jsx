@@ -140,6 +140,11 @@ const AdminLayout = () => {
     navigate("/perloginan");
   }, [navigate]);
 
+  // Force light mode inside admin area regardless of stored preference
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("adminAuth");
     navigate("/perloginan");

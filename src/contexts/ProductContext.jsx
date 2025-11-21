@@ -2,6 +2,7 @@
 // Fix: Populating ProductContext to manage and provide product data, as the file was empty.
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { PRODUCTS } from "../constants";
+import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from '../config/api';
 
 const ProductContext = createContext(undefined);
 
@@ -60,18 +61,28 @@ export const ProductProvider = ({ children }) => {
   // Admin functions that call the API and update local state
   const addProduct = async (productData) => {
     try {
-      // if admin token exists, use admin endpoint with Authorization
+      // Admin uses /api/products with admin token
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const url = adminToken ? `${API_BASE}/api/admin/products` : `${API_BASE}/api/products`;
+      const token = adminToken || (typeof window !== 'undefined' ? localStorage.getItem('billsnack_token') : null);
+      
       const headers = { 'Content-Type': 'application/json' };
-      if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
-      const res = await fetch(url, {
+      if (token) headers.Authorization = `Bearer ${token}`;
+      
+      console.log('Creating product:', productData);
+      const res = await fetch(`${API_BASE}/api/products`, {
         method: 'POST',
         headers,
         body: JSON.stringify(productData),
       });
-      if (!res.ok) throw new Error('Failed to create product');
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Create product failed:', res.status, errorText);
+        throw new Error(`Failed to create product: ${res.status}`);
+      }
+      
       const created = await res.json();
+      console.log('Product created:', created);
       // normalize created product
       const normCreated = {
         ...created,
@@ -91,16 +102,26 @@ export const ProductProvider = ({ children }) => {
   const updateProduct = async (updatedProduct) => {
     try {
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const url = adminToken ? `${API_BASE}/api/admin/products/${updatedProduct.id}` : `${API_BASE}/api/products/${updatedProduct.id}`;
+      const token = adminToken || (typeof window !== 'undefined' ? localStorage.getItem('billsnack_token') : null);
+      
       const headers = { 'Content-Type': 'application/json' };
-      if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
-      const res = await fetch(url, {
+      if (token) headers.Authorization = `Bearer ${token}`;
+      
+      console.log('Updating product:', updatedProduct);
+      const res = await fetch(`${API_BASE}/api/products/${updatedProduct.id}`, {
         method: 'PUT',
         headers,
         body: JSON.stringify(updatedProduct),
       });
-      if (!res.ok) throw new Error('Failed to update product');
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Update product failed:', res.status, errorText);
+        throw new Error(`Failed to update product: ${res.status}`);
+      }
+      
       const data = await res.json();
+      console.log('Product updated:', data);
       // Preserve any client-only fields (e.g., inStock) that the server doesn't echo back.
       const merged = Object.assign({}, data, {});
       if (typeof updatedProduct.inStock !== 'undefined') merged.inStock = updatedProduct.inStock;
@@ -124,11 +145,18 @@ export const ProductProvider = ({ children }) => {
   const deleteProduct = async (id) => {
     try {
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-      const url = adminToken ? `${API_BASE}/api/admin/products/${id}` : `${API_BASE}/api/products/${id}`;
+      const token = adminToken || (typeof window !== 'undefined' ? localStorage.getItem('billsnack_token') : null);
+      
       const headers = {};
-      if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
-      const res = await fetch(url, { method: 'DELETE', headers });
-      if (!res.ok) throw new Error('Failed to delete product');
+      if (token) headers.Authorization = `Bearer ${token}`;
+      
+      const res = await fetch(`${API_BASE}/api/products/${id}`, { method: 'DELETE', headers });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Delete product failed:', res.status, errorText);
+        throw new Error(`Failed to delete product: ${res.status}`);
+      }
       setProducts((prev) => prev.filter((p) => Number(p.id) !== Number(id)));
       return true;
     } catch (err) {
@@ -139,19 +167,44 @@ export const ProductProvider = ({ children }) => {
 
   const uploadImages = async (files) => {
     if (!files || files.length === 0) return [];
-    const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
-    const fd = new FormData();
-    for (const f of files) fd.append('files', f);
-    const headers = {};
-    if (adminToken) headers.Authorization = `Bearer ${adminToken}`;
-    const res = await fetch(`${API_BASE}/api/uploads`, { method: 'POST', body: fd, headers });
-    if (!res.ok) throw new Error('Image upload failed');
-    const data = await res.json();
-    // prefer structured meta if provided (files_meta contains { original, thumb })
-    if (data.files_meta && Array.isArray(data.files_meta)) return data.files_meta;
-    // otherwise return array of objects for consistency
-    if (data.files && Array.isArray(data.files)) return data.files.map((u) => ({ original: u, thumb: null }));
-    return [];
+    
+    try {
+      const fd = new FormData();
+      for (const f of files) {
+        fd.append('files', f);
+      }
+      
+      // Upload endpoint doesn't require auth, but we'll send token if available
+      const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+      const token = adminToken || (typeof window !== 'undefined' ? localStorage.getItem('billsnack_token') : null);
+      
+      const headers = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      
+      const res = await fetch(`${API_BASE}/api/uploads`, { 
+        method: 'POST', 
+        body: fd, 
+        headers 
+      });
+      
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Upload failed:', res.status, errorText);
+        throw new Error(`Image upload failed: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      console.log('Upload response:', data);
+      
+      // prefer structured meta if provided (files_meta contains { original, thumb })
+      if (data.files_meta && Array.isArray(data.files_meta)) return data.files_meta;
+      // otherwise return array of objects for consistency
+      if (data.files && Array.isArray(data.files)) return data.files.map((u) => ({ original: u, thumb: u }));
+      return [];
+    } catch (err) {
+      console.error('Upload images error:', err);
+      throw err;
+    }
   };
 
   return (

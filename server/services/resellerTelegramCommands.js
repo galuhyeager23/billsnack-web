@@ -1,8 +1,8 @@
 /* eslint-env node */
 
 class ResellerTelegramCommandHandler {
-  constructor(db, telegramService) {
-    this.db = db;
+  constructor(supabase, telegramService) {
+    this.supabase = supabase;
     this.telegramService = telegramService;
   }
 
@@ -13,11 +13,15 @@ class ResellerTelegramCommandHandler {
    */
   async getResellerIdFromChatId(chatId) {
     try {
-      const [rows] = await this.db.query(
-        'SELECT user_id FROM telegram_users WHERE chat_id = ? AND bot_type = "reseller"',
-        [chatId]
-      );
-      return rows.length > 0 ? rows[0].user_id : null;
+      const { data, error } = await this.supabase
+        .from('telegram_users')
+        .select('user_id')
+        .eq('chat_id', chatId)
+        .eq('bot_type', 'reseller')
+        .single();
+
+      if (error) return null;
+      return data?.user_id || null;
     } catch (err) {
       console.error('Error getting reseller ID:', err);
       return null;
@@ -31,11 +35,15 @@ class ResellerTelegramCommandHandler {
    */
   async isRegisteredReseller(userId) {
     try {
-      const [rows] = await this.db.query(
-        'SELECT id FROM users WHERE id = ? AND role = "reseller"',
-        [userId]
-      );
-      return rows.length > 0;
+      const { data, error } = await this.supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .eq('role', 'reseller')
+        .single();
+
+      if (error) return false;
+      return !!data;
     } catch (err) {
       console.error('Error checking reseller status:', err);
       return false;
@@ -49,9 +57,9 @@ class ResellerTelegramCommandHandler {
    * @returns {Promise<void>}
    */
   async handleMessage(message, chatId) {
-  const text = message.text || '';
-  const command = text.split(' ')[0].toLowerCase();
-  const _args = text.split(' ').slice(1).join(' ');
+    const text = message.text || '';
+    const command = text.split(' ')[0].toLowerCase();
+    const _args = text.split(' ').slice(1).join(' ');
 
     try {
       switch (command) {
@@ -162,12 +170,16 @@ Saya adalah bot untuk mengelola produk dan penjualan Anda di Bilsnack.
     }
 
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, stock, category, in_stock FROM products WHERE reseller_id = ? ORDER BY created_at DESC LIMIT 20',
-        [resellerId]
-      );
+      const { data: rows, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, stock, category, in_stock')
+        .eq('reseller_id', resellerId)
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-      if (rows.length === 0) {
+      if (error) throw error;
+
+      if (!rows || rows.length === 0) {
         await this.sendMessage(chatId, '❌ Anda belum memiliki produk. Upload produk di dashboard terlebih dahulu.');
         return;
       }
@@ -201,12 +213,15 @@ Saya adalah bot untuk mengelola produk dan penjualan Anda di Bilsnack.
     }
 
     try {
-      const [rows] = await this.db.query(
-        'SELECT name, stock, in_stock FROM products WHERE reseller_id = ? AND (stock > 0 OR in_stock = 1)',
-        [resellerId]
-      );
+      const { data: rows, error } = await this.supabase
+        .from('products')
+        .select('name, stock, in_stock')
+        .eq('reseller_id', resellerId)
+        .or('stock.gt.0,in_stock.eq.true');
 
-      if (rows.length === 0) {
+      if (error) throw error;
+
+      if (!rows || rows.length === 0) {
         await this.sendMessage(chatId, '⚠️ Semua produk Anda habis atau tidak aktif.');
         return;
       }
@@ -248,22 +263,41 @@ Saya adalah bot untuk mengelola produk dan penjualan Anda di Bilsnack.
     }
 
     try {
-      // Query orders containing reseller's products
-      const [orders] = await this.db.query(`
-        SELECT COUNT(DISTINCT o.id) as total_orders, SUM(o.total_price) as total_revenue
-        FROM orders o
-        JOIN order_items oi ON oi.order_id = o.id
-        JOIN products p ON p.id = oi.product_id
-        WHERE p.reseller_id = ? AND o.status = "completed"
-      `, [resellerId]);
+      // Get orders with reseller's products
+      const { data: orderItems, error } = await this.supabase
+        .from('order_items')
+        .select(`
+          quantity,
+          price_at_purchase,
+          orders!inner (
+            id,
+            status,
+            total_price
+          ),
+          products!inner (
+            reseller_id
+          )
+        `)
+        .eq('products.reseller_id', resellerId)
+        .eq('orders.status', 'completed');
 
-      const totalOrders = orders[0]?.total_orders || 0;
-      const totalRevenue = orders[0]?.total_revenue || 0;
+      if (error) throw error;
+
+      // Calculate totals
+      const uniqueOrders = new Set();
+      let totalRevenue = 0;
+
+      if (orderItems && orderItems.length > 0) {
+        orderItems.forEach(item => {
+          uniqueOrders.add(item.orders.id);
+          totalRevenue += item.quantity * item.price_at_purchase;
+        });
+      }
 
       const message = `
 <b>💰 Informasi Penjualan Anda</b>
 
-📊 <b>Total Penjualan:</b> ${totalOrders} order
+📊 <b>Total Penjualan:</b> ${uniqueOrders.size} order
 💵 <b>Total Revenue:</b> Rp${Number(totalRevenue).toLocaleString('id-ID')}
 📈 <b>Rating Toko:</b> ⭐ 4.5 (Sedang dikembangkan)
 👥 <b>Total Pembeli:</b> Data sedang dikumpulkan
@@ -289,24 +323,42 @@ Saya adalah bot untuk mengelola produk dan penjualan Anda di Bilsnack.
     }
 
     try {
-      // Query orders containing this reseller's products
-      const [rows] = await this.db.query(`
-        SELECT DISTINCT o.id, o.total_price, o.status, o.created_at
-        FROM orders o
-        JOIN order_items oi ON oi.order_id = o.id
-        JOIN products p ON p.id = oi.product_id
-        WHERE p.reseller_id = ?
-        ORDER BY o.created_at DESC
-        LIMIT 5
-      `, [resellerId]);
+      // Get orders containing reseller's products
+      const { data: orderItems, error } = await this.supabase
+        .from('order_items')
+        .select(`
+          orders!inner (
+            id,
+            total_price,
+            status,
+            created_at
+          ),
+          products!inner (
+            reseller_id
+          )
+        `)
+        .eq('products.reseller_id', resellerId)
+        .order('orders(created_at)', { ascending: false })
+        .limit(5);
 
-      if (rows.length === 0) {
+      if (error) throw error;
+
+      if (!orderItems || orderItems.length === 0) {
         await this.sendMessage(chatId, '📭 Belum ada pesanan masuk untuk produk Anda.');
         return;
       }
 
+      // Deduplicate orders
+      const uniqueOrders = new Map();
+      orderItems.forEach(item => {
+        const order = item.orders;
+        if (!uniqueOrders.has(order.id)) {
+          uniqueOrders.set(order.id, order);
+        }
+      });
+
       let message = '<b>📋 Pesanan Terbaru untuk Produk Anda</b>\n\n';
-      rows.forEach((order, index) => {
+      Array.from(uniqueOrders.values()).slice(0, 5).forEach((order, index) => {
         const date = new Date(order.created_at).toLocaleDateString('id-ID');
         const statusEmoji = order.status === 'completed' ? '✅' : order.status === 'pending' ? '⏳' : '❌';
         message += `${index + 1}. Order #${order.id}\n`;
@@ -370,17 +422,19 @@ Saya adalah bot untuk mengelola produk dan penjualan Anda di Bilsnack.
     }
 
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, stock, category, in_stock FROM products WHERE reseller_id = ? AND name LIKE ? LIMIT 1',
-        [resellerId, `%${productName}%`]
-      );
+      const { data: product, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, stock, category, in_stock')
+        .eq('reseller_id', resellerId)
+        .ilike('name', `%${productName}%`)
+        .limit(1)
+        .single();
 
-      if (rows.length === 0) {
+      if (error || !product) {
         await this.sendMessage(chatId, `❌ Produk "${productName}" tidak ditemukan di katalog Anda.`);
         return;
       }
 
-      const product = rows[0];
       const statusEmoji = product.in_stock ? '✅' : '❌';
       const message = `
 <b>🔍 Hasil Pencarian</b>

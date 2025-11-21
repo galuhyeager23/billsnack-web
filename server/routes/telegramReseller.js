@@ -9,8 +9,8 @@ let resellerCommandHandler;
  * Initialize Reseller Telegram webhook
  * This should be called once when the server starts
  */
-async function initResellerTelegramWebhook(db) {
-  resellerCommandHandler = new ResellerTelegramCommandHandler(db, null);
+async function initResellerTelegramWebhook(supabase) {
+  resellerCommandHandler = new ResellerTelegramCommandHandler(supabase, null);
 }
 
 /**

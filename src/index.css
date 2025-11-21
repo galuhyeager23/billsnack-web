@@ -1,56 +1,145 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Color system with CSS variables to avoid clash in dark mode */
+:root {
+  /* Slightly darker neutral palette (less bright / less gaudy) */
+  --bg: 243 244 246; /* slate-100 */
+  --bg-muted: 234 236 239; /* custom neutral */
+  --surface: 238 240 243; /* muted surface */
+  --surface-alt: 228 231 235; /* alt surface for sections */
+  --border: 207 213 221; /* slate-300 */
+  --text: 31 41 55; /* slate-800 */
+  --text-muted: 88 102 126; /* darker muted */
+  --accent: 202 138 4; /* amber-700 (toned down gold) */
+  --accent-hover: 180 83 9; /* amber-800 */
+  --accent-fg: 255 255 255;
+}
+.dark {
+  --bg: 15 16 18; /* slightly deeper base */
+  --bg-muted: 26 28 32; /* muted layer */
+  --surface: 32 34 38; /* surface */
+  --surface-alt: 40 42 46; /* elevated surface */
+  --border: 66 70 74; /* subtle border */
+  --text: 232 234 237; /* primary text */
+  --text-muted: 156 167 185; /* muted text */
+  --accent: 217 156 27; /* amber-500 toned for dark */
+  --accent-hover: 202 138 4; /* amber-700 for hover */
+  --accent-fg: 255 255 255; /* light foreground on accent */
+}
 
 @layer base {
-  * {
-    @apply m-0 p-0 box-border;
-  }
-
-  html, body {
-    @apply h-full w-full;
-  }
-
+  * { @apply box-border; }
+  html { @apply scroll-smooth; }
   body {
-    @apply font-sans antialiased text-gray-900;
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background: linear-gradient(120deg, rgb(var(--bg)) 0%, rgb(var(--surface)) 55%, rgb(var(--surface-alt)) 100%);
+    color: rgb(var(--text));
   }
-
-  a {
-    @apply text-blue-600 hover:text-blue-700 transition-colors;
+  .dark body {
+    background: linear-gradient(160deg, rgb(var(--bg)) 0%, rgb(var(--bg-muted)) 60%, rgb(var(--surface)) 100%);
+    color: rgb(var(--text));
   }
-
-  button {
-    @apply transition-colors duration-200;
-  }
-
-  input, textarea, select {
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500;
-  }
+  a { @apply underline-offset-2 transition-colors; color: rgb(var(--accent)); }
+  a:hover { color: rgb(var(--accent-hover)); }
+  h1,h2,h3,h4,h5 { font-family: theme('fontFamily.sans'); letter-spacing: -0.015em; color: rgb(var(--text)); }
+  .dark h1,.dark h2,.dark h3,.dark h4,.dark h5 { color: rgb(var(--text)); }
+  button { @apply transition-all duration-200 active:scale-[.97]; }
+  input, textarea, select { @apply outline-none ring-0 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400; background-color: rgb(var(--surface)); color: rgb(var(--text)); border: 1px solid rgb(var(--border)); }
+  ::selection { background: rgb(var(--accent)); color: rgb(var(--accent-fg)); }
 }
 
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+html.dark ::-webkit-scrollbar-thumb { background: #374151; }
+html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* Components */
 @layer components {
+  .container-custom { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
   .btn-primary {
-    @apply bg-black text-white font-semibold py-3 px-8 rounded-full hover:bg-gray-800 transition-colors;
+    @apply relative inline-flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background: linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--accent-hover)) 100%);
+    color: rgb(var(--accent-fg));
   }
+  .btn-primary:hover { filter: brightness(1.05); }
+  .dark .btn-primary { box-shadow: 0 4px 16px -4px rgba(var(--accent),0.25); }
+  .btn-primary:focus { --tw-ring-color: rgb(var(--accent)); --tw-ring-offset-color: rgb(var(--surface)); }
 
   .btn-secondary {
-    @apply bg-gray-200 text-gray-800 font-semibold py-3 px-8 rounded-full hover:bg-gray-300 transition-colors;
+    @apply inline-flex items-center justify-center gap-2 font-medium py-3 px-6 rounded-xl shadow-sm border focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background-color: rgb(var(--surface));
+    color: rgb(var(--text));
+    border-color: rgb(var(--border));
   }
+  .btn-secondary:hover { background-color: rgb(var(--surface-alt)); }
+  .dark .btn-secondary { box-shadow: 0 2px 6px -2px rgba(0,0,0,0.4); }
 
-  .container-custom {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+  .glass {
+    backdrop-filter: blur(6px);
+    background: rgba(var(--surface),0.75);
+    border: 1px solid rgba(var(--border),0.7);
   }
+  .dark .glass { background: rgba(var(--surface),0.55); }
+
+  .card { @apply rounded-2xl transition-shadow; background-color: rgb(var(--surface)); border: 1px solid rgb(var(--border)); }
+  .card:hover { box-shadow: 0 6px 20px -6px rgba(0,0,0,0.15); }
+  .dark .card { background-color: rgb(var(--surface)); border-color: rgba(var(--border),0.9); }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
+    background-color: rgb(var(--accent)/0.15);
+    color: rgb(var(--accent-hover));
+  }
+  .dark .badge { background-color: rgb(var(--accent)/0.25); color: rgb(var(--accent)); }
+  /* Unified icon button style for header/profile/cart/theme */
+  .icon-btn {
+    @apply w-10 h-10 rounded-full flex items-center justify-center border transition shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400;
+    background-color: rgb(var(--surface-alt));
+    border-color: rgb(var(--border));
+    color: rgb(var(--text-muted));
+  }
+  .icon-btn:hover {
+    background-color: rgb(var(--surface));
+    color: rgb(var(--accent));
+    border-color: rgb(var(--accent));
+    box-shadow: 0 0 0 2px rgba(var(--accent),0.35), 0 0 0 4px rgba(var(--accent),0.15);
+  }
+  .dark .icon-btn { box-shadow: 0 0 0 1px rgba(var(--border),0.3); }
+  .dark .icon-btn:hover { box-shadow: 0 0 0 2px rgba(var(--accent),0.55), 0 0 0 6px rgba(var(--accent),0.25); }
+  .icon-btn:hover .user-avatar-inner { border-color: rgb(var(--accent)); }
+  .icon-btn:hover .user-avatar-inner img { outline: 2px solid rgb(var(--accent)); outline-offset: 0; }
+  .icon-btn svg { stroke: currentColor; }
+  .icon-btn:hover svg { stroke: rgb(var(--accent)); }
 }
 
-
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+/* Utility overrides */
+@layer utilities {
+  /* Color utility classes (light/dark aware via CSS variables) */
+  /* Usage guide:
+     - Use .bg-surface for main card backgrounds.
+     - Use .bg-surface-alt for subtle contrast sections.
+     - Use .text-muted for secondary text.
+     - Use .border-base for neutral borders (instead of border-gray-*).
+     - Use .accent-bg / .accent-text for call-to-action elements.
+     Keep existing error colors (red) as-is for clarity. */
+  .bg-surface { background-color: rgb(var(--surface)); }
+  .bg-surface-alt { background-color: rgb(var(--surface-alt)); }
+  .text-muted { color: rgb(var(--text-muted)); }
+  .border-base { border-color: rgb(var(--border)); }
+  .accent-bg { background-color: rgb(var(--accent)); color: rgb(var(--accent-fg)); }
+  .accent-bg:hover { background-color: rgb(var(--accent-hover)); }
+  .accent-text { color: rgb(var(--accent)); }
+  .accent-text:hover { color: rgb(var(--accent-hover)); }
+  .text-gradient { background: linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--accent-hover)) 100%); -webkit-background-clip: text; color: transparent; }
 }
+
+/* Dark mode transitions */
+html.dark body, body { transition: background 400ms, color 250ms; }
+

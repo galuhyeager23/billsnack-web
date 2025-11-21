@@ -1,8 +1,8 @@
 /* eslint-env node */
 
 class NotificationService {
-  constructor(db) {
-    this.db = db;
+  constructor(supabase) {
+    this.supabase = supabase;
   }
 
   /**
@@ -14,44 +14,48 @@ class NotificationService {
   async notifyOrderPurchase(orderId, orderItems) {
     try {
       // Get order details
-      const [orders] = await this.db.query(
-        'SELECT id, user_id, total_price, created_at FROM orders WHERE id = ?',
-        [orderId]
-      );
+      const { data: orders, error: orderError } = await this.supabase
+        .from('orders')
+        .select('id, user_id, total_price, created_at')
+        .eq('id', orderId)
+        .single();
 
-      if (orders.length === 0) {
-        console.warn(`Order ${orderId} not found`);
+      if (orderError) {
+        console.warn(`Order ${orderId} not found:`, orderError);
         return;
       }
 
-  const order = orders[0];
-  // buyerUserId not used currently
-  const _buyerUserId = order.user_id;
+      const order = orders;
+      // buyerUserId not used currently
+      const _buyerUserId = order.user_id;
 
       // For each product in order, notify the reseller
       if (orderItems && orderItems.length > 0) {
         for (const item of orderItems) {
           // Get product details
-          const [products] = await this.db.query(
-            'SELECT id, name, price, reseller_id FROM products WHERE id = ?',
-            [item.product_id]
-          );
+          const { data: product, error: productError } = await this.supabase
+            .from('products')
+            .select('id, name, price, reseller_id')
+            .eq('id', item.product_id)
+            .single();
 
-          if (products.length > 0) {
-            const product = products[0];
-            const resellerId = product.reseller_id;
+          if (productError) {
+            console.warn(`Product ${item.product_id} not found`);
+            continue;
+          }
 
-            // Notify reseller if product has reseller_id (not admin products)
-            if (resellerId) {
-              await this.createNotification(
-                resellerId,
-                'order_purchase',
-                `📦 Produk ${product.name} dibeli!`,
-                `Pesanan baru! ${item.quantity} x ${product.name} (Rp${Number(product.price).toLocaleString('id-ID')})`,
-                orderId,
-                product.id
-              );
-            }
+          const resellerId = product.reseller_id;
+
+          // Notify reseller if product has reseller_id (not admin products)
+          if (resellerId) {
+            await this.createNotification(
+              resellerId,
+              'order_purchase',
+              `📦 Produk ${product.name} dibeli!`,
+              `Pesanan baru! ${item.quantity} x ${product.name} (Rp${Number(product.price).toLocaleString('id-ID')})`,
+              orderId,
+              product.id
+            );
           }
         }
       }
@@ -87,23 +91,39 @@ class NotificationService {
   async createNotification(userId, type, title, message, orderId, productId, recipientType = 'reseller') {
     try {
       if (recipientType === 'admin') {
-        // Create notification for all admin users
-        const [admins] = await this.db.query(
-          'SELECT id FROM users WHERE role = "admin"'
-        );
+        // Get all admin users
+        const { data: admins, error: adminError } = await this.supabase
+          .from('users')
+          .select('id')
+          .eq('role', 'admin');
 
+        if (adminError) throw adminError;
+
+        // Create notification for all admin users
         for (const admin of admins) {
-          await this.db.query(
-            'INSERT INTO notifications (user_id, type, title, message, order_id, product_id) VALUES (?, ?, ?, ?, ?, ?)',
-            [admin.id, type, title, message, orderId, productId]
-          );
+          await this.supabase
+            .from('notifications')
+            .insert({
+              user_id: admin.id,
+              type,
+              title,
+              message,
+              order_id: orderId,
+              product_id: productId,
+            });
         }
       } else if (userId) {
         // Create notification for specific user
-        await this.db.query(
-          'INSERT INTO notifications (user_id, type, title, message, order_id, product_id) VALUES (?, ?, ?, ?, ?, ?)',
-          [userId, type, title, message, orderId, productId]
-        );
+        await this.supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            type,
+            title,
+            message,
+            order_id: orderId,
+            product_id: productId,
+          });
       }
     } catch (err) {
       console.error('Error creating notification:', err);
@@ -118,11 +138,16 @@ class NotificationService {
    */
   async getUnreadNotifications(userId, limit = 10) {
     try {
-      const [rows] = await this.db.query(
-        'SELECT * FROM notifications WHERE user_id = ? AND is_read = 0 ORDER BY created_at DESC LIMIT ?',
-        [userId, limit]
-      );
-      return rows || [];
+      const { data, error } = await this.supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_read', false)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+      return data || [];
     } catch (err) {
       console.error('Error getting unread notifications:', err);
       return [];
@@ -138,19 +163,25 @@ class NotificationService {
    */
   async getNotifications(userId, offset = 0, limit = 20) {
     try {
-      const [notifications] = await this.db.query(
-        'SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
-        [userId, limit, offset]
-      );
+      const { data: notifications, error: notifError } = await this.supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
-      const [countResult] = await this.db.query(
-        'SELECT COUNT(*) as total FROM notifications WHERE user_id = ?',
-        [userId]
-      );
+      if (notifError) throw notifError;
+
+      const { count, error: countError } = await this.supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+      if (countError) throw countError;
 
       return {
         notifications: notifications || [],
-        total: countResult[0]?.total || 0,
+        total: count || 0,
       };
     } catch (err) {
       console.error('Error getting notifications:', err);
@@ -165,10 +196,15 @@ class NotificationService {
    */
   async markAsRead(notificationId) {
     try {
-      await this.db.query(
-        'UPDATE notifications SET is_read = 1, read_at = NOW() WHERE id = ?',
-        [notificationId]
-      );
+      const { error } = await this.supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+        })
+        .eq('id', notificationId);
+
+      if (error) throw error;
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
@@ -181,10 +217,16 @@ class NotificationService {
    */
   async markAllAsRead(userId) {
     try {
-      await this.db.query(
-        'UPDATE notifications SET is_read = 1, read_at = NOW() WHERE user_id = ? AND is_read = 0',
-        [userId]
-      );
+      const { error } = await this.supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+          read_at: new Date().toISOString(),
+        })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+      if (error) throw error;
     } catch (err) {
       console.error('Error marking all notifications as read:', err);
     }
@@ -197,11 +239,14 @@ class NotificationService {
    */
   async countUnread(userId) {
     try {
-      const [result] = await this.db.query(
-        'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0',
-        [userId]
-      );
-      return result[0]?.count || 0;
+      const { count, error } = await this.supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
+      if (error) throw error;
+      return count || 0;
     } catch (err) {
       console.error('Error counting unread notifications:', err);
       return 0;
@@ -215,11 +260,16 @@ class NotificationService {
    */
   async deleteOldNotifications(daysOld = 30) {
     try {
-      const result = await this.db.query(
-        'DELETE FROM notifications WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)',
-        [daysOld]
-      );
-      console.log(`Deleted ${result[0]?.affectedRows || 0} old notifications`);
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+      const { error } = await this.supabase
+        .from('notifications')
+        .delete()
+        .lt('created_at', cutoffDate.toISOString());
+
+      if (error) throw error;
+      console.log(`Deleted old notifications older than ${daysOld} days`);
     } catch (err) {
       console.error('Error deleting old notifications:', err);
     }
@@ -234,17 +284,19 @@ class NotificationService {
   async sendTelegramNotification(userId, message) {
     try {
       // Get chat_id from telegram_users table
-      const [telegramUsers] = await this.db.query(
-        'SELECT chat_id FROM telegram_users WHERE user_id = ? AND bot_type = "reseller" LIMIT 1',
-        [userId]
-      );
+      const { data: telegramUser, error } = await this.supabase
+        .from('telegram_users')
+        .select('chat_id')
+        .eq('user_id', userId)
+        .eq('bot_type', 'reseller')
+        .single();
 
-      if (telegramUsers.length === 0) {
+      if (error || !telegramUser) {
         console.warn(`No Telegram chat found for user ${userId}`);
         return false;
       }
 
-      const chatId = telegramUsers[0].chat_id;
+      const chatId = telegramUser.chat_id;
       const botToken = process.env.TELEGRAM_RESELLER_BOT_TOKEN;
 
       if (!botToken) {

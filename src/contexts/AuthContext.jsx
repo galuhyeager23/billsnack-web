@@ -1,9 +1,8 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from "react";
+import { API_ENDPOINTS, apiPost, apiPut } from '../config/api';
 
 const AuthContext = createContext(undefined);
-
-const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
@@ -40,53 +39,31 @@ export const AuthProvider = ({ children }) => {
     if (profileImage) body.profileImage = profileImage;
     if (profileImageUrl) body.profileImageUrl = profileImageUrl;
 
-    let res;
     try {
-      res = await fetch(`${API_BASE}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-    } catch (networkErr) {
-      console.error('Network error when calling register:', networkErr);
-      throw new Error('Network error: could not reach backend. Pastikan server backend berjalan.');
+      const data = await apiPost(API_ENDPOINTS.AUTH.REGISTER, body);
+      setToken(data.token);
+      const userObj = data.user || {};
+      if (userObj.firstName || userObj.lastName) userObj.name = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
+      setUser(userObj);
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Registration failed. Pastikan server backend berjalan.');
     }
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Registration failed');
-    }
-    const data = await res.json();
-    setToken(data.token);
-    const userObj = data.user || {};
-    if (userObj.firstName || userObj.lastName) userObj.name = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
-    setUser(userObj);
-    return data;
   };
 
   const login = async ({ email, password }) => {
-    let res;
     try {
-      res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-    } catch (networkErr) {
-      console.error('Network error when calling login:', networkErr);
-      throw new Error('Network error: could not reach backend. Pastikan server backend berjalan.');
+      const data = await apiPost(API_ENDPOINTS.AUTH.LOGIN, { email, password });
+      setToken(data.token);
+      const userObj = data.user || {};
+      if (userObj.firstName || userObj.lastName) userObj.name = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
+      setUser(userObj);
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw new Error(error.message || 'Login failed. Pastikan server backend berjalan.');
     }
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Login failed');
-    }
-    const data = await res.json();
-    setToken(data.token);
-    const userObj = data.user || {};
-    if (userObj.firstName || userObj.lastName) userObj.name = `${userObj.firstName || ''} ${userObj.lastName || ''}`.trim();
-    setUser(userObj);
-    return data;
   };
 
   const logout = () => {
@@ -106,37 +83,16 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       (async () => {
         try {
-          const res = await fetch(`${API_BASE}/api/auth/profile`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(userData),
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const updated = data.user;
-            // derive display name
-            if (updated.firstName || updated.lastName) {
-              updated.name = `${updated.firstName || ''} ${updated.lastName || ''}`.trim();
-            }
-            setUser(updated);
-          } else {
-            const err = await res.json().catch(() => ({}));
-            console.error('Failed to update profile on server', err);
-            // fallback: update locally
-            setUser(prev => {
-              if (!prev) return null;
-              const updatedLocal = { ...prev, ...userData };
-              if (userData.firstName || userData.lastName) {
-                updatedLocal.name = `${updatedLocal.firstName || ''} ${updatedLocal.lastName || ''}`.trim();
-              }
-              return updatedLocal;
-            });
+          const data = await apiPut(API_ENDPOINTS.AUTH.PROFILE, userData, token);
+          const updated = data.user;
+          // derive display name
+          if (updated.firstName || updated.lastName) {
+            updated.name = `${updated.firstName || ''} ${updated.lastName || ''}`.trim();
           }
+          setUser(updated);
         } catch (e) {
           console.error('Profile update error', e);
+          // fallback: update locally
           setUser(prev => {
             if (!prev) return null;
             const updatedLocal = { ...prev, ...userData };

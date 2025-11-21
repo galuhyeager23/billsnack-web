@@ -84,7 +84,7 @@ const ProfilePage = () => {
   if (!user) {
     return (
       <div className="px-8 sm:px-12 lg:px-16 py-20 text-center">
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-3xl font-bold text-gradient">
           Silakan masuk untuk melihat profil Anda
         </h1>
       </div>
@@ -92,23 +92,23 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="px-8 sm:px-12 lg:px-16 py-12">
+    <div className="px-8 sm:px-12 lg:px-16 py-12 bg-bg">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Profil Saya</h1>
+        <h1 className="text-3xl font-bold mb-8 text-gradient">Profil Saya</h1>
 
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-lg shadow-md space-y-6">
+        <form onSubmit={handleSubmit} className="bg-surface-alt border border-base p-8 rounded-lg shadow-md space-y-6">
           <div className="flex items-center gap-6">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+              <div className="w-24 h-24 rounded-full overflow-hidden bg-surface-alt border border-base flex items-center justify-center">
                 {avatarPreview ? (
                   <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
                 ) : (
-                  <div className="text-gray-400">No Image</div>
+                  <div className="text-muted">No Image</div>
                 )}
               </div>
-              <label className="absolute -bottom-2 right-0 bg-white rounded-full p-1 shadow-md">
+              <label className="absolute -bottom-2 right-0 bg-surface rounded-full p-1 shadow-md border border-base cursor-pointer">
                 <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
@@ -117,15 +117,15 @@ const ProfilePage = () => {
             </div>
             <div>
               <div className="flex gap-2">
-                <button type="button" onClick={() => fileInputRef.current && fileInputRef.current.click()} className="px-3 py-2 bg-yellow-500 text-white rounded-md">Unggah</button>
-                <button type="button" onClick={handleRemoveAvatar} className="px-3 py-2 border rounded-md">Hapus</button>
+                <button type="button" onClick={() => fileInputRef.current && fileInputRef.current.click()} className="px-3 py-2 btn-primary rounded-md">Unggah</button>
+                <button type="button" onClick={handleRemoveAvatar} className="px-3 py-2 border border-base rounded-md bg-surface hover:bg-surface-alt transition-colors text-muted">Hapus</button>
               </div>
-              <p className="text-sm text-gray-500 mt-2">Format: JPG/PNG, max 2MB</p>
+              <p className="text-sm text-muted mt-2">Format: JPG/PNG, max 2MB</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted mb-2">
                 Nama Depan
               </label>
               <input
@@ -133,12 +133,12 @@ const ProfilePage = () => {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-muted mb-2">
                 Nama Belakang
               </label>
               <input
@@ -146,60 +146,52 @@ const ProfilePage = () => {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
                 required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Username
-            </label>
+            <label className="block text-sm font-medium text-muted mb-2">Username</label>
             <input
               type="text"
               name="username"
               value={formData.username}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
               placeholder="Masukkan username Anda"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alamat Email
-            </label>
+            <label className="block text-sm font-medium text-muted mb-2">Alamat Email</label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nomor Telepon
-            </label>
+            <label className="block text-sm font-medium text-muted mb-2">Nomor Telepon</label>
             <input
               type="tel"
               name="phone"
               value={formData.phone}
               onChange={handleChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
               placeholder="Masukkan nomor telepon Anda"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Jenis Kelamin
-            </label>
+            <label className="block text-sm font-medium text-muted mb-2">Jenis Kelamin</label>
             <div className="flex gap-6">
               <label className="flex items-center">
                 <input
@@ -229,56 +221,48 @@ const ProfilePage = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Alamat
-            </label>
+            <label className="block text-sm font-medium text-muted mb-2">Alamat</label>
             <textarea
               name="address"
               value={formData.address}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+              className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
               placeholder="Masukkan alamat lengkap Anda"
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kode Pos
-              </label>
+              <label className="block text-sm font-medium text-muted mb-2">Kode Pos</label>
               <input
                 type="text"
                 name="postalCode"
                 value={formData.postalCode}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
                 placeholder="12345"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kota/Kecamatan
-              </label>
+              <label className="block text-sm font-medium text-muted mb-2">Kota/Kecamatan</label>
               <input
                 type="text"
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
                 placeholder="Jakarta"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Provinsi
-              </label>
+              <label className="block text-sm font-medium text-muted mb-2">Provinsi</label>
               <input
                 type="text"
                 name="province"
                 value={formData.province}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
+                className="w-full px-3 py-2 border border-base rounded-md bg-surface placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
                 placeholder="DKI Jakarta"
               />
             </div>
@@ -287,7 +271,7 @@ const ProfilePage = () => {
           <div className="flex items-center space-x-4 pt-6">
             <button
               type="submit"
-              className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-6 py-3 rounded-md font-semibold shadow-md transition transform hover:-translate-y-0.5 active:scale-95"
+              className="btn-primary px-6 py-3 rounded-md font-semibold shadow-md"
             >
               Perbarui Profil
             </button>

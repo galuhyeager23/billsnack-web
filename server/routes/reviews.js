@@ -1,6 +1,6 @@
 /* eslint-env node */
 const express = require('express');
-const pool = require('../db');
+const supabase = require('../supabase');
 const auth = require('./auth');
 
 const router = express.Router();
@@ -10,22 +10,39 @@ const verifyToken = auth && auth.verifyToken ? auth.verifyToken : (req, res, nex
 router.get('/product/:productId', async (req, res) => {
   const { productId } = req.params;
   try {
-    const [rows] = await pool.execute(
-      `SELECT r.id, r.product_id, r.user_id, r.rating, r.comment, r.created_at, u.email, u.username, u.first_name, u.last_name
-       FROM reviews r
-       LEFT JOIN users u ON u.id = r.user_id
-       WHERE r.product_id = ? ORDER BY r.created_at DESC`,
-      [productId]
-    );
-    const out = rows.map((r) => ({
+    const { data: rows, error } = await supabase
+      .from('reviews')
+      .select(`
+        id,
+        product_id,
+        user_id,
+        rating,
+        comment,
+        created_at,
+        users (
+          email,
+          username,
+          first_name,
+          last_name
+        )
+      `)
+      .eq('product_id', productId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const out = (rows || []).map((r) => ({
       id: r.id,
       productId: r.product_id,
       userId: r.user_id,
       rating: Number(r.rating),
       comment: r.comment,
       createdAt: r.created_at,
-      // prefer first/last name, then username, then email
-      user_name: (r.first_name || r.last_name) ? `${r.first_name || ''} ${r.last_name || ''}`.trim() : (r.username || r.email),
+      user_name: r.users ? 
+        ((r.users.first_name || r.users.last_name) ? 
+          `${r.users.first_name || ''} ${r.users.last_name || ''}`.trim() : 
+          (r.users.username || r.users.email)) : 
+        'Unknown'
     }));
     res.json(out);
   } catch (err) {
@@ -40,14 +57,22 @@ router.get('/can-review', verifyToken, async (req, res) => {
   const userId = req.user && req.user.id;
   const userEmail = req.user && req.user.email;
   if (!productId || !userId) return res.json({ canReview: false });
+  
   try {
-    const [rows] = await pool.execute(
-      `SELECT 1 FROM order_items oi
-       JOIN orders o ON o.id = oi.order_id
-       WHERE (o.user_id = ? OR o.email = ?) AND oi.product_id = ? LIMIT 1`,
-      [userId, userEmail || null, productId]
+    // Get order items for this product, then filter by user in JavaScript
+    const { data: rows, error } = await supabase
+      .from('order_items')
+      .select('id, orders!inner(user_id, email)')
+      .eq('product_id', productId);
+
+    if (error) throw error;
+    
+    // Filter orders that belong to current user
+    const userOrders = (rows || []).filter(item => 
+      item.orders && (item.orders.user_id === userId || item.orders.email === userEmail)
     );
-    res.json({ canReview: rows.length > 0 });
+    
+    res.json({ canReview: userOrders.length > 0 });
   } catch (err) {
     console.error('can-review check error', err);
     res.status(500).json({ error: 'Failed to check purchase history' });
@@ -62,30 +87,57 @@ router.post('/', verifyToken, async (req, res) => {
   if (!productId || typeof rating === 'undefined') return res.status(400).json({ error: 'Missing productId or rating' });
 
   try {
-    // verify purchase (allow match by user_id or by order email matching user's email)
+    // Verify purchase - get order items for this product, filter by user in JavaScript
     const userEmail = req.user && req.user.email;
-    const [pRows] = await pool.execute(
-      `SELECT 1 FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE (o.user_id = ? OR o.email = ?) AND oi.product_id = ? LIMIT 1`,
-      [userId, userEmail || null, productId]
-    );
-    if (pRows.length === 0) return res.status(403).json({ error: 'User has not purchased this product' });
+    const { data: pRows, error: purchaseError } = await supabase
+      .from('order_items')
+      .select('id, orders!inner(user_id, email)')
+      .eq('product_id', productId);
 
-    // insert review
-    const [r] = await pool.execute(
-      'INSERT INTO reviews (product_id, user_id, rating, comment) VALUES (?, ?, ?, ?)',
-      [productId, userId, rating, comment || null]
+    if (purchaseError) throw purchaseError;
+    
+    // Filter orders that belong to current user
+    const userOrders = (pRows || []).filter(item => 
+      item.orders && (item.orders.user_id === userId || item.orders.email === userEmail)
     );
+    
+    if (userOrders.length === 0) {
+      return res.status(403).json({ error: 'User has not purchased this product' });
+    }
 
-    // recompute aggregate rating and count
-    const [[agg]] = await pool.query(
-      'SELECT COUNT(*) AS cnt, COALESCE(AVG(rating),0) AS avg_rating FROM reviews WHERE product_id = ?',
-      [productId]
-    );
-    const cnt = agg.cnt || 0;
-    const avg = Number(agg.avg_rating || 0).toFixed(2);
-    await pool.execute('UPDATE products SET rating = ?, review_count = ? WHERE id = ?', [avg, cnt, productId]);
+    // Insert review
+    const { data: reviewData, error: insertError } = await supabase
+      .from('reviews')
+      .insert({
+        product_id: productId,
+        user_id: userId,
+        rating: rating,
+        comment: comment || null
+      })
+      .select()
+      .single();
 
-    res.status(201).json({ ok: true, reviewId: r.insertId, rating: Number(avg), reviewCount: cnt });
+    if (insertError) throw insertError;
+
+    // Recompute aggregate rating and count
+    const { data: allReviews, error: aggError } = await supabase
+      .from('reviews')
+      .select('rating')
+      .eq('product_id', productId);
+
+    if (aggError) throw aggError;
+
+    const cnt = allReviews ? allReviews.length : 0;
+    const avg = cnt > 0 ? (allReviews.reduce((sum, r) => sum + Number(r.rating), 0) / cnt).toFixed(2) : 0;
+
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ rating: Number(avg), review_count: cnt })
+      .eq('id', productId);
+
+    if (updateError) throw updateError;
+
+    res.status(201).json({ ok: true, reviewId: reviewData.id, rating: Number(avg), reviewCount: cnt });
   } catch (err) {
     console.error('Post review error', err);
     res.status(500).json({ error: 'Failed to post review' });

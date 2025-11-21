@@ -1,55 +1,52 @@
 /* eslint-env node */
 const express = require('express');
-const pool = require('../db');
+const supabase = require('../supabase');
 const router = express.Router();
-const { sanitizeImages, sanitizeColors } = require('../utils/validate');
+const { sanitizeImages, sanitizeColors, sanitizeInStock } = require('../utils/validate');
 const auth = require('./auth');
 
-// helper to detect if the products table has `is_approved` column
-let _hasIsApproved = null;
-async function hasIsApprovedColumn() {
-  if (_hasIsApproved !== null) return _hasIsApproved;
-  try {
-    const dbName = process.env.DB_DATABASE || 'billsnack';
-    const [rows] = await pool.execute(
-      'SELECT COUNT(*) AS cnt FROM information_schema.columns WHERE table_schema = ? AND table_name = ? AND column_name = ?',
-      [dbName, 'products', 'is_approved']
-    );
-    const cnt = rows && rows[0] && (rows[0].cnt || rows[0]['COUNT(*)'] || 0);
-    _hasIsApproved = Number(cnt) > 0;
-  } catch (e) {
-    console.warn('Could not determine presence of is_approved column, assuming false', e);
-    _hasIsApproved = false;
-  }
-  return _hasIsApproved;
-}
-
-// protect write operations: require JWT and admin role
 const verifyToken = auth && auth.verifyToken ? auth.verifyToken : (req, res, next) => next();
+
 function requireAdmin(req, res, next) {
   const user = req.user || {};
   if (user.role && user.role === 'admin') return next();
   return res.status(403).json({ error: 'Admin privileges required' });
 }
 
-// Get all products
+function requireReseller(req, res, next) {
+  const user = req.user || {};
+  if (user.role && user.role === 'reseller') return next();
+  return res.status(403).json({ error: 'Reseller privileges required' });
+}
+
+// Get all products (public - only approved reseller products)
 router.get('/', async (req, res) => {
   try {
-    // Only include reseller products if they are approved. Public products (reseller_id IS NULL) are always included.
-    const hasIs = await hasIsApprovedColumn();
-    const baseSelect = `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
-       FROM products p
-       LEFT JOIN users u ON p.reseller_id = u.id
-       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id`;
-    const where = hasIs ? ' WHERE (p.reseller_id IS NULL OR p.is_approved = 1)' : '';
-    const sqlAll = `${baseSelect}${where} ORDER BY p.id DESC`;
-    const [rows] = await pool.execute(sqlAll);
-    // normalize DB row -> frontend shape (camelCase + parsed arrays)
-    const parsed = rows.map((r) => {
-      const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-      const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-      const images = sanitizeImages(rawImages) || [];
-      const colors = sanitizeColors(rawColors) || [];
+    const { data: rows, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .or('reseller_id.is.null,is_approved.eq.true')
+      .order('id', { ascending: false });
+
+    if (error) throw error;
+
+    const parsed = (rows || []).map((r) => {
+      const images = sanitizeImages(r.images) || [];
+      const colors = sanitizeColors(r.colors) || [];
+      const rp = r.users?.reseller_profiles;
+      let storeNameRaw = null;
+      if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
+      else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+      const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+      const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
       return {
         id: r.id,
         name: r.name,
@@ -61,9 +58,9 @@ router.get('/', async (req, res) => {
         originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
         rating: r.rating !== null ? Number(r.rating) : 0,
         reviewCount: r.review_count || 0,
-        is_approved: hasIs ? Number(r.is_approved) === 1 : true,
+        is_approved: r.is_approved === true || r.is_approved === 1,
         colors,
-        sellerName: (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Admin',
+        sellerName,
         resellerId: r.reseller_id,
         createdAt: r.created_at,
       };
@@ -75,28 +72,61 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get top-selling products (aggregated from order_items)
+// Get top-selling products
 router.get('/top-selling', async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 10));
-    // Only include approved reseller products in top-selling for public view
-    const hasIsTop = await hasIsApprovedColumn();
-    const whereClause = hasIsTop ? 'WHERE (p.reseller_id IS NULL OR p.is_approved = 1)' : '';
-    const sqlTop = `
-      SELECT p.*, COALESCE(SUM(oi.quantity), 0) AS sold_qty
-      FROM products p
-      LEFT JOIN order_items oi ON oi.product_id = p.id
-      ${whereClause}
-      GROUP BY p.id
-      ORDER BY sold_qty DESC
-      LIMIT ?`;
-    const [rows] = await pool.execute(sqlTop, [limit]);
+    
+    // Get all order items with product info (only approved products)
+    const { data: orderItems, error } = await supabase
+      .from('order_items')
+      .select(`
+        product_id, 
+        quantity, 
+        products!inner(
+          *,
+          users:reseller_id (
+            first_name,
+            last_name,
+            email,
+            reseller_profiles (store_name)
+          )
+        )
+      `);
 
-    const parsed = rows.map((r) => {
-      const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-      const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-      const images = sanitizeImages(rawImages) || [];
-      const colors = sanitizeColors(rawColors) || [];
+    if (error) throw error;
+
+    // Aggregate by product and filter approved products
+    const productMap = {};
+    (orderItems || []).forEach(item => {
+      const product = item.products;
+      const pid = item.product_id;
+      
+      // Only include approved reseller products or admin products (null reseller_id)
+      if (product && (product.reseller_id === null || product.is_approved === true)) {
+        if (!productMap[pid]) {
+          productMap[pid] = {
+            ...product,
+            sold_qty: 0
+          };
+        }
+        productMap[pid].sold_qty += item.quantity || 0;
+      }
+    });
+
+    const sorted = Object.values(productMap)
+      .sort((a, b) => b.sold_qty - a.sold_qty)
+      .slice(0, limit);
+
+    const parsed = sorted.map((r) => {
+      const images = sanitizeImages(r.images) || [];
+      const colors = sanitizeColors(r.colors) || [];
+      const rp = r.users?.reseller_profiles;
+      let storeNameRaw = null;
+      if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
+      else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+      const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+      const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
       return {
         id: r.id,
         name: r.name,
@@ -109,6 +139,7 @@ router.get('/top-selling', async (req, res) => {
         rating: r.rating !== null ? Number(r.rating) : 0,
         reviewCount: r.review_count || 0,
         colors,
+        sellerName,
         createdAt: r.created_at,
         soldQty: Number(r.sold_qty || 0),
       };
@@ -120,46 +151,51 @@ router.get('/top-selling', async (req, res) => {
   }
 });
 
-// ===== RESELLER ROUTES (MUST BE BEFORE /:id) =====
-function requireReseller(req, res, next) {
-  const user = req.user || {};
-  if (user.role && user.role === 'reseller') return next();
-  return res.status(403).json({ error: 'Reseller privileges required' });
-}
+// ===== RESELLER ROUTES =====
 
 // List reseller products
 router.get('/reseller', verifyToken, requireReseller, async (req, res) => {
   try {
     const userId = req.user && req.user.id;
-    const [rows] = await pool.execute(
-      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
-       FROM products p
-       LEFT JOIN users u ON p.reseller_id = u.id
-       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
-       WHERE p.reseller_id = ? ORDER BY p.id DESC`,
-      [userId]
-    );
-    const hasIsReseller = await hasIsApprovedColumn();
-    const parsed = rows.map((r) => {
-      const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : []; } catch { return []; } })();
-      const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : []; } catch { return []; } })();
-      const images = sanitizeImages(rawImages) || [];
-      const colors = sanitizeColors(rawColors) || [];
-      const sellerName = (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Reseller';
+    const { data: rows, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .eq('reseller_id', userId)
+      .order('id', { ascending: false });
+
+    if (error) throw error;
+
+    const parsed = (rows || []).map((r) => {
+      const images = sanitizeImages(r.images) || [];
+      const colors = sanitizeColors(r.colors) || [];
+      const rp = r.users?.reseller_profiles;
+      let storeNameRaw = null;
+      if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
+      else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+      const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+      const sellerName = storeName || 'Toko Reseller';
       return {
         id: r.id,
         name: r.name,
         description: r.description,
         price: Number(r.price),
         stock: r.stock,
-        inStock: !!Number(r.in_stock),
+        inStock: !!r.in_stock,
         category: r.category,
         images,
         originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
         rating: r.rating !== null ? Number(r.rating) : 0,
         reviewCount: r.review_count || 0,
         colors,
-        is_approved: hasIsReseller ? Number(r.is_approved) === 1 : true,
+        is_approved: r.is_approved === true || r.is_approved === 1,
         sellerName,
         resellerId: r.reseller_id,
         createdAt: r.created_at,
@@ -177,49 +213,71 @@ router.post('/reseller', verifyToken, requireReseller, async (req, res) => {
   const userId = req.user && req.user.id;
   const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
   if (!name || typeof price === 'undefined') return res.status(400).json({ error: 'Missing required fields: name, price' });
+  
   try {
-    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
-    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
-    const in_stock = Number(stock) > 0 ? 1 : 0;
-    const is_approved = 0;
-    const hasIsInsert = await hasIsApprovedColumn();
-    let insertSql;
-    let insertParams;
-    if (hasIsInsert) {
-      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, userId, is_approved];
-    } else {
-      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, userId];
-    }
-    const [result] = await pool.execute(insertSql, insertParams);
-    const [rows2] = await pool.execute(
-      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
-       FROM products p
-       LEFT JOIN users u ON p.reseller_id = u.id
-       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
-       WHERE p.id = ?`,
-      [result.insertId]
-    );
-    const r = rows2[0];
-    const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-    const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
+    const in_stock = Number(stock) > 0;
+    // Precompute seller_name for persistence
+    const { data: rpProfile } = await supabase.from('reseller_profiles').select('store_name').eq('user_id', userId);
+    let storeNamePersist = null;
+    if (Array.isArray(rpProfile) && rpProfile.length > 0) storeNamePersist = rpProfile[0]?.store_name;
+    else if (rpProfile && typeof rpProfile === 'object') storeNamePersist = rpProfile.store_name;
+    storeNamePersist = (storeNamePersist && typeof storeNamePersist === 'string') ? storeNamePersist.trim() : null;
+    const sellerNamePersist = storeNamePersist || 'Toko Reseller';
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        name,
+        description: description || null,
+        price,
+        stock: stock || 0,
+        category: category || null,
+        images: imagesInput || [],
+        original_price: originalPrice !== undefined ? originalPrice : null,
+        rating: rating !== undefined ? rating : 0,
+        review_count: reviewCount !== undefined ? reviewCount : 0,
+        colors: colorsInput || [],
+        in_stock,
+        reseller_id: userId,
+        is_approved: false,
+        seller_name: sellerNamePersist
+      })
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .single();
+
+    if (error) throw error;
+
+    const r = data;
+    const rp = r.users?.reseller_profiles;
+    let storeNameRaw = null;
+    if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
+    else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+    const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+    const sellerName = storeName || 'Toko Reseller';
+
     const parsed = {
       id: r.id,
       name: r.name,
       description: r.description,
       price: Number(r.price),
       stock: r.stock,
-      inStock: !!Number(r.in_stock),
+      inStock: !!r.in_stock,
       category: r.category,
-      images: rawImages,
+      images: r.images || [],
       originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
       rating: r.rating !== null ? Number(r.rating) : 0,
       reviewCount: r.review_count || 0,
-      colors: rawColors,
-      is_approved: Number(r.is_approved) === 1,
+      colors: r.colors || [],
+      is_approved: r.is_approved === true,
       resellerId: r.reseller_id,
-      sellerName: (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Reseller',
+      sellerName,
       createdAt: r.created_at,
     };
     res.status(201).json(parsed);
@@ -234,17 +292,46 @@ router.put('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
   const userId = req.user && req.user.id;
   const { id } = req.params;
   const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, in_stock } = req.body;
+  
   try {
-    const [rows] = await pool.execute('SELECT reseller_id FROM products WHERE id = ?', [id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-    if (rows[0].reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to update this product' });
-    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
-    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
-    const inStockVal = typeof in_stock !== 'undefined' ? (in_stock ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
-    const sql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ? WHERE id = ?';
-    const params = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, inStockVal, id];
-    const [result] = await pool.execute(sql, params);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
+    // Verify ownership
+    const { data: existing, error: fetchError } = await supabase
+      .from('products')
+      .select('reseller_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existing) return res.status(404).json({ error: 'Product not found' });
+    if (existing.reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to update this product' });
+
+    const inStockVal = typeof in_stock !== 'undefined' ? in_stock : (Number(stock) > 0);
+    // Recompute seller_name for persistence (profile may have changed)
+    const { data: rpProfile } = await supabase.from('reseller_profiles').select('store_name').eq('user_id', userId);
+    let storeNamePersist = null;
+    if (Array.isArray(rpProfile) && rpProfile.length > 0) storeNamePersist = rpProfile[0]?.store_name;
+    else if (rpProfile && typeof rpProfile === 'object') storeNamePersist = rpProfile.store_name;
+    storeNamePersist = (storeNamePersist && typeof storeNamePersist === 'string') ? storeNamePersist.trim() : null;
+    const sellerNamePersist = storeNamePersist || 'Toko Reseller';
+    
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({
+        name,
+        description: description || null,
+        price,
+        stock: stock || 0,
+        category: category || null,
+        images: imagesInput || [],
+        original_price: originalPrice !== undefined ? originalPrice : null,
+        rating: rating !== undefined ? rating : 0,
+        review_count: reviewCount !== undefined ? reviewCount : 0,
+        colors: colorsInput || [],
+        in_stock: inStockVal,
+        seller_name: sellerNamePersist
+      })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
     res.json({ ok: true });
   } catch (err) {
     console.error('Failed to update reseller product', err);
@@ -256,11 +343,23 @@ router.put('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
 router.delete('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
   const userId = req.user && req.user.id;
   const { id } = req.params;
+  
   try {
-    const [rows] = await pool.execute('SELECT reseller_id FROM products WHERE id = ?', [id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-    if (rows[0].reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to delete this product' });
-    await pool.execute('DELETE FROM products WHERE id = ?', [id]);
+    const { data: existing, error: fetchError } = await supabase
+      .from('products')
+      .select('reseller_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existing) return res.status(404).json({ error: 'Product not found' });
+    if (existing.reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to delete this product' });
+
+    const { error: deleteError } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) throw deleteError;
     res.json({ ok: true });
   } catch (err) {
     console.error('Failed to delete reseller product', err);
@@ -268,21 +367,38 @@ router.delete('/reseller/:id', verifyToken, requireReseller, async (req, res) =>
   }
 });
 
-// Get single product
+// Get single product (public)
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-    const r = rows[0];
-    // Hide unapproved reseller products from public product detail
-      // Hide unapproved reseller products from public product detail (only when column exists)
-      const hasIsForId = await hasIsApprovedColumn();
-      if (hasIsForId && r.reseller_id && Number(r.is_approved) !== 1) return res.status(404).json({ error: 'Product not found' });
-    const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-    const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-    const images = sanitizeImages(rawImages) || [];
-    const colors = sanitizeColors(rawColors) || [];
+    const { data: r, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error || !r) return res.status(404).json({ error: 'Product not found' });
+
+    // Hide unapproved reseller products from public
+    if (r.reseller_id && !r.is_approved) return res.status(404).json({ error: 'Product not found' });
+
+    const images = sanitizeImages(r.images) || [];
+    const colors = sanitizeColors(r.colors) || [];
+    const rp = r.users?.reseller_profiles;
+    let storeNameRaw = null;
+    if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
+    else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+    const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+    const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
+    
     const out = {
       id: r.id,
       name: r.name,
@@ -295,7 +411,9 @@ router.get('/:id', async (req, res) => {
       rating: r.rating !== null ? Number(r.rating) : 0,
       reviewCount: r.review_count || 0,
       colors,
-      is_approved: hasIsForId ? Number(r.is_approved) === 1 : true,
+      is_approved: r.is_approved === true,
+      sellerName,
+      resellerId: r.reseller_id,
       createdAt: r.created_at,
     };
     res.json(out);
@@ -305,61 +423,86 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Create product (admin can create and optionally assign reseller_id)
+// Create product (admin)
 router.post('/', verifyToken, requireAdmin, async (req, res) => {
   const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, resellerId, reseller_id } = req.body;
-  // accept either camelCase `inStock` or snake_case `in_stock` in the payload
-  const { sanitizeInStock } = require('../utils/validate');
   const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
-  // determine stored tinyint value using sanitizer; fall back to stock numeric test
   let in_stock = sanitizeInStock(inStockInput);
-  if (in_stock === null) in_stock = Number(stock) > 0 ? 1 : 0;
+  if (in_stock === null) in_stock = Number(stock) > 0;
+
   if (!name || typeof price === 'undefined') {
     return res.status(400).json({ error: 'Missing required fields: name, price' });
   }
+  
   try {
-    console.info(`Create product request by user=${req.user && req.user.id}`, { name, price, stock, category });
-    // sanitize inputs
     const sanitizedImages = sanitizeImages(imagesInput);
-    const imagesJson = sanitizedImages ? JSON.stringify(sanitizedImages) : null;
-    console.debug('Images JSON for insert:', imagesJson);
     const sanitizedColors = sanitizeColors(colorsInput);
-    const colorsJson = sanitizedColors ? JSON.stringify(sanitizedColors) : null;
-    // allow admin to set reseller_id via `resellerId` or `reseller_id`
     const resellerIdToUse = typeof resellerId !== 'undefined' ? resellerId : reseller_id || null;
-    // Admin-created products should be approved by default
-    const is_approved_val = 1;
-    const hasIsInsert = await hasIsApprovedColumn();
-    let insertSql;
-    let insertParams;
-    if (hasIsInsert) {
-      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, resellerIdToUse, is_approved_val];
-    } else {
-      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, resellerIdToUse];
+
+    // Precompute seller_name for persistence (if reseller assigned)
+    let sellerNamePersist = 'BillSnack Store';
+    if (resellerIdToUse) {
+      const { data: rp } = await supabase.from('reseller_profiles').select('store_name').eq('user_id', resellerIdToUse);
+      let storeNamePersist = null;
+      if (Array.isArray(rp) && rp.length > 0) storeNamePersist = rp[0]?.store_name;
+      else if (rp && typeof rp === 'object') storeNamePersist = rp.store_name;
+      storeNamePersist = (storeNamePersist && typeof storeNamePersist === 'string') ? storeNamePersist.trim() : null;
+      sellerNamePersist = storeNamePersist || 'Toko Reseller';
     }
-    const [result] = await pool.execute(insertSql, insertParams);
-    console.info('Product inserted id=', result.insertId);
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [result.insertId]);
-    const r = rows[0];
-    const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-    const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-    const images = sanitizeImages(rawImages) || [];
-    const colors = sanitizeColors(rawColors) || [];
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        name,
+        description: description || null,
+        price,
+        stock: stock || 0,
+        category: category || null,
+        images: sanitizedImages || [],
+        original_price: originalPrice !== undefined ? originalPrice : null,
+        rating: rating !== undefined ? rating : 0,
+        review_count: reviewCount !== undefined ? reviewCount : 0,
+        colors: sanitizedColors || [],
+        in_stock,
+        reseller_id: resellerIdToUse,
+        is_approved: true,
+        seller_name: sellerNamePersist
+      })
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .single();
+
+    if (error) throw error;
+
+    const r = data;
+    const images = sanitizeImages(r.images) || [];
+    const colors = sanitizeColors(r.colors) || [];
+    const rp = r.users?.reseller_profiles;
+    let storeNameRaw = null;
+    if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name; else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+    const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+    const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
     const out = {
       id: r.id,
       name: r.name,
       description: r.description,
       price: Number(r.price),
       stock: r.stock,
-      inStock: !!Number(r.in_stock),
+      inStock: !!r.in_stock,
       category: r.category,
       images,
       originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
       rating: r.rating !== null ? Number(r.rating) : 0,
       reviewCount: r.review_count || 0,
       colors,
+      sellerName,
+      resellerId: r.reseller_id,
       createdAt: r.created_at,
     };
     res.status(201).json(out);
@@ -369,62 +512,96 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Update product
-// Update product (admin may update reseller_id)
+// Update product (admin)
 router.put('/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, resellerId, reseller_id } = req.body;
-  // accept either camelCase `inStock` or snake_case `in_stock` in the payload
   const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
-  const in_stock = typeof inStockInput !== 'undefined' ? (inStockInput ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
+  const in_stock = typeof inStockInput !== 'undefined' ? !!inStockInput : (Number(stock) > 0);
   const is_approved_input = typeof req.body.is_approved !== 'undefined' ? req.body.is_approved : (typeof req.body.isApproved !== 'undefined' ? req.body.isApproved : undefined);
+
   try {
-    console.info(`Update product request by user=${req.user && req.user.id} id=${id}`);
-    // sanitize inputs for update
-    const sanitizedImagesU = sanitizeImages(imagesInput);
-    const imagesJson = sanitizedImagesU ? JSON.stringify(sanitizedImagesU) : null;
-    console.debug('Images JSON for update:', imagesJson);
-    const sanitizedColorsU = sanitizeColors(colorsInput);
-    const colorsJson = sanitizedColorsU ? JSON.stringify(sanitizedColorsU) : null;
-    // allow admin to update reseller_id if provided
+    const sanitizedImages = sanitizeImages(imagesInput);
+    const sanitizedColors = sanitizeColors(colorsInput);
     const resellerIdToUse = typeof resellerId !== 'undefined' ? resellerId : reseller_id;
-    let sql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ?';
-    const params = [name, description || null, price, stock, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock];
+
+    const updates = {
+      name,
+      description: description || null,
+      price,
+      stock,
+      category: category || null,
+      images: sanitizedImages || [],
+      original_price: originalPrice !== undefined ? originalPrice : null,
+      rating: rating !== undefined ? rating : 0,
+      review_count: reviewCount !== undefined ? reviewCount : 0,
+      colors: sanitizedColors || [],
+      in_stock
+    };
+
     if (typeof resellerIdToUse !== 'undefined') {
-      sql += ', reseller_id = ?';
-      params.push(resellerIdToUse);
+      updates.reseller_id = resellerIdToUse;
     }
     if (typeof is_approved_input !== 'undefined') {
-      const canUseIs = await hasIsApprovedColumn();
-      if (canUseIs) {
-        sql += ', is_approved = ?';
-        params.push(is_approved_input ? 1 : 0);
-      }
+      updates.is_approved = !!is_approved_input;
     }
-    sql += ' WHERE id = ?';
-    params.push(id);
-    const [result] = await pool.execute(sql, params);
-      console.info('Product update affectedRows=', result.affectedRows);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
-    const r = rows[0];
-    const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-    const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-    const images = sanitizeImages(rawImages) || [];
-    const colors = sanitizeColors(rawColors) || [];
+
+    // Recompute seller_name if reseller_id is (re)assigned
+    if (updates.reseller_id) {
+      const resellerIdForPersist = updates.reseller_id;
+      const { data: rp } = await supabase.from('reseller_profiles').select('store_name').eq('user_id', resellerIdForPersist);
+      let storeNamePersist = null;
+      if (Array.isArray(rp) && rp.length > 0) storeNamePersist = rp[0]?.store_name;
+      else if (rp && typeof rp === 'object') storeNamePersist = rp.store_name;
+      storeNamePersist = (storeNamePersist && typeof storeNamePersist === 'string') ? storeNamePersist.trim() : null;
+      updates.seller_name = storeNamePersist || 'Toko Reseller';
+    }
+
+    const { error: updateError } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    const { data: r, error: fetchError } = await supabase
+      .from('products')
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const images = sanitizeImages(r.images) || [];
+    const colors = sanitizeColors(r.colors) || [];
+    const rp = r.users?.reseller_profiles;
+    let storeNameRaw = null;
+    if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name; else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+    const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+    const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
     const out = {
       id: r.id,
       name: r.name,
       description: r.description,
       price: Number(r.price),
       stock: r.stock,
-      inStock: !!Number(r.in_stock),
+      inStock: !!r.in_stock,
       category: r.category,
       images,
       originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
       rating: r.rating !== null ? Number(r.rating) : 0,
       reviewCount: r.review_count || 0,
       colors,
+      sellerName,
+      resellerId: r.reseller_id,
       createdAt: r.created_at,
     };
     res.json(out);
@@ -434,12 +611,16 @@ router.put('/:id', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Delete product
+// Delete product (admin)
 router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.execute('DELETE FROM products WHERE id = ?', [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
     res.json({ ok: true });
   } catch (err) {
     console.error(err);
@@ -448,152 +629,3 @@ router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
 });
 
 module.exports = router;
-
-function requireReseller(req, res, next) {
-  const user = req.user || {};
-  if (user.role && user.role === 'reseller') return next();
-  return res.status(403).json({ error: 'Reseller privileges required' });
-}
-
-// List reseller products
-router.get('/reseller', verifyToken, requireReseller, async (req, res) => {
-  try {
-    const userId = req.user && req.user.id;
-    // join with users and reseller_profiles to include seller/store name
-    const [rows] = await pool.execute(
-      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
-       FROM products p
-       LEFT JOIN users u ON p.reseller_id = u.id
-       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
-       WHERE p.reseller_id = ? ORDER BY p.id DESC`,
-      [userId]
-    );
-    const hasIsReseller = await hasIsApprovedColumn();
-    const parsed = rows.map((r) => {
-      const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-      const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-      const sellerName = (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Reseller';
-      return {
-        id: r.id,
-        name: r.name,
-        description: r.description,
-        price: Number(r.price),
-        stock: r.stock,
-        inStock: !!Number(r.in_stock),
-        category: r.category,
-        images: rawImages,
-        originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
-        rating: r.rating !== null ? Number(r.rating) : 0,
-        reviewCount: r.review_count || 0,
-        colors: rawColors,
-        is_approved: hasIsReseller ? Number(r.is_approved) === 1 : true,
-        sellerName,
-        resellerId: r.reseller_id,
-        createdAt: r.created_at,
-      };
-    });
-    res.json(parsed);
-  } catch (err) {
-    console.error('Failed to fetch reseller products', err);
-    res.status(500).json({ error: 'Failed to fetch reseller products' });
-  }
-});
-
-// Create product as reseller
-router.post('/reseller', verifyToken, requireReseller, async (req, res) => {
-  const userId = req.user && req.user.id;
-  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput } = req.body;
-  if (!name || typeof price === 'undefined') return res.status(400).json({ error: 'Missing required fields: name, price' });
-  try {
-    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
-    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
-    const in_stock = Number(stock) > 0 ? 1 : 0;
-    // Reseller-created products are not approved by default; admin must approve.
-    const is_approved = 0;
-    const hasIsInsert = await hasIsApprovedColumn();
-    let insertSql;
-    let insertParams;
-    if (hasIsInsert) {
-      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, userId, is_approved];
-    } else {
-      insertSql = 'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, reseller_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-      insertParams = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, userId];
-    }
-    const [result] = await pool.execute(insertSql, insertParams);
-    // return full product object (including seller info) so frontend can display it immediately
-    const [rows2] = await pool.execute(
-      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
-       FROM products p
-       LEFT JOIN users u ON p.reseller_id = u.id
-       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
-       WHERE p.id = ?`,
-      [result.insertId]
-    );
-    const r = rows2[0];
-    const rawImages = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-    const rawColors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-    const parsed = {
-      id: r.id,
-      name: r.name,
-      description: r.description,
-      price: Number(r.price),
-      stock: r.stock,
-      inStock: !!Number(r.in_stock),
-      category: r.category,
-      images: rawImages,
-      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
-      rating: r.rating !== null ? Number(r.rating) : 0,
-      reviewCount: r.review_count || 0,
-      colors: rawColors,
-      is_approved: Number(r.is_approved) === 1,
-      resellerId: r.reseller_id,
-      sellerName: (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'Reseller',
-      createdAt: r.created_at,
-    };
-    res.status(201).json(parsed);
-  } catch (err) {
-    console.error('Failed to create reseller product', err);
-    res.status(500).json({ error: 'Failed to create product' });
-  }
-});
-
-// Update product as reseller
-router.put('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
-  const userId = req.user && req.user.id;
-  const { id } = req.params;
-  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, in_stock } = req.body;
-  try {
-    // verify ownership
-    const [rows] = await pool.execute('SELECT reseller_id FROM products WHERE id = ?', [id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-    if (rows[0].reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to update this product' });
-    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
-    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
-    const inStockVal = typeof in_stock !== 'undefined' ? (in_stock ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
-    const sql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ? WHERE id = ?';
-    const params = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, inStockVal, id];
-    const [result] = await pool.execute(sql, params);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Failed to update reseller product', err);
-    res.status(500).json({ error: 'Failed to update product' });
-  }
-});
-
-// Delete product as reseller
-router.delete('/reseller/:id', verifyToken, requireReseller, async (req, res) => {
-  const userId = req.user && req.user.id;
-  const { id } = req.params;
-  try {
-    const [rows] = await pool.execute('SELECT reseller_id FROM products WHERE id = ?', [id]);
-    if (rows.length === 0) return res.status(404).json({ error: 'Product not found' });
-    if (rows[0].reseller_id !== userId) return res.status(403).json({ error: 'Not authorized to delete this product' });
-  await pool.execute('DELETE FROM products WHERE id = ?', [id]);
-  res.json({ ok: true });
-  } catch (err) {
-    console.error('Failed to delete reseller product', err);
-    res.status(500).json({ error: 'Failed to delete product' });
-  }
-});

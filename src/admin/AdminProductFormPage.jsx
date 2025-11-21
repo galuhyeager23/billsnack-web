@@ -125,50 +125,96 @@ const AdminProductFormPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log('=== SUBMIT PRODUCT ===');
+    console.log('Current product state:', product);
+    console.log('Uploaded meta:', uploadedMeta);
+    console.log('Selected images:', selectedImages);
+    console.log('Images text:', imagesText);
+    
     // Simple validation: require name, category, and a valid numeric price
     const priceValid = product.price !== '' && product.price !== null && !Number.isNaN(Number(product.price));
-    if (!product.name || !product.category || !priceValid) {
-      alert("Harap isi semua kolom yang diperlukan.");
+    
+    if (!product.name) {
+      alert("Nama produk harus diisi!");
+      return;
+    }
+    if (!product.category) {
+      alert("Kategori harus dipilih!");
+      return;
+    }
+    if (!priceValid) {
+      alert("Harga produk tidak valid!");
       return;
     }
 
-  // Upload selected images (if any) then create/update via ProductContext
-  let finalImages = product.images || [];
+    // Upload selected images (if any) then create/update via ProductContext
+    let finalImages = [];
+    
     try {
       if (uploadedMeta && uploadedMeta.length > 0) {
         // prefer already-uploaded meta (uploaded on select)
+        console.log('Using already uploaded images:', uploadedMeta);
         finalImages = uploadedMeta;
       } else if (selectedImages.length > 0) {
         // upload via ProductContext.uploadImages (returns array of { original, thumb })
+        console.log('Uploading new images...');
         let uploaded;
         try {
           uploaded = await uploadImages(selectedImages);
+          console.log('Upload result:', uploaded);
         } catch (upErr) {
-          console.error('Image upload failed', upErr);
-          alert('Gagal mengunggah gambar. Silakan coba lagi.');
+          console.error('Image upload failed:', upErr);
+          alert(`Gagal mengunggah gambar: ${upErr.message}`);
           return;
         }
-        console.debug('Uploaded images response:', uploaded);
+        
         if (uploaded && uploaded.length > 0) {
-          finalImages = uploaded; // store objects so frontend can use thumb/original
+          finalImages = uploaded;
           setUploadedMeta(uploaded);
         }
       } else if (imagesText && imagesText.trim().length > 0) {
         // parse typed image URLs
         const parts = imagesText.split(/[,\n]+/).map(s => s.trim()).filter(Boolean);
+        console.log('Using text URLs:', parts);
         finalImages = parts.map((url) => ({ original: url, thumb: url }));
+      } else if (product.images && Array.isArray(product.images)) {
+        // Use existing images if editing
+        console.log('Using existing images:', product.images);
+        finalImages = product.images;
       }
-  const productToSave = { ...product, images: finalImages };
-      console.debug('Product to save:', productToSave);
+      
+      // Ensure images is always an array
+      if (!Array.isArray(finalImages)) {
+        console.warn('finalImages is not an array, converting:', finalImages);
+        finalImages = [];
+      }
+      
+      const productToSave = { 
+        ...product, 
+        images: finalImages,
+        price: Number(product.price),
+        stock: Number(product.stock || 0)
+      };
+      
+      console.log('Product to save:', JSON.stringify(productToSave, null, 2));
+      
       if (isEditing) {
+        console.log('Updating product ID:', productToSave.id);
         await updateProduct(productToSave);
       } else {
+        console.log('Creating new product');
         await addProduct(productToSave);
       }
+      
+      console.log('Product saved successfully, navigating...');
       navigate('/admin/products');
     } catch (err) {
-      console.error('Failed to save product', err);
-      alert('Gagal menyimpan produk. Periksa konsol untuk detail.');
+      console.error('=== SAVE PRODUCT ERROR ===');
+      console.error('Error object:', err);
+      console.error('Error message:', err.message);
+      console.error('Error stack:', err.stack);
+      alert(`Gagal menyimpan produk: ${err.message || 'Unknown error'}\n\nPeriksa console untuk detail.`);
     }
   };
 

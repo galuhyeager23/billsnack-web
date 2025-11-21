@@ -1,8 +1,8 @@
 /* eslint-env node */
 
 class TelegramCommandHandler {
-  constructor(db, telegramService) {
-    this.db = db;
+  constructor(supabase, telegramService) {
+    this.supabase = supabase;
     this.telegramService = telegramService;
   }
 
@@ -13,9 +13,9 @@ class TelegramCommandHandler {
    * @returns {Promise<void>}
    */
   async handleMessage(message, chatId) {
-  const text = message.text || '';
-  const command = text.split(' ')[0].toLowerCase();
-  const _args = text.split(' ').slice(1).join(' ');
+    const text = message.text || '';
+    const command = text.split(' ')[0].toLowerCase();
+    const _args = text.split(' ').slice(1).join(' ');
 
     try {
       switch (command) {
@@ -104,11 +104,16 @@ Saya adalah bot untuk cek informasi produk dan stock barang Bilsnack.
    */
   async handleStock(chatId) {
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, stock, category, in_stock FROM products WHERE stock > 0 OR in_stock = 1 ORDER BY name LIMIT 20'
-      );
+      const { data: rows, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, stock, category, in_stock')
+        .or('stock.gt.0,in_stock.eq.true')
+        .order('name')
+        .limit(20);
 
-      if (rows.length === 0) {
+      if (error) throw error;
+
+      if (!rows || rows.length === 0) {
         await this.sendMessage(chatId, '❌ Tidak ada produk ditemukan.');
         return;
       }
@@ -140,17 +145,18 @@ Saya adalah bot untuk cek informasi produk dan stock barang Bilsnack.
     }
 
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, stock, category FROM products WHERE name LIKE ? LIMIT 1',
-        [`%${productName}%`]
-      );
+      const { data: product, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, stock, category')
+        .ilike('name', `%${productName}%`)
+        .limit(1)
+        .single();
 
-      if (rows.length === 0) {
+      if (error || !product) {
         await this.sendMessage(chatId, `❌ Produk "${productName}" tidak ditemukan.`);
         return;
       }
 
-      const product = rows[0];
       const message = `
 <b>💰 Informasi Harga</b>
 
@@ -177,17 +183,18 @@ Saya adalah bot untuk cek informasi produk dan stock barang Bilsnack.
     }
 
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, stock, category, in_stock, rating, review_count, description FROM products WHERE name LIKE ? LIMIT 1',
-        [`%${productName}%`]
-      );
+      const { data: product, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, stock, category, in_stock, rating, review_count, description')
+        .ilike('name', `%${productName}%`)
+        .limit(1)
+        .single();
 
-      if (rows.length === 0) {
+      if (error || !product) {
         await this.sendMessage(chatId, `❌ Produk "${productName}" tidak ditemukan.`);
         return;
       }
 
-      const product = rows[0];
       const statusEmoji = product.in_stock || product.stock > 0 ? '✅' : '❌';
       const message = `
 <b>📦 Detail Produk</b>
@@ -212,11 +219,16 @@ ${product.description ? `\n<b>Deskripsi:</b>\n${product.description.substring(0,
    */
   async handleAvailableStock(chatId) {
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, stock, category FROM products WHERE stock > 0 OR in_stock = 1 ORDER BY stock DESC LIMIT 15'
-      );
+      const { data: rows, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, stock, category')
+        .or('stock.gt.0,in_stock.eq.true')
+        .order('stock', { ascending: false })
+        .limit(15);
 
-      if (rows.length === 0) {
+      if (error) throw error;
+
+      if (!rows || rows.length === 0) {
         await this.sendMessage(chatId, '❌ Tidak ada produk yang tersedia.');
         return;
       }
@@ -240,11 +252,17 @@ ${product.description ? `\n<b>Deskripsi:</b>\n${product.description.substring(0,
    */
   async handleOutOfStock(chatId) {
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, category FROM products WHERE stock = 0 AND in_stock = 0 ORDER BY name LIMIT 15'
-      );
+      const { data: rows, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, category')
+        .eq('stock', 0)
+        .eq('in_stock', false)
+        .order('name')
+        .limit(15);
 
-      if (rows.length === 0) {
+      if (error) throw error;
+
+      if (!rows || rows.length === 0) {
         await this.sendMessage(chatId, '✅ Semua produk tersedia! Tidak ada yang habis.');
         return;
       }
@@ -305,12 +323,15 @@ Contoh: Dodol Susu
    */
   async handleProductSearch(chatId, searchTerm) {
     try {
-      const [rows] = await this.db.query(
-        'SELECT id, name, price, stock, category, in_stock FROM products WHERE name LIKE ? LIMIT 5',
-        [`%${searchTerm}%`]
-      );
+      const { data: rows, error } = await this.supabase
+        .from('products')
+        .select('id, name, price, stock, category, in_stock')
+        .ilike('name', `%${searchTerm}%`)
+        .limit(5);
 
-      if (rows.length === 0) {
+      if (error) throw error;
+
+      if (!rows || rows.length === 0) {
         await this.sendMessage(chatId, `❌ Produk "${searchTerm}" tidak ditemukan.\n\nCoba gunakan /stock untuk melihat semua produk.`);
         return;
       }

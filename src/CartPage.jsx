@@ -42,7 +42,7 @@ const CartItemRow = ({ item }) => {
   const cartItemId = `${item.id}`;
 
   return (
-    <div className="flex items-center py-6 border-b">
+    <div className="flex items-center py-6 border-b border-base">
       <img
         src={item.image}
         alt={item.name}
@@ -52,17 +52,17 @@ const CartItemRow = ({ item }) => {
   <h3 className="text-lg font-semibold">{item.name}</h3>
   <p className="text-lg font-bold mt-2">Rp {formatPrice(item.price)}</p>
       </div>
-      <div className="flex items-center border rounded-full px-3 py-1">
+      <div className="flex items-center border border-base rounded-full px-3 py-1 bg-surface-alt">
         <button
           onClick={() => updateQuantity(cartItemId, item.quantity - 1)}
-          className="text-gray-500 text-xl"
+          className="text-muted text-xl hover:text-[rgb(var(--accent))]"
         >
           -
         </button>
         <span className="w-8 text-center font-semibold">{item.quantity}</span>
         <button
           onClick={() => updateQuantity(cartItemId, item.quantity + 1)}
-          className="text-gray-500 text-xl"
+          className="text-muted text-xl hover:text-[rgb(var(--accent))]"
         >
           +
         </button>
@@ -97,32 +97,27 @@ const CartPage = () => {
     navigate('/checkout', { state: { checkoutSellerId: sellerId } });
   };
 
-  const grandTotal = cartItems.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const grandDiscount = grandTotal * 0.2;
-  const finalTotal = grandTotal - grandDiscount;
+  // Removed unused grand total calculations to satisfy lint
 
   return (
-    <div className="bg-white">
+    <div className="bg-surface">
       <div className="px-8 sm:px-12 lg:px-16 py-12">
-        <nav className="flex items-center text-sm text-gray-500 mb-8">
-          <Link to="/" className="hover:text-gray-700">
+        <nav className="flex items-center text-sm text-muted mb-8">
+          <Link to="/" className="hover:text-[rgb(var(--accent))]">
             Beranda
           </Link>{" "}
           <ChevronRightIcon />
-          <span className="text-gray-700 font-medium">Keranjang</span>
+          <span className="font-medium text-gray-700 dark:text-neutral-200">Keranjang</span>
         </nav>
 
         <h1 className="text-4xl font-bold mb-8">KERANJANG ANDA</h1>
 
         {cartItems.length === 0 ? (
-          <div className="bg-gray-50 p-12 rounded-lg shadow text-center">
+          <div className="bg-surface-alt p-12 rounded-lg shadow text-center border border-base">
             <h2 className="text-2xl font-semibold">Keranjang Anda kosong</h2>
             <Link
               to="/shop"
-              className="mt-4 inline-block bg-amber-500 text-white font-semibold py-3 px-8 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
+              className="mt-4 inline-block btn-primary font-semibold py-3 px-8 rounded-full text-lg focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
             >
               Lanjut Belanja
             </Link>
@@ -130,21 +125,21 @@ const CartPage = () => {
         ) : (
           <div className="space-y-6">
             {/* Group items by seller */}
-            {cartsBySeller.map((sellerCart, index) => {
+            {cartsBySeller.map((sellerCart) => {
               const { subtotal, discount, total } = calculateTotalBySeller(sellerCart.items);
               return (
-                <div key={sellerCart.sellerId} className="bg-white rounded-lg p-6 shadow-lg border border-gray-200">
+                <div key={sellerCart.sellerId} className="bg-surface rounded-lg p-6 shadow-lg border border-base">
                   {/* Seller Header */}
-                  <div className="flex items-center justify-between border-b pb-4 mb-4">
+                  <div className="flex items-center justify-between border-b border-base pb-4 mb-4">
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900 flex items-center">
-                        <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <h2 className="text-xl font-bold flex items-center text-gradient">
+                        <svg className="w-5 h-5 mr-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
                         {sellerCart.sellerName}
                       </h2>
                       {sellerCart.resellerEmail && (
-                        <p className="text-sm text-gray-500 mt-1">{sellerCart.resellerEmail}</p>
+                        <p className="text-sm text-muted mt-1">{sellerCart.resellerEmail}</p>
                       )}
                     </div>
                   </div>
@@ -157,26 +152,26 @@ const CartPage = () => {
                   </div>
 
                   {/* Seller Summary & Checkout Button */}
-                  <div className="mt-6 pt-4 border-t bg-gray-50 rounded-lg p-4">
+                  <div className="mt-6 pt-4 border-t border-base bg-surface-alt rounded-lg p-4">
                     <div className="space-y-2 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Subtotal</span>
-                        <span className="font-semibold">Rp {formatPrice(subtotal)}</span>
+                      <div className="flex justify-between text-sm text-muted">
+                        <span>Subtotal</span>
+                        <span className="font-medium text-gray-700 dark:text-neutral-200">Rp {formatPrice(subtotal)}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Diskon (-20%)</span>
-                        <span className="font-semibold text-red-500">-Rp {formatPrice(discount)}</span>
+                      <div className="flex justify-between text-sm text-muted">
+                        <span>Diskon (20%)</span>
+                        <span className="font-medium text-red-500">-Rp {formatPrice(discount)}</span>
                       </div>
-                      <div className="flex justify-between font-bold text-lg border-t pt-2">
-                        <span>Total Toko</span>
-                        <span className="text-blue-600">Rp {formatPrice(total)}</span>
+                      <div className="flex justify-between font-semibold text-base border-t border-base pt-2">
+                        <span className="text-muted">Total Toko</span>
+                        <span className="accent-text font-bold">Rp {formatPrice(total)}</span>
                       </div>
                     </div>
 
                     {/* Checkout Button for this seller */}
                     <button
                       onClick={() => handleCheckoutSeller(sellerCart.sellerId)}
-                      className="w-full bg-amber-500 text-white font-semibold py-3 px-6 rounded-full text-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300 flex items-center justify-center"
+                      className="w-full btn-primary rounded-full text-base flex items-center justify-center gap-2 py-3"
                     >
                       Checkout Toko Ini <ChevronRightIcon />
                     </button>
@@ -187,12 +182,12 @@ const CartPage = () => {
 
             {/* Total Summary Card */}
             {cartsBySeller.length > 1 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mt-8">
-                <h3 className="text-lg font-bold text-blue-900 mb-4">Ringkasan Total Belanja</h3>
+              <div className="bg-surface-alt border border-base rounded-lg p-6 mt-8">
+                <h3 className="text-lg font-semibold mb-4 text-gradient">Ringkasan Total Belanja</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-blue-800">Total dari {cartsBySeller.length} toko</span>
-                    <span className="font-bold text-blue-900">Rp {formatPrice(
+                    <span className="text-muted">Total dari {cartsBySeller.length} toko</span>
+                    <span className="accent-text font-bold">Rp {formatPrice(
                       cartsBySeller.reduce((sum, seller) => {
                         const { total } = calculateTotalBySeller(seller.items);
                         return sum + total;
@@ -200,8 +195,8 @@ const CartPage = () => {
                     )}</span>
                   </div>
                 </div>
-                <p className="text-xs text-blue-700 mt-4">
-                  💡 Setiap toko akan diproses sebagai pesanan terpisah
+                <p className="text-xs text-muted mt-4">
+                  💡 Setiap toko diproses sebagai pesanan terpisah.
                 </p>
               </div>
             )}

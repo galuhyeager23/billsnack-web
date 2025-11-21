@@ -1,56 +1,46 @@
 /* eslint-env node */
 const express = require('express');
-const pool = require('../db');
+const supabase = require('../supabase');
 const auth = require('./auth');
 const bcrypt = require('bcrypt');
 
 const router = express.Router();
 
-// reuse verifyToken exported from auth router
 const verifyToken = auth && auth.verifyToken ? auth.verifyToken : (req, res, next) => next();
 
-// admin-role check middleware
 function requireAdmin(req, res, next) {
   const user = req.user || {};
   if (user.role && user.role === 'admin') return next();
   return res.status(403).json({ error: 'Admin privileges required' });
 }
 
-// All admin routes should use verifyToken + requireAdmin
 // Products (admin CRUD) - show ALL products including unapproved reseller products
 router.get('/products', verifyToken, requireAdmin, async (req, res) => {
   try {
-    // Admin should see ALL products, including unapproved reseller products
-    // Join with users and reseller_profiles to include seller info
-    const [rows] = await pool.execute(
-      `SELECT p.*, u.first_name, u.last_name, u.email AS reseller_email, rp.store_name
-       FROM products p
-       LEFT JOIN users u ON p.reseller_id = u.id
-       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
-       ORDER BY p.id DESC`
-    );
-    
-    // Parse JSON fields and normalize to camelCase
+    const { data: rows, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .order('id', { ascending: false });
+
+    if (error) throw error;
+
     const { sanitizeImages, sanitizeColors } = require('../utils/validate');
-    const normalized = rows.map((r) => {
-      const rawImages = (() => { 
-        try { 
-          return r.images ? JSON.parse(r.images) : []; 
-        } catch (e) { 
-          console.warn('Failed to parse images for product', r.id, e);
-          return []; 
-        } 
-      })();
-      const rawColors = (() => { 
-        try { 
-          return r.colors ? JSON.parse(r.colors) : []; 
-        } catch (e) { 
-          console.warn('Failed to parse colors for product', r.id, e);
-          return []; 
-        } 
-      })();
-      const images = sanitizeImages(rawImages) || [];
-      const colors = sanitizeColors(rawColors) || [];
+    const normalized = (rows || []).map((r) => {
+      const images = sanitizeImages(r.images) || [];
+      const colors = sanitizeColors(r.colors) || [];
+      let storeNameRaw = null;
+      const rp = r.users?.reseller_profiles;
+      if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name; else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+      const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+      const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
       return {
         id: r.id,
         name: r.name,
@@ -62,11 +52,11 @@ router.get('/products', verifyToken, requireAdmin, async (req, res) => {
         originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
         rating: r.rating !== null ? Number(r.rating) : 0,
         reviewCount: r.review_count || 0,
-        is_approved: r.is_approved !== undefined ? !!Number(r.is_approved) : true,
+        is_approved: !!r.is_approved,
         colors,
-        sellerName: r.seller_name || (r.store_name && r.store_name.trim()) || (`${r.first_name || ''} ${r.last_name || ''}`.trim()) || r.reseller_email || 'BillSnack Store',
+        sellerName,
         resellerId: r.reseller_id,
-        resellerEmail: r.reseller_email,
+        resellerEmail: r.users?.email,
         createdAt: r.created_at,
       };
     });
@@ -77,144 +67,115 @@ router.get('/products', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
-router.post('/products', verifyToken, requireAdmin, async (req, res) => {
-  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, sellerName } = req.body;
-  if (!name || typeof price === 'undefined') return res.status(400).json({ error: 'Missing required fields' });
-  // accept either camelCase `inStock` or snake_case `in_stock` and sanitize
-  const { sanitizeInStock } = require('../utils/validate');
-  const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
-  let in_stock = sanitizeInStock(inStockInput);
-  if (in_stock === null) in_stock = Number(stock) > 0 ? 1 : 0;
-  try {
-    // stringify arrays for JSON/DB storage
-    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
-    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
-    const seller_name = sellerName || 'BillSnack Store';
-    const [result] = await pool.execute(
-      'INSERT INTO products (name, description, price, stock, category, images, original_price, rating, review_count, colors, in_stock, seller_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, seller_name]
-    );
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [result.insertId]);
-    const r = rows[0];
-    const images = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-    const colors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-    const out = {
-      id: r.id,
-      name: r.name,
-      description: r.description,
-      price: Number(r.price),
-      stock: Number(r.stock),
-      inStock: !!Number(r.in_stock),
-      category: r.category,
-      images,
-      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
-      rating: r.rating !== null ? Number(r.rating) : 0,
-      reviewCount: r.review_count || 0,
-      colors,
-      sellerName: r.seller_name || 'BillSnack Store',
-      createdAt: r.created_at,
-    };
-    res.status(201).json(out);
-  } catch (err) {
-    console.error('Admin create product error', err);
-    res.status(500).json({ error: 'Failed to create product' });
-  }
-});
-
-router.put('/products/:id', verifyToken, requireAdmin, async (req, res) => {
-  const { id } = req.params;
-  const { name, description, price, stock, category, images: imagesInput, originalPrice, rating, reviewCount, colors: colorsInput, is_approved, isApproved, sellerName } = req.body;
-  // accept camelCase `inStock` or snake_case `in_stock`
-  const inStockInput = typeof req.body.inStock !== 'undefined' ? req.body.inStock : req.body.in_stock;
-  const in_stock = typeof inStockInput !== 'undefined' ? (inStockInput ? 1 : 0) : (Number(stock) > 0 ? 1 : 0);
-  try {
-    const imagesJson = imagesInput && Array.isArray(imagesInput) ? JSON.stringify(imagesInput) : null;
-    const colorsJson = colorsInput && Array.isArray(colorsInput) ? JSON.stringify(colorsInput) : null;
-    
-    // Handle is_approved field (accept both camelCase and snake_case)
-    const isApprovedVal = typeof is_approved !== 'undefined' ? is_approved : (typeof isApproved !== 'undefined' ? isApproved : undefined);
-    const seller_name = sellerName || 'BillSnack Store';
-    
-    let updateSql = 'UPDATE products SET name = ?, description = ?, price = ?, stock = ?, category = ?, images = ?, original_price = ?, rating = ?, review_count = ?, colors = ?, in_stock = ?, seller_name = ?';
-    const params = [name, description || null, price, stock || 0, category || null, imagesJson, typeof originalPrice !== 'undefined' ? originalPrice : null, typeof rating !== 'undefined' ? rating : 0, typeof reviewCount !== 'undefined' ? reviewCount : 0, colorsJson, in_stock, seller_name];
-    
-    // Add is_approved to UPDATE if provided
-    if (typeof isApprovedVal !== 'undefined') {
-      updateSql += ', is_approved = ?';
-      params.push(isApprovedVal ? 1 : 0);
-    }
-    
-    updateSql += ' WHERE id = ?';
-    params.push(id);
-    
-    const [result] = await pool.execute(updateSql, params);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
-    const r = rows[0];
-    const images = (() => { try { return r.images ? JSON.parse(r.images) : (r.images || []); } catch { return r.images || []; } })();
-    const colors = (() => { try { return r.colors ? JSON.parse(r.colors) : (r.colors || []); } catch { return r.colors || []; } })();
-    const out = {
-      id: r.id,
-      name: r.name,
-      description: r.description,
-      price: Number(r.price),
-      stock: Number(r.stock),
-      inStock: !!Number(r.in_stock),
-      category: r.category,
-      images,
-      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
-      rating: r.rating !== null ? Number(r.rating) : 0,
-      reviewCount: r.review_count || 0,
-      colors,
-      is_approved: r.is_approved !== undefined ? !!Number(r.is_approved) : undefined,
-      createdAt: r.created_at,
-    };
-    res.json(out);
-  } catch (err) {
-    console.error('Admin update product error', err);
-    res.status(500).json({ error: 'Failed to update product' });
-  }
-});
-
-router.delete('/products/:id', verifyToken, requireAdmin, async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [result] = await pool.execute('DELETE FROM products WHERE id = ?', [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: "Product not found" });
-    res.json({ ok: true });
-  } catch (err) {
-    console.error('Admin delete product error', err);
-    res.status(500).json({ error: 'Failed to delete product' });
-  }
-});
-
 // Approve/reject reseller product
 router.put('/products/:id/approve', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { is_approved, isApproved } = req.body;
   const approved = typeof is_approved !== 'undefined' ? is_approved : (typeof isApproved !== 'undefined' ? isApproved : true);
+  
   try {
-    const [result] = await pool.execute(
-      'UPDATE products SET is_approved = ? WHERE id = ?',
-      [approved ? 1 : 0, id]
-    );
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Product not found' });
-    const [rows] = await pool.execute('SELECT * FROM products WHERE id = ?', [id]);
-    const r = rows[0];
-    res.json({ ok: true, is_approved: !!Number(r.is_approved) });
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ is_approved: !!approved })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    const { data: r, error: fetchError } = await supabase
+      .from('products')
+      .select('is_approved')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) throw fetchError;
+    res.json({ ok: true, is_approved: !!r.is_approved });
   } catch (err) {
     console.error('Admin approve product error', err);
     res.status(500).json({ error: 'Failed to approve product' });
   }
 });
 
-// Users: list users (non-sensitive fields)
+// Users: list users
 router.get('/users', verifyToken, requireAdmin, async (req, res) => {
   try {
-    const [rows] = await pool.execute(
-      'SELECT id, email, first_name, last_name, username, phone, gender, role, created_at FROM users ORDER BY id DESC'
-    );
-    res.json(rows);
+    const { data: rows, error } = await supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        first_name,
+        last_name,
+        username,
+        phone,
+        gender,
+        role,
+        created_at,
+        reseller_profiles (
+          store_name
+        )
+      `)
+      .order('id', { ascending: false });
+
+    if (error) throw error;
+    // Collect reseller ids
+    const resellerIds = (rows || [])
+      .filter(u => u.role === 'reseller')
+      .map(u => u.id);
+
+    let productCountsByReseller = {};
+    let salesCountsByReseller = {};
+
+    if (resellerIds.length > 0) {
+      try {
+        // Fetch products for these resellers
+        const { data: productRows, error: productsErr } = await supabase
+          .from('products')
+          .select('id,reseller_id')
+          .in('reseller_id', resellerIds);
+        if (!productsErr && Array.isArray(productRows)) {
+          productRows.forEach(p => {
+            if (p.reseller_id) {
+              productCountsByReseller[p.reseller_id] = (productCountsByReseller[p.reseller_id] || 0) + 1;
+            }
+          });
+        }
+
+        // Fetch order items joined to products to compute sold quantities per reseller
+        const { data: salesRows, error: salesErr } = await supabase
+          .from('order_items')
+          .select('quantity, products:product_id(reseller_id)')
+          .in('products.reseller_id', resellerIds);
+        if (!salesErr && Array.isArray(salesRows)) {
+          salesRows.forEach(r => {
+            const rid = r.products && r.products.reseller_id;
+            if (rid) {
+              salesCountsByReseller[rid] = (salesCountsByReseller[rid] || 0) + (r.quantity || 0);
+            }
+          });
+        }
+      } catch (aggErr) {
+        console.error('Aggregation error for reseller product/sales counts', aggErr);
+      }
+    }
+
+    // Flatten reseller_profiles and append counts
+    const formatted = (rows || []).map(user => {
+      const rp = user.reseller_profiles;
+      let storeNameRaw = null;
+      if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
+      else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+      const store_name = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+      const totalProducts = productCountsByReseller[user.id] || 0;
+      const totalSales = salesCountsByReseller[user.id] || 0;
+      return {
+        ...user,
+        store_name,
+        totalProducts,
+        totalSales
+      };
+    });
+
+    res.json(formatted);
   } catch (err) {
     console.error('Admin get users error', err);
     res.status(500).json({ error: 'Failed to fetch users' });
@@ -225,177 +186,229 @@ router.get('/users', verifyToken, requireAdmin, async (req, res) => {
 router.get('/users/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const [rows] = await pool.execute(
-      `SELECT u.id, u.email, u.first_name, u.last_name, u.username, u.phone, u.address, u.role, u.is_active, rp.store_name, rp.phone AS rp_phone
-       FROM users u
-       LEFT JOIN reseller_profiles rp ON rp.user_id = u.id
-       WHERE u.id = ?`,
-      [id]
-    );
-    if (!rows || rows.length === 0) return res.status(404).json({ error: 'User not found' });
-    res.json(rows[0]);
+    const { data: rows, error } = await supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        first_name,
+        last_name,
+        username,
+        phone,
+        address,
+        role,
+        is_active,
+        reseller_profiles (
+          store_name,
+          phone
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error || !rows) return res.status(404).json({ error: 'User not found' });
+    
+    const user = {
+      ...rows,
+      rp_phone: rows.reseller_profiles?.[0]?.phone,
+      store_name: rows.reseller_profiles?.[0]?.store_name
+    };
+    delete user.reseller_profiles;
+    
+    res.json(user);
   } catch (err) {
     console.error('Admin get user error', err);
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
 
-// Admin: create a user (admin creates reseller accounts)
+// Admin: create a user (returns store_name if present)
 router.post('/users', verifyToken, requireAdmin, async (req, res) => {
   const { email, password, first_name, last_name, phone, address, role, store_name } = req.body || {};
   if (!email) return res.status(400).json({ error: 'Email required' });
+
   try {
-    // optional password hashing
     let hash = null;
     if (password) {
       hash = await bcrypt.hash(password, process.env.SALT_ROUNDS ? Number(process.env.SALT_ROUNDS) : 10);
     }
-    const [result] = await pool.execute(
-      'INSERT INTO users (email, password_hash, first_name, last_name, phone, address, role, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())',
-      [email, hash, first_name || null, last_name || null, phone || null, address || null, role || 'reseller', 1]
-    );
-    const userId = result.insertId;
-    if (store_name) {
-      await pool.execute('INSERT INTO reseller_profiles (user_id, store_name, phone, address, created_at) VALUES (?, ?, ?, ?, NOW())', [userId, store_name, phone || null, address || null]);
+
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .insert({
+        email,
+        password_hash: hash,
+        first_name: first_name || null,
+        last_name: last_name || null,
+        phone: phone || null,
+        address: address || null,
+        role: role || 'reseller',
+        is_active: true
+      })
+      .select()
+      .single();
+
+    if (userError) throw userError;
+    const userId = userData.id;
+
+    if (typeof store_name !== 'undefined') {
+      // Use upsert to avoid separate existence check (handles missing id column scenario)
+      await supabase
+        .from('reseller_profiles')
+        .upsert({
+          user_id: userId,
+          store_name: store_name || null,
+          phone: phone || null,
+          address: address || null
+        }, { onConflict: 'user_id' });
     }
-    const [rows] = await pool.execute('SELECT id, email, first_name, last_name, username, phone, address, role, created_at FROM users WHERE id = ?', [userId]);
-    res.status(201).json({ ok: true, user: rows[0] });
+
+    const { data: userWithProfile } = await supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        first_name,
+        last_name,
+        username,
+        phone,
+        address,
+        role,
+        created_at,
+        reseller_profiles ( store_name )
+      `)
+      .eq('id', userId)
+      .single();
+
+    const responseUser = {
+      ...userWithProfile,
+      store_name: userWithProfile.reseller_profiles?.[0]?.store_name || null
+    };
+    delete responseUser.reseller_profiles;
+
+    res.status(201).json({ ok: true, user: responseUser });
   } catch (err) {
     console.error('Admin create user error', err);
     res.status(500).json({ error: 'Failed to create user' });
   }
 });
 
-// Admin: update user fields and reseller profile
+// Admin: update user fields and reseller profile (returns store_name)
 router.put('/users/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { email, first_name, last_name, phone, address, role, is_active, store_name } = req.body || {};
+
+  console.log(`\n=== UPDATE USER ${id} ===`);
+  console.log('Request body:', req.body);
+  console.log('Store name:', store_name);
+
   try {
-    const sets = [];
-    const params = [];
-    if (email) { sets.push('email = ?'); params.push(email); }
-    if (first_name) { sets.push('first_name = ?'); params.push(first_name); }
-    if (last_name) { sets.push('last_name = ?'); params.push(last_name); }
-    if (phone) { sets.push('phone = ?'); params.push(phone); }
-    if (address) { sets.push('address = ?'); params.push(address); }
-    if (role) { sets.push('role = ?'); params.push(role); }
-    if (typeof is_active !== 'undefined') { sets.push('is_active = ?'); params.push(is_active ? 1 : 0); }
-    if (sets.length > 0) {
-      params.push(id);
-      await pool.execute(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`, params);
+    const updates = {};
+    if (typeof email !== 'undefined') updates.email = email;
+    if (typeof first_name !== 'undefined') updates.first_name = first_name || null;
+    if (typeof last_name !== 'undefined') updates.last_name = last_name || null;
+    if (typeof phone !== 'undefined') updates.phone = phone || null;
+    if (typeof address !== 'undefined') updates.address = address || null;
+    if (typeof role !== 'undefined') updates.role = role;
+    if (typeof is_active !== 'undefined') updates.is_active = !!is_active;
+
+    console.log('User table updates:', updates);
+
+    if (Object.keys(updates).length > 0) {
+      const { error: updateError } = await supabase
+        .from('users')
+        .update(updates)
+        .eq('id', id);
+      if (updateError) throw updateError;
+      console.log('✓ Users table updated');
     }
-    // upsert reseller_profiles when store_name provided
+
+    // Upsert reseller profile if store_name provided (even if empty string)
     if (typeof store_name !== 'undefined') {
-      // try update
-      const [r] = await pool.execute('SELECT user_id FROM reseller_profiles WHERE user_id = ?', [id]);
-      if (r && r.length > 0) {
-        await pool.execute('UPDATE reseller_profiles SET store_name = ?, phone = ?, address = ? WHERE user_id = ?', [store_name || null, phone || null, address || null, id]);
-      } else {
-        await pool.execute('INSERT INTO reseller_profiles (user_id, store_name, phone, address, created_at) VALUES (?, ?, ?, ?, NOW())', [id, store_name || null, phone || null, address || null]);
-      }
+      console.log('Upserting reseller_profiles with store_name (no id assumption):', store_name);
+      const profileData = { user_id: id, store_name: store_name || null, phone: phone || null, address: address || null };
+      const { error: upsertError } = await supabase
+        .from('reseller_profiles')
+        .upsert(profileData, { onConflict: 'user_id' });
+      if (upsertError) throw upsertError;
+      console.log('✓ Reseller profile upserted');
+    } else {
+      console.log('store_name not provided; skipping profile upsert');
     }
-    const [rows] = await pool.execute('SELECT id, email, first_name, last_name, username, phone, address, role, created_at FROM users WHERE id = ?', [id]);
-    res.json({ ok: true, user: rows[0] });
+
+    // Fetch user with profile to include store_name in response
+    const { data: userWithProfile, error: fetchUserError } = await supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        first_name,
+        last_name,
+        username,
+        phone,
+        address,
+        role,
+        created_at,
+        reseller_profiles ( store_name )
+      `)
+      .eq('id', id)
+      .single();
+    if (fetchUserError) throw fetchUserError;
+
+    const responseUser = {
+      ...userWithProfile,
+      store_name: userWithProfile.reseller_profiles?.[0]?.store_name || null
+    };
+    delete responseUser.reseller_profiles;
+
+    console.log('✓ Update complete\n');
+    res.json({ ok: true, user: responseUser });
   } catch (err) {
     console.error('Admin update user error', err);
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
 
-// Admin: set or update a user's role (e.g., mark as 'reseller')
+// Admin: set or update a user's role
 router.put('/users/:id/role', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { role } = req.body || {};
   if (!role) return res.status(400).json({ error: 'Missing role in body' });
+  
   const allowed = ['user', 'reseller', 'admin'];
   if (!allowed.includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  
   try {
-    const [result] = await pool.execute('UPDATE users SET role = ? WHERE id = ?', [role, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found' });
-    const [rows] = await pool.execute('SELECT id, email, first_name, last_name, username, phone, gender, role, created_at FROM users WHERE id = ?', [id]);
-    return res.json({ ok: true, user: rows[0] });
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ role })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    const { data: user } = await supabase
+      .from('users')
+      .select('id, email, first_name, last_name, username, phone, gender, role, created_at')
+      .eq('id', id)
+      .single();
+
+    return res.json({ ok: true, user });
   } catch (err) {
     console.error('Admin update user role error', err);
     res.status(500).json({ error: 'Failed to update user role' });
   }
 });
 
-// Transactions: best-effort read (returns [] if no table exists)
-router.get('/transactions', verifyToken, requireAdmin, async (req, res) => {
-  try {
-    // try common table names used by the app (orders/transactions)
-    const tryTables = ['transactions', 'orders', 'order_items'];
-    for (const t of tryTables) {
-      try {
-        // Enrich known tables with related user/order info so admin UI can show customer
-        let rows = [];
-        if (t === 'orders') {
-          // compute amount from order_items.total_price when possible so the admin UI
-          // shows the sum of product prices the customer actually ordered. Fall back
-          // to o.total when no items present.
-          const r = await pool.execute(
-            `SELECT o.*, o.id AS order_id, o.order_number AS order_number,
-                    COALESCE(o.payment_method, JSON_UNQUOTE(JSON_EXTRACT(o.metadata, '$.payment'))) AS payment_method,
-                    u.email AS user_email, u.role AS user_role, u.first_name, u.last_name,
-                    COALESCE(o.total, SUM(oi.total_price)) AS amount
-             FROM \`orders\` o
-             LEFT JOIN order_items oi ON oi.order_id = o.id
-             LEFT JOIN users u ON o.user_id = u.id
-             GROUP BY o.id
-             ORDER BY o.id DESC LIMIT 500`
-          );
-          rows = r[0];
-        } else if (t === 'transactions') {
-          // Return a consistent `amount` for transactions by falling back to
-          // transaction amount, then linked order.total, then sum of order_items
-          // so admin UI shows the real billed amount.
-          const r = await pool.execute(
-      `SELECT tr.*, o.id AS order_id, o.order_number AS order_number, o.total AS order_total,
-        COALESCE(tr.amount, o.total, SUM(oi.total_price)) AS amount,
-        COALESCE(o.payment_method, JSON_UNQUOTE(JSON_EXTRACT(o.metadata, '$.payment'))) AS payment_method,
-        o.email AS order_email, o.name AS order_name, u.email AS user_email, u.role AS user_role, u.first_name, u.last_name
-             FROM \`transactions\` tr
-             LEFT JOIN orders o ON tr.order_id = o.id
-             LEFT JOIN order_items oi ON o.id = oi.order_id
-             LEFT JOIN users u ON o.user_id = u.id
-             GROUP BY tr.id
-             ORDER BY tr.id DESC LIMIT 500`
-          );
-          rows = r[0];
-        } else {
-          const r = await pool.execute(`SELECT * FROM \`${t}\` ORDER BY id DESC LIMIT 500`);
-          rows = r[0];
-        }
-
-        // If the table exists but has no rows, continue to next candidate so admins see orders when
-        // transactions is present but empty. Only return when we have actual rows.
-        if (rows && rows.length > 0) {
-          return res.json({ table: t, rows });
-        }
-        // otherwise fall through to try next table name
-      } catch (err) {
-        // table may not exist - continue to next
-        if (err && err.code === 'ER_NO_SUCH_TABLE') continue;
-        // unexpected error - throw
-        throw err;
-      }
-    }
-    // no known transactions table present
-    return res.json({ table: null, rows: [] });
-  } catch (err) {
-    console.error('Admin get transactions error', err);
-    res.status(500).json({ error: 'Failed to fetch transactions' });
-  }
-});
-
-module.exports = router;
-
 // Admin: delete a user
 router.delete('/users/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const [result] = await pool.execute('DELETE FROM users WHERE id = ?', [id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'User not found' });
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
     res.json({ ok: true });
   } catch (err) {
     console.error('Failed to delete user', err);
@@ -403,19 +416,89 @@ router.delete('/users/:id', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
-// Admin-only: update a transaction's status when it is stored in `transactions` table
+// Transactions: return orders as transactions
+router.get('/transactions', verifyToken, requireAdmin, async (req, res) => {
+  try {
+    // Fetch orders with user info and aggregated order items
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        users:user_id (email, role, first_name, last_name)
+      `)
+      .order('id', { ascending: false })
+      .limit(500);
+
+    if (ordersError) throw ordersError;
+
+    if (!orders || orders.length === 0) {
+      return res.json({ table: 'orders', rows: [] });
+    }
+
+    const orderIds = orders.map(o => o.id);
+
+    // Fetch all order items for these orders
+    const { data: items, error: itemsError } = await supabase
+      .from('order_items')
+      .select('order_id, total_price')
+      .in('order_id', orderIds);
+
+    if (itemsError) throw itemsError;
+
+    // Sum total_price per order
+    const itemSumsByOrder = (items || []).reduce((acc, it) => {
+      acc[it.order_id] = (acc[it.order_id] || 0) + parseFloat(it.total_price || 0);
+      return acc;
+    }, {});
+
+    const rows = orders.map(o => {
+      const itemsTotal = itemSumsByOrder[o.id] || 0;
+      return {
+        ...o,
+        order_id: o.id,
+        order_number: o.order_number,
+        payment_method: o.payment_method || (o.metadata?.payment),
+        user_email: o.users?.email,
+        user_role: o.users?.role,
+        first_name: o.users?.first_name,
+        last_name: o.users?.last_name,
+        amount: o.total || itemsTotal
+      };
+    });
+
+    return res.json({ table: 'orders', rows });
+  } catch (err) {
+    console.error('Admin get transactions error', err);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
+// Admin: update transaction/order status
 router.put('/transactions/:id/status', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   const { status } = req.body || {};
   const allowed = ['Selesai', 'Menunggu', 'Gagal', 'Dikirim', 'Dalam Pengiriman'];
   if (!status || !allowed.includes(status)) return res.status(400).json({ error: 'Invalid status' });
+  
   try {
-    const [result] = await pool.execute('UPDATE transactions SET status = ? WHERE id = ?', [status, id]);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Transaction not found' });
-    const [rows] = await pool.execute('SELECT id, status FROM transactions WHERE id = ?', [id]);
-    return res.json({ ok: true, transaction: rows[0] });
+    const { error: updateError } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', id);
+
+    if (updateError) throw updateError;
+
+    const { data: order } = await supabase
+      .from('orders')
+      .select('id, status')
+      .eq('id', id)
+      .single();
+
+    return res.json({ ok: true, transaction: order });
   } catch (err) {
     console.error('Failed to update transaction status', err);
     return res.status(500).json({ error: 'Failed to update status' });
   }
 });
+
+module.exports = router;

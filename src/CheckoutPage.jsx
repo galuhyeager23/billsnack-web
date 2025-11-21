@@ -37,6 +37,9 @@ const CheckoutPage = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [btnHover, setBtnHover] = useState(false);
+  const [shippingFeePerStore, setShippingFeePerStore] = useState(0);
+  const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingError, setShippingError] = useState(null);
 
   // Get checkout seller ID from navigation state (if coming from specific seller checkout)
   const checkoutSellerId = location.state?.checkoutSellerId;
@@ -75,27 +78,61 @@ const CheckoutPage = () => {
   }, 0);
   const discount = subtotal * 0.2;
 
-  // Calculate delivery fee based on shipping method
-  const getDeliveryFee = () => {
-    switch (shippingMethod) {
-      case "gosend":
-        return 0; // Free delivery
-      case "jne":
-        return 5;
-      case "jnt":
-        return 8;
-      default:
-        return 15; // Default fallback
-    }
-  };
-
-  const deliveryFee = getDeliveryFee() * checkoutCarts.length; // Multiply by number of sellers
-  const total = subtotal - discount + deliveryFee;
-
+  // Fetch distance-based shipping fee when dependencies change
   const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+
+  useEffect(() => {
+    if (!formData.city || !shippingMethod) return; // wait until required data entered
+    let active = true;
+    const fetchQuote = async () => {
+      setShippingLoading(true);
+      setShippingError(null);
+      try {
+        const res = await fetch(`${API_BASE}/api/shipping/quote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            city: formData.city,
+            postalCode: formData.postalCode || null,
+            shippingMethod,
+            sellersCount: checkoutCarts.length
+          })
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || 'Gagal menghitung ongkir');
+        }
+        const data = await res.json();
+        if (active) {
+          setShippingFeePerStore(data.feePerStore || 0);
+          setShippingError(null);
+        }
+      } catch (err) {
+        if (active) {
+          setShippingError(err.message || 'Gagal menghitung ongkir');
+          setShippingFeePerStore(0);
+        }
+      } finally {
+        if (active) setShippingLoading(false);
+      }
+    };
+    fetchQuote();
+    return () => { active = false; };
+  }, [API_BASE, formData.city, formData.postalCode, shippingMethod, checkoutCarts.length]);
+
+  const deliveryFee = shippingFeePerStore * checkoutCarts.length;
+  const total = subtotal - discount + deliveryFee;
 
   const handlePlaceOrder = async (e) => {
     e.preventDefault();
+    if (shippingLoading) {
+      alert('Menunggu perhitungan ongkir selesai');
+      return;
+    }
+    if (shippingError) {
+      alert('Tidak bisa membuat pesanan: ' + shippingError);
+      return;
+    }
     setSubmitting(true);
     try {
       const headers = { 'Content-Type': 'application/json' };
@@ -106,7 +143,7 @@ const CheckoutPage = () => {
         const items = sellerCart.items;
         const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
         const discount = subtotal * 0.2;
-        const deliveryFee = getDeliveryFee();
+        const deliveryFee = shippingFeePerStore; // per store
         const total = subtotal - discount + deliveryFee;
 
         const payload = {
@@ -129,8 +166,7 @@ const CheckoutPage = () => {
           })),
           subtotal,
           discount,
-          deliveryFee,
-          total,
+          total, // server will recompute deliveryFee & total for integrity
           paymentMethod,
           shippingMethod,
           sellerId: sellerCart.sellerId !== 'admin' ? sellerCart.sellerId : null,
@@ -156,7 +192,7 @@ const CheckoutPage = () => {
       // Collect all order IDs and items from checkout
       const orderIds = orders.map(o => o.orderId || Math.random().toString(36).substr(2, 9).toUpperCase()).join(', ');
       const checkoutItems = checkoutCarts.flatMap(cart => cart.items);
-      const totalAmount = subtotal - discount + (getDeliveryFee() * checkoutCarts.length);
+      const totalAmount = subtotal - discount + deliveryFee;
       
       // Create lightweight items list for confirmation page
       const purchasedItems = checkoutItems.map(it => ({ id: it.id, name: it.name, image: it.image || '' }));
@@ -206,35 +242,35 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-surface">
       <div className="px-8 sm:px-12 lg:px-16 py-12">
-        <nav className="flex items-center text-sm text-gray-500 mb-8">
-          <Link to="/" className="hover:text-gray-700">
+        <nav className="flex items-center text-sm text-muted mb-8">
+          <Link to="/" className="hover:text-[rgb(var(--accent))]">
             Beranda
           </Link>{" "}
           <ChevronRightIcon />
-          <Link to="/cart" className="hover:text-gray-700">
+          <Link to="/cart" className="hover:text-[rgb(var(--accent))]">
             Keranjang
           </Link>{" "}
           <ChevronRightIcon />
-          <span className="text-gray-700 font-medium">Checkout</span>
+          <span className="font-medium text-gray-700 dark:text-neutral-200">Checkout</span>
         </nav>
-        <h1 className="text-4xl font-bold mb-8">Checkout</h1>
+        <h1 className="text-4xl font-bold mb-8 text-gradient">Checkout</h1>
         <form
           onSubmit={handlePlaceOrder}
           className="grid grid-cols-1 lg:grid-cols-3 gap-12"
         >
-          <div className="lg:col-span-2 bg-white p-8 rounded-lg shadow space-y-8">
+          <div className="lg:col-span-2 bg-surface p-8 rounded-lg shadow space-y-8 border border-base">
             {/* Shipping Information */}
             <div>
               <h2 className="text-2xl font-bold mb-4">Informasi Pengiriman</h2>
               {user && (
-                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4">
-                  <p className="text-sm text-blue-800">
-                    Informasi telah diisi sebelumnya dari profil Anda.{" "}
+                <div className="bg-surface-alt border border-base rounded-md p-3 mb-4">
+                  <p className="text-sm text-muted">
+                    Informasi terisi otomatis dari profil Anda.{" "}
                     <Link
                       to="/profile"
-                      className="underline hover:text-blue-600"
+                      className="underline accent-text"
                     >
                       Perbarui profil
                     </Link>
@@ -249,7 +285,7 @@ const CheckoutPage = () => {
                   onChange={handleInputChange}
                   placeholder="Username"
                   required
-                  className="bg-gray-100 p-3 rounded-md w-full sm:col-span-2"
+                  className="p-3 rounded-md w-full sm:col-span-2 bg-surface-alt border border-base placeholder:text-muted"
                 />
                 <input
                   type="email"
@@ -258,7 +294,7 @@ const CheckoutPage = () => {
                   onChange={handleInputChange}
                   placeholder="Alamat Email"
                   required
-                  className="bg-gray-100 p-3 rounded-md w-full sm:col-span-2"
+                  className="p-3 rounded-md w-full sm:col-span-2 bg-surface-alt border border-base placeholder:text-muted"
                 />
                 <input
                   type="tel"
@@ -267,7 +303,7 @@ const CheckoutPage = () => {
                   onChange={handleInputChange}
                   placeholder="Nomor Telepon"
                   required
-                  className="bg-gray-100 p-3 rounded-md w-full sm:col-span-2"
+                  className="p-3 rounded-md w-full sm:col-span-2 bg-surface-alt border border-base placeholder:text-muted"
                 />
                 <input
                   type="text"
@@ -276,7 +312,7 @@ const CheckoutPage = () => {
                   onChange={handleInputChange}
                   placeholder="Alamat Lengkap"
                   required
-                  className="bg-gray-100 p-3 rounded-md w-full sm:col-span-2"
+                  className="p-3 rounded-md w-full sm:col-span-2 bg-surface-alt border border-base placeholder:text-muted"
                 />
                 <input
                   type="text"
@@ -285,7 +321,7 @@ const CheckoutPage = () => {
                   onChange={handleInputChange}
                   placeholder="Kota"
                   required
-                  className="bg-gray-100 p-3 rounded-md w-full"
+                  className="p-3 rounded-md w-full bg-surface-alt border border-base placeholder:text-muted"
                 />
                 <input
                   type="text"
@@ -294,7 +330,7 @@ const CheckoutPage = () => {
                   onChange={handleInputChange}
                   placeholder="Kode Pos"
                   required
-                  className="bg-gray-100 p-3 rounded-md w-full"
+                  className="p-3 rounded-md w-full bg-surface-alt border border-base placeholder:text-muted"
                 />
               </div>
             </div>
@@ -303,7 +339,7 @@ const CheckoutPage = () => {
             <div>
               <h2 className="text-2xl font-bold mb-4">Metode Pengiriman</h2>
               <div className="space-y-3">
-                <label className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <label className="flex items-center p-4 border border-base rounded-lg hover:bg-surface-alt cursor-pointer transition">
                   <input
                     type="radio"
                     name="shippingMethod"
@@ -314,7 +350,7 @@ const CheckoutPage = () => {
                   />
                   <div className="flex-1">
                     <div className="font-semibold">GoSend</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted">
                       Pengiriman instan dalam 1-2 jam
                     </div>
                     <div className="text-sm font-medium text-green-600">
@@ -322,7 +358,7 @@ const CheckoutPage = () => {
                     </div>
                   </div>
                 </label>
-                <label className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <label className="flex items-center p-4 border border-base rounded-lg hover:bg-surface-alt cursor-pointer transition">
                   <input
                     type="radio"
                     name="shippingMethod"
@@ -333,15 +369,15 @@ const CheckoutPage = () => {
                   />
                   <div className="flex-1">
                     <div className="font-semibold">JNE</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted">
                       Pengiriman reguler 2-3 hari kerja
                     </div>
                     <div className="text-sm font-medium text-green-600">
-                      Rp{formatPrice(5)}
+                      Rp{formatPrice(32000)}
                     </div>
                   </div>
                 </label>
-                <label className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <label className="flex items-center p-4 border border-base rounded-lg hover:bg-surface-alt cursor-pointer transition">
                   <input
                     type="radio"
                     name="shippingMethod"
@@ -352,11 +388,11 @@ const CheckoutPage = () => {
                   />
                   <div className="flex-1">
                     <div className="font-semibold">JNT</div>
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted">
                       Pengiriman express 1-2 hari kerja
                     </div>
                     <div className="text-sm font-medium text-green-600">
-                      Rp{formatPrice(8)}
+                      Rp{formatPrice(30000)}
                     </div>
                   </div>
                 </label>
@@ -411,13 +447,13 @@ const CheckoutPage = () => {
 
               {/* Payment Details Based on Method */}
               {paymentMethod === "qris" && (
-                <div className="text-center p-6 bg-gray-50 rounded-lg">
+                <div className="text-center p-6 bg-surface-alt rounded-lg border border-base">
                   <h3 className="text-lg font-semibold mb-4">
                     Scan Kode QR untuk Membayar
                   </h3>
-                  <div className="bg-white p-4 rounded-lg inline-block">
+                  <div className="bg-surface p-4 rounded-lg inline-block border border-base">
                     {/* QR Code image for Billsnack (place file `public/qris-billsnack.png`) */}
-                    <div className="w-48 h-48 flex items-center justify-center rounded-lg overflow-hidden bg-white">
+                    <div className="w-48 h-48 flex items-center justify-center rounded-lg overflow-hidden bg-surface border border-base">
                       <img
                         src="/assets/qrisbillsnack.jpg"
                         alt="QRIS BillSnack"
@@ -432,7 +468,7 @@ const CheckoutPage = () => {
                       />
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-4">
+                  <p className="text-sm text-muted mt-4">
                     Scan kode QR ini dengan aplikasi e-wallet Anda untuk menyelesaikan pembayaran
                   </p>
                   <p className="text-lg font-bold mt-2">
@@ -442,7 +478,7 @@ const CheckoutPage = () => {
               )}
 
               {paymentMethod === "bank" && (
-                <div className="p-6 bg-gray-50 rounded-lg">
+                <div className="p-6 bg-surface-alt rounded-lg border border-base">
                   <h3 className="text-lg font-semibold mb-4">
                     Detail Transfer Bank
                   </h3>
@@ -464,8 +500,8 @@ const CheckoutPage = () => {
                       <span className="font-bold">Rp{formatPrice(total)}</span>
                     </div>
                   </div>
-                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-sm text-yellow-800">
+                  <div className="mt-4 p-3 bg-surface border border-base rounded">
+                    <p className="text-sm text-muted">
                       <strong>Penting:</strong> Harap sertakan ID pesanan Anda
                       dalam deskripsi transfer. Pesanan Anda akan diproses
                       setelah pembayaran dikonfirmasi (biasanya dalam 1-2 hari kerja).
@@ -475,7 +511,7 @@ const CheckoutPage = () => {
               )}
 
               {paymentMethod === "cod" && (
-                <div className="p-6 bg-gray-50 rounded-lg">
+                <div className="p-6 bg-surface-alt rounded-lg border border-base">
                   <h3 className="text-lg font-semibold mb-4">
                     Bayar di Tempat
                   </h3>
@@ -489,8 +525,8 @@ const CheckoutPage = () => {
                       <span className="font-bold">Rp{formatPrice(total)}</span>
                     </div>
                   </div>
-                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-                    <p className="text-sm text-blue-800">
+                  <div className="mt-4 p-3 bg-surface border border-base rounded">
+                    <p className="text-sm text-muted">
                       <strong>Catatan:</strong> Anda akan membayar tunai saat
                       pesanan dikirim ke alamat Anda. Harap siapkan jumlah yang tepat
                       untuk pelayanan yang lebih cepat.
@@ -502,7 +538,7 @@ const CheckoutPage = () => {
           </div>
 
           {/* Order Summary */}
-          <div className="bg-amber-50 p-8 rounded-lg shadow h-fit border border-amber-100">
+          <div className="bg-surface-alt p-8 rounded-lg shadow h-fit border border-base">
             <h2 className="text-2xl font-bold mb-6 border-b pb-4">
               Ringkasan Pesanan
             </h2>
@@ -514,15 +550,15 @@ const CheckoutPage = () => {
               const sellerTotal = sellerSubtotal - sellerDiscount;
               
               return (
-                <div key={sellerCart.sellerId} className={`${index > 0 ? 'mt-6 pt-6 border-t' : ''}`}>
+                <div key={sellerCart.sellerId} className={`${index > 0 ? 'mt-6 pt-6 border-t border-base' : ''}`}>
                   <div className="mb-3 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-5 h-5 mr-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
                     <div>
-                      <p className="font-bold text-gray-900">{sellerCart.sellerName}</p>
+                      <p className="font-semibold accent-text">{sellerCart.sellerName}</p>
                       {sellerCart.resellerEmail && (
-                        <p className="text-xs text-gray-500">{sellerCart.resellerEmail}</p>
+                        <p className="text-xs text-muted">{sellerCart.resellerEmail}</p>
                       )}
                     </div>
                   </div>
@@ -532,7 +568,7 @@ const CheckoutPage = () => {
                         key={item.id}
                         className="flex justify-between items-center text-sm"
                       >
-                        <span className="text-gray-600">
+                        <span className="text-muted">
                           {item.name} x {item.quantity}
                         </span>
                         <span className="font-semibold">
@@ -542,54 +578,61 @@ const CheckoutPage = () => {
                     ))}
                   </div>
                   <div className="mt-2 ml-2 text-sm text-right">
-                    <p className="text-gray-600">Subtotal: Rp{formatPrice(sellerSubtotal)}</p>
+                    <p className="text-muted">Subtotal: Rp{formatPrice(sellerSubtotal)}</p>
                     <p className="text-red-500">Diskon: -Rp{formatPrice(sellerDiscount)}</p>
-                    <p className="font-bold text-blue-600">Total Toko: Rp{formatPrice(sellerTotal)}</p>
+                    <p className="font-semibold accent-text">Total Toko: Rp{formatPrice(sellerTotal)}</p>
                   </div>
                 </div>
               );
             })}
 
-            <div className="space-y-4 text-lg mt-6 border-t pt-4">
+            <div className="space-y-4 text-lg mt-6 border-t pt-4 border-base">
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Belanja</span>
+                <span className="text-muted">Total Belanja</span>
                 <span className="font-semibold">Rp{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Total Diskon (-20%)</span>
+                <span className="text-muted">Total Diskon (20%)</span>
                 <span className="font-semibold text-red-500">
                   -Rp{formatPrice(discount)}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">
+                <span className="text-muted">
                   Biaya Pengiriman {checkoutCarts.length > 1 && `(${checkoutCarts.length} toko)`}
                 </span>
-                <span className="font-semibold">Rp{formatPrice(deliveryFee)}</span>
+                <span className="font-semibold">
+                  {shippingLoading ? 'Menghitung...' : shippingError ? 'Error' : `Rp${formatPrice(deliveryFee)}`}
+                </span>
               </div>
+              {shippingError && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 p-3 rounded text-sm">
+                  {shippingError}
+                </div>
+              )}
               {checkoutCarts.length > 1 && (
-                <div className="bg-blue-50 p-3 rounded-lg">
-                  <p className="text-xs text-blue-800">
+                <div className="bg-surface p-3 rounded-lg border border-base">
+                  <p className="text-xs text-muted">
                     <strong>Info:</strong> Anda berbelanja dari {checkoutCarts.length} toko berbeda. 
                     Biaya pengiriman dikenakan per toko.
                   </p>
                 </div>
               )}
             </div>
-            <div className="flex justify-between text-2xl font-bold mt-6 border-t pt-4">
+            <div className="flex justify-between text-2xl font-bold mt-6 border-t pt-4 border-base">
               <span>Total Keseluruhan</span>
-              <span>Rp{formatPrice(total)}</span>
+              <span className="accent-text">Rp{formatPrice(total)}</span>
             </div>
 
             <button
               type="submit"
               onMouseEnter={() => setBtnHover(true)}
               onMouseLeave={() => setBtnHover(false)}
-              className="w-full mt-6 text-white font-semibold py-4 px-8 rounded-full text-lg focus:outline-none transition duration-300 focus:ring-2 focus:ring-amber-300 disabled:opacity-80"
-              style={{ backgroundColor: submitting ? '#FFB380' : (btnHover ? '#E65A00' : '#FF6B00') }}
-              disabled={submitting}
+              className="w-full mt-6 btn-primary rounded-full text-lg disabled:opacity-80"
+              style={{ filter: btnHover ? 'brightness(1.08)' : 'none', opacity: submitting ? 0.85 : 1 }}
+              disabled={submitting || shippingLoading || !!shippingError}
             >
-              {submitting ? 'Memproses...' : `Buat Pesanan${checkoutCarts.length > 1 ? ` (${checkoutCarts.length} Toko)` : ''}`}
+              {submitting ? 'Memproses...' : shippingLoading ? 'Menghitung Ongkir...' : shippingError ? 'Perbaiki Ongkir' : `Buat Pesanan${checkoutCarts.length > 1 ? ` (${checkoutCarts.length} Toko)` : ''}`}
             </button>
           </div>
         </form>

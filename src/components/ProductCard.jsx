@@ -10,50 +10,38 @@ const ProductCard = ({ product }) => {
     ? (typeof firstImage === 'string' ? firstImage : (firstImage.thumb || firstImage.original))
     : '/images/placeholder.png';
 
+  const discountPct = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : null;
+
   return (
-    <Link to={`/product/${product.id}`} className="group">
-      <div className="bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-        <div className="bg-gray-100 flex items-center justify-center overflow-hidden w-full max-w-[829px] aspect-[1.08/1]">
-          <div className="w-full h-full flex items-center justify-center p-6 bg-transparent">
-            <img
-              src={imageUrl}
-              alt={product.name}
-              className="max-h-full max-w-full object-contain object-center transition-transform duration-300 group-hover:scale-105"
-            />
-          </div>
-        </div>
+    <Link to={`/product/${product.id}`} className="group block">
+      <div className="relative card overflow-hidden aspect-[1/1.15] flex items-center justify-center dark:bg-[rgb(var(--surface-alt))]">
+        {discountPct && (
+          <span className="absolute top-3 left-3 badge bg-red-500/90 text-white shadow-md">-{discountPct}%</span>
+        )}
+        <div className="absolute inset-0 bg-[linear-gradient(150deg,rgba(var(--accent)/0.12)_0%,transparent_55%)] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        <img
+          src={imageUrl}
+          alt={product.name}
+          className="w-full h-full object-contain p-6 transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+        />
       </div>
-      <div className="mt-4">
-        <h3 className="text-lg font-semibold text-gray-800">{product.name}</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          <span className="inline-flex items-center">
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-            </svg>
-            {product.sellerName || product.storeName || product.shopName || product.seller || 'BillSnack Store'}
-          </span>
+      <div className="mt-4 space-y-1">
+        <h3 className="text-sm font-semibold text-gray-800 dark:text-neutral-200 group-hover:accent-text transition-colors">{product.name}</h3>
+        <p className="text-xs text-gray-500 dark:text-muted flex items-center">
+          <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+          </svg>
+          {product.sellerName || product.storeName || product.shopName || product.seller || 'BillSnack Store'}
         </p>
-        <div className="flex items-center mt-1">
+        <div className="flex items-center">
           <StarRating rating={product.rating} />
-          <span className="text-sm text-gray-500 ml-2">{product.rating}/5</span>
+          <span className="text-xs text-gray-500 dark:text-muted ml-2">{product.rating}/5</span>
         </div>
-        <div className="flex items-baseline mt-2 space-x-2">
-          <p className="text-xl font-bold text-black">Rp{formatPrice(product.price)}</p>
+        <div className="flex items-baseline mt-1 space-x-2">
+          <p className="text-base font-bold text-gray-900 dark:text-neutral-100">Rp{formatPrice(product.price)}</p>
           {product.originalPrice && (
-            <p className="text-lg text-gray-400 line-through">
-              Rp{formatPrice(product.originalPrice)}
-            </p>
-          )}
-          {product.originalPrice && (
-            <p className="text-sm font-semibold text-red-500 bg-red-100 px-2 py-1 rounded-full">
-              -
-              {Math.round(
-                ((product.originalPrice - product.price) /
-                  product.originalPrice) *
-                  100
-              )}
-              %
-            </p>
+            <p className="text-sm text-gray-400 line-through">Rp{formatPrice(product.originalPrice)}</p>
           )}
         </div>
       </div>

@@ -115,24 +115,24 @@ const ResellerProductsPage = () => {
         <h1 className="text-3xl font-bold">Produk Saya</h1>
         <Link
           to="/reseller/products/new"
-          className="bg-blue-500 text-white px-5 py-2 rounded-md font-semibold hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-colors"
+          className="accent-bg accent-text px-5 py-2 rounded-md font-semibold hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]/50 transition-colors"
         >
           Tambah Produk Baru
         </Link>
       </div>
 
-      {loading && <div className="p-4 text-sm text-gray-600">Memuat produk...</div>}
+      {loading && <div className="p-4 text-sm text-muted">Memuat produk...</div>}
       {errorMsg && (
-        <div className="p-4 mb-4 bg-red-50 text-red-700 border border-red-100 rounded">{errorMsg} (status: {statusCode})</div>
+        <div className="p-4 mb-4 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-100 dark:border-red-800/40 rounded">{errorMsg} (status: {statusCode})</div>
       )}
 
-      <div className="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+      <div className="bg-surface p-6 rounded-lg shadow-md overflow-x-auto border border-base">
         {products.length === 0 && !loading ? (
-          <div className="p-12 text-center text-gray-500">Belum ada produk</div>
+          <div className="p-12 text-center text-muted">Belum ada produk</div>
         ) : (
           <table className="w-full table-auto text-left">
             <thead>
-              <tr className="border-b bg-gray-50">
+              <tr className="border-b border-base bg-surface-alt">
                 <th className="p-4 font-semibold">Gambar</th>
                 <th className="p-4 font-semibold">Nama</th>
                 <th className="p-4 font-semibold">Kategori</th>
@@ -144,7 +144,7 @@ const ResellerProductsPage = () => {
             </thead>
             <tbody>
               {products.map((product) => (
-                <tr key={product.id} className="border-b hover:bg-gray-50">
+                <tr key={product.id} className="border-b border-base hover:bg-surface-alt">
                   <td className="p-4">
                     {(() => {
                       const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
@@ -165,7 +165,7 @@ const ResellerProductsPage = () => {
                       const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
                       const src = img ? (typeof img === 'string' ? img : (img.thumb || img.original || '')) : '';
                       return !src ? (
-                        <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
+                        <div className="w-16 h-16 bg-surface-alt rounded-md flex items-center justify-center text-xs text-muted border border-base">
                           No image
                         </div>
                       ) : null;
@@ -173,28 +173,33 @@ const ResellerProductsPage = () => {
                   </td>
                   <td className="p-4 font-medium">
                     {product.name}
-                    <div className="text-sm text-gray-500">{product.sellerName || ''}</div>
+                    <div className="text-sm text-muted">{product.sellerName || ''}</div>
                   </td>
-                  <td className="p-4 text-gray-600">{product.category}</td>
+                  <td className="p-4 text-muted">{product.category}</td>
                   <td className="p-4 font-medium">{formatPrice(product.price)}</td>
                   <td className="p-4">
                     <div className="flex items-center gap-3">
-                      <span className="font-bold text-blue-600">{product.stock} unit</span>
+                      <span className="font-bold accent-text">{product.stock} unit</span>
                       <label className="inline-flex items-center">
-                        <input type="checkbox" checked={!!toggleStates[product.id]} onChange={() => handleToggleStock(product)} />
+                        <input
+                          type="checkbox"
+                          checked={!!toggleStates[product.id]}
+                          onChange={() => handleToggleStock(product)}
+                          className="accent-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]/50"
+                        />
                         <span className="ml-2 text-sm">Tersedia</span>
                       </label>
                     </div>
                   </td>
                   <td className="p-4">
                     {product.is_approved ? (
-                      <span className="inline-block bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">Disetujui</span>
+                      <span className="inline-block bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs px-3 py-1 rounded-full">Disetujui</span>
                     ) : (
-                      <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full">Menunggu</span>
+                      <span className="inline-block bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs px-3 py-1 rounded-full">Menunggu</span>
                     )}
                   </td>
                   <td className="p-4">
-                    <Link to={`/reseller/products/edit/${product.id}`} className="text-blue-600 hover:underline mr-4">Edit</Link>
+                    <Link to={`/reseller/products/edit/${product.id}`} className="accent-text hover:underline mr-4">Edit</Link>
                     <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:underline">Hapus</button>
                   </td>
                 </tr>

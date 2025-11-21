@@ -29,11 +29,14 @@ const AdminResellerFormPage = () => {
       try {
         // try to load from API if token available, otherwise keep dummy/demo behavior
         if (authHeaderToken) {
+          console.log('Loading reseller data for ID:', id);
           const resp = await fetch(`/api/admin/users/${id}`, {
             headers: { Authorization: `Bearer ${authHeaderToken}` },
           });
           if (!resp.ok) throw new Error("Failed to load user");
           const data = await resp.json();
+          console.log('Loaded user data:', data);
+          
           setFormData((prev) => ({
             ...prev,
             name: data.store_name || data.first_name || "",
@@ -42,6 +45,14 @@ const AdminResellerFormPage = () => {
             address: data.address || "",
             status: data.is_active ? "active" : "inactive",
           }));
+          
+          console.log('Form data set to:', {
+            name: data.store_name || data.first_name || "",
+            email: data.email || "",
+            phone: data.phone || data.rp_phone || "",
+            address: data.address || "",
+            status: data.is_active ? "active" : "inactive",
+          });
           return;
         }
 
@@ -82,7 +93,7 @@ const AdminResellerFormPage = () => {
     };
 
     load();
-  }, [id, isEditing, token]);
+  }, [id, isEditing, token, authHeaderToken]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -105,6 +116,12 @@ const AdminResellerFormPage = () => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
+    
+    console.log('=== SUBMIT RESELLER FORM ===');
+    console.log('Form Data:', formData);
+    console.log('Is Editing:', isEditing);
+    console.log('User ID:', id);
+    
     try {
       const payload = {
         email: formData.email,
@@ -114,9 +131,13 @@ const AdminResellerFormPage = () => {
       };
       if (formData.password) payload.password = formData.password;
 
+      console.log('Payload to send:', JSON.stringify(payload, null, 2));
+
       if (authHeaderToken) {
         if (isEditing) {
           payload.is_active = formData.status === "active";
+          console.log('Updating user at:', `/api/admin/users/${id}`);
+          
           const resp = await fetch(`/api/admin/users/${id}`, {
             method: "PUT",
             headers: {
@@ -125,10 +146,22 @@ const AdminResellerFormPage = () => {
             },
             body: JSON.stringify(payload),
           });
-          if (!resp.ok) throw new Error("Update failed");
+          
+          console.log('Response status:', resp.status);
+          
+          if (!resp.ok) {
+            const errorText = await resp.text();
+            console.error('Update failed:', errorText);
+            throw new Error(`Update failed: ${resp.status}`);
+          }
+          
+          const result = await resp.json();
+          console.log('Update result:', result);
           alert("Reseller berhasil diupdate!");
         } else {
           payload.role = "reseller";
+          console.log('Creating new user at:', '/api/admin/users');
+          
           const resp = await fetch("/api/admin/users", {
             method: "POST",
             headers: {
@@ -137,20 +170,29 @@ const AdminResellerFormPage = () => {
             },
             body: JSON.stringify(payload),
           });
+          
+          console.log('Response status:', resp.status);
+          
           if (!resp.ok) {
             const err = await resp.json().catch(() => null);
+            console.error('Create failed:', err);
             throw new Error(err && err.error ? err.error : "Create failed");
           }
+          
+          const result = await resp.json();
+          console.log('Create result:', result);
           alert("Reseller berhasil ditambahkan!");
         }
       } else {
         // No token / offline mode - simulate success
+        console.warn('No auth token, simulating success');
         alert(isEditing ? "Reseller berhasil diupdate!" : "Reseller berhasil ditambahkan!");
       }
 
       navigate("/admin/resellers");
     } catch (err) {
-      console.error(err);
+      console.error('=== SUBMIT ERROR ===');
+      console.error('Error:', err);
       alert(err.message || "Gagal menyimpan reseller");
     } finally {
       setSubmitting(false);
@@ -264,7 +306,7 @@ const AdminResellerFormPage = () => {
 
           <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password (opsional)
+              Password 
             </label>
             <input
               type="password"

@@ -150,27 +150,29 @@ const ProductDetailPage = () => {
     .filter((p) => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
+  const discountPct = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : null;
+
   return (
-    <div className="bg-white">
-      <div className="px-8 sm:px-12 lg:px-16 py-12">
-        <nav className="flex items-center text-sm text-gray-500 mb-8">
-          <Link to="/" className="hover:text-gray-700">
+    <div className="bg-surface dark:bg-[rgb(var(--bg))]">
+      <div className="px-8 sm:px-12 lg:px-16 py-12 max-w-7xl mx-auto">
+        <nav className="flex items-center text-sm text-gray-500 dark:text-muted mb-8">
+          <Link to="/" className="hover:accent-text">
             Beranda
           </Link>{" "}
           <ChevronRightIcon />
-          <Link to="/shop" className="hover:text-gray-700">
+          <Link to="/shop" className="hover:accent-text">
             Toko
           </Link>{" "}
           <ChevronRightIcon />
-          <span className="text-gray-700 font-medium">{product.name}</span>
+          <span className="text-gray-700 dark:text-neutral-200 font-medium">{product.name}</span>
         </nav>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Product Images */}
           <div>
-            <div className="bg-gray-100 rounded-lg shadow-sm overflow-hidden mb-4 flex items-center justify-center">
-              <div className="w-full max-w-[829px] aspect-[1.08/1] bg-gray-100 flex items-center justify-center overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center p-8 bg-transparent">
+            <div className="bg-surface-alt dark:bg-[rgb(var(--surface-alt))] rounded-lg shadow-sm overflow-hidden mb-4 flex items-center justify-center border border-base">
+              <div className="w-full max-w-[829px] aspect-[1.08/1] bg-surface-alt dark:bg-[rgb(var(--surface))] flex items-center justify-center overflow-hidden">
+                <div className="w-full h-full flex items-center justify-center p-8">
                   <img
                     src={selectedImage}
                     alt={product.name}
@@ -186,11 +188,11 @@ const ProductDetailPage = () => {
                   <div
                     key={index}
                     className={`w-24 aspect-3/2 rounded-md overflow-hidden cursor-pointer border-2 ${
-                      selectedImage === url ? "border-black" : "border-gray-200"
-                    }`}
+                      selectedImage === url ? "border-[rgb(var(--accent))]" : "border-base"
+                    } bg-surface-alt dark:bg-[rgb(var(--surface-alt))]`}
                     onClick={() => setSelectedImage(url)}
                   >
-                    <div className="w-full h-full flex items-center justify-center bg-white">
+                    <div className="w-full h-full flex items-center justify-center">
                       <img
                         src={url}
                         alt={`${product.name} view ${index + 1}`}
@@ -204,9 +206,9 @@ const ProductDetailPage = () => {
           </div>
 
           {/* Product Details */}
-          <div className="bg-white">
+          <div className="bg-surface dark:bg-[rgb(var(--surface))] rounded-xl border border-base p-6 lg:p-8 shadow-sm">
             <h1 className="text-4xl font-bold">{product.name}</h1>
-            <div className="flex items-center text-sm text-gray-600 mt-3 mb-4">
+            <div className="flex items-center text-sm text-gray-600 dark:text-muted mt-3 mb-4">
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
               </svg>
@@ -215,29 +217,34 @@ const ProductDetailPage = () => {
             </div>
             <div className="flex items-center my-4">
               <StarRating rating={product.rating} />
-              <span className="text-gray-500 ml-2">
+              <span className="text-gray-500 dark:text-muted ml-2">
                 {product.reviewCount} Ulasan
               </span>
             </div>
-            <div className="flex items-baseline space-x-2 mb-6">
-              <p className="text-3xl font-bold text-black">Rp{formatPrice(product.price)}</p>
+            <div className="flex items-baseline space-x-3 mb-6">
+              <p className="text-3xl font-bold text-gray-900 dark:text-neutral-100">Rp{formatPrice(product.price)}</p>
               {product.originalPrice && (
-                <p className="text-2xl text-gray-400 line-through">Rp{formatPrice(product.originalPrice)}</p>
+                <p className="text-xl text-gray-400 dark:text-gray-500 line-through">Rp{formatPrice(product.originalPrice)}</p>
+              )}
+              {discountPct && (
+                <span className="ml-1 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[rgba(var(--accent)/0.18)] text-[rgb(var(--accent-hover))] dark:bg-[rgba(var(--accent)/0.25)] dark:text-[rgb(var(--accent))]">-{discountPct}%</span>
               )}
             </div>
 
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-muted mb-3">
               <span className="font-semibold">Ketersediaan Stok:</span> {product.stock} unit
             </p>
-
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 dark:text-muted mb-3">
+              <span className="font-semibold">Kategori:</span> {product.category || 'Umum'}
+            </p>
+            <p className="text-gray-600 dark:text-muted mb-6">
               <span className="font-semibold">Deskripsi:</span> {product.description}
             </p>
 
             <hr className="my-8" />
 
             <div className="flex items-center space-x-4 mb-8">
-              <div className="flex items-center border rounded-full px-4 py-3">
+              <div className="flex items-center border border-base rounded-full px-4 py-3 bg-surface-alt dark:bg-[rgb(var(--surface-alt))]">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                   className="text-gray-500 text-xl font-bold w-6 h-6 flex items-center justify-center"
@@ -260,32 +267,32 @@ const ProductDetailPage = () => {
                 onMouseEnter={() => setBtnHover(true)}
                 onMouseLeave={() => setBtnHover(false)}
                 disabled={outOfStock}
-                className={`grow text-white font-semibold py-4 px-8 rounded-full text-lg focus:outline-none transition duration-300 ${outOfStock ? "bg-gray-400 cursor-not-allowed" : ""}`}
+                className={`grow btn-primary py-4 px-8 rounded-full text-lg focus:outline-none transition duration-300 ${outOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
                 aria-label="Tambah ke Keranjang"
-                style={!outOfStock ? { backgroundColor: btnHover ? '#E65A00' : '#FF6B00' } : {}}
+                style={outOfStock ? {} : { filter: btnHover ? 'brightness(1.07)' : 'brightness(1.0)' }}
               >
                 {outOfStock ? "Stok Habis" : "Tambah ke Keranjang"}
               </button>
             </div>
 
-            <button className="w-full border border-black text-black font-semibold py-3 px-8 rounded-full text-lg hover:bg-black hover:text-white transition duration-300">
+            <button className="w-full border border-base text-gray-800 dark:text-neutral-200 font-semibold py-3 px-8 rounded-full text-lg hover:accent-bg hover:text-[rgb(var(--accent-fg))] transition duration-300">
               Wishlist ♡
             </button>
           </div>
           {/* Reviews Section */}
           <div className="mt-12 lg:col-span-2">
-            <h2 className="text-2xl font-bold mb-4">Ulasan ({reviews.length})</h2>
+            <h2 className="text-2xl font-bold mb-4 dark:text-neutral-100">Ulasan ({reviews.length})</h2>
             {reviews.length === 0 ? (
-              <p className="text-gray-500">Belum ada ulasan untuk produk ini.</p>
+              <p className="text-gray-500 dark:text-muted">Belum ada ulasan untuk produk ini.</p>
             ) : (
               <div className="space-y-4">
                 {reviews.map((r) => (
-                  <div key={r.id || `${r.userId}-${r.created_at}` } className="p-4 border rounded-md">
+                  <div key={r.id || `${r.userId}-${r.created_at}` } className="p-4 border border-base rounded-md bg-surface-alt dark:bg-[rgb(var(--surface-alt))]">
                     <div className="flex items-center justify-between">
                       <strong>{r.user_name || r.userId || 'Pelanggan'}</strong>
                       <StarRating rating={r.rating} />
                     </div>
-                    {r.comment && <p className="mt-2 text-gray-700">{r.comment}</p>}
+                    {r.comment && <p className="mt-2 text-gray-700 dark:text-neutral-300">{r.comment}</p>}
                   </div>
                 ))}
               </div>
@@ -299,7 +306,7 @@ const ProductDetailPage = () => {
                   <select
                     value={newRating}
                     onChange={(e) => setNewRating(Number(e.target.value))}
-                    className="mt-1 rounded-md border px-3 py-2"
+                    className="mt-1 rounded-md border border-base bg-surface-alt dark:bg-[rgb(var(--surface-alt))] px-3 py-2"
                   >
                     {[5,4,3,2,1].map((v) => (
                       <option key={v} value={v}>{v} bintang</option>
@@ -311,7 +318,7 @@ const ProductDetailPage = () => {
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    className="mt-1 w-full rounded-md border px-3 py-2"
+                    className="mt-1 w-full rounded-md border border-base bg-surface-alt dark:bg-[rgb(var(--surface-alt))] px-3 py-2"
                     rows={4}
                     placeholder="Tulis pengalaman Anda menggunakan produk ini..."
                   />
@@ -320,14 +327,14 @@ const ProductDetailPage = () => {
                   <button
                     type="submit"
                     disabled={submittingReview}
-                    className="inline-flex items-center px-6 py-2 bg-orange-600 text-white rounded-md disabled:opacity-50"
+                    className="inline-flex items-center px-6 py-2 btn-primary rounded-md disabled:opacity-50"
                   >
                     {submittingReview ? 'Mengirim...' : 'Kirim Ulasan'}
                   </button>
                 </div>
               </form>
             ) : (
-              <p className="text-sm text-gray-500 mt-4">
+              <p className="text-sm text-gray-500 dark:text-muted mt-4">
                 {user ? 'Anda belum dapat mengulas produk ini (mungkin belum membeli atau sudah mengulas).' : 'Silakan login setelah membeli untuk mengirim ulasan.'}
               </p>
             )}
@@ -336,9 +343,9 @@ const ProductDetailPage = () => {
 
         {/* Related Products */}
         {relatedProducts.length > 0 && (
-        <div className="bg-gray-50 py-16">
+        <div className="bg-surface-alt dark:bg-[rgb(var(--surface-alt))] py-16 mt-12 rounded-xl border border-base">
           <div className="px-8 sm:px-12 lg:px-16">
-            <h2 className="text-4xl font-bold text-center mb-10">
+            <h2 className="text-4xl font-bold text-center mb-10 dark:text-neutral-100">
               Anda Mungkin Juga Suka
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">

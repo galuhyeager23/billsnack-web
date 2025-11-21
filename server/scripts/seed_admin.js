@@ -1,49 +1,94 @@
 /*
-  Seed script to create or update an admin user in the MySQL `users` table.
-  Usage (from project root):
-    NODE_ENV=development ADMIN_EMAIL=admin@billsnack.id ADMIN_PASSWORD=admin123 node server/scripts/seed_admin.js
+  Seed script to create or update an admin user in the Supabase `users` table.
+  Usage (from server folder):
+    node scripts/seed_admin.js
+  
+  Or with custom credentials:
+    ADMIN_EMAIL=admin@billsnack.id ADMIN_PASSWORD=admin123 node scripts/seed_admin.js
 
-  This script uses bcrypt to hash the password and the project's existing DB pool at ../db.js
+  This script uses bcrypt to hash the password and the project's Supabase client
 */
 require('dotenv').config();
-const pool = require('../db');
+const supabase = require('../supabase');
 const bcrypt = require('bcrypt');
 
 const SALT_ROUNDS = process.env.SALT_ROUNDS ? Number(process.env.SALT_ROUNDS) : 10;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@billsnack.id';
-// Default password as requested: 'admin' — override with ADMIN_PASSWORD env var if you prefer
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin';
+// Default password: 'admin123' — override with ADMIN_PASSWORD env var if you prefer
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
 async function upsertAdmin() {
-  const conn = await pool.getConnection();
   try {
-    const [rows] = await conn.execute('SELECT id, email, role FROM users WHERE email = ?', [ADMIN_EMAIL]);
+    console.log('\n🔍 Checking if admin user exists...');
+    console.log('Email:', ADMIN_EMAIL);
+    
+    // Check if admin already exists
+    const { data: existingUser, error: selectError } = await supabase
+      .from('users')
+      .select('id, email, role')
+      .eq('email', ADMIN_EMAIL)
+      .single();
+
+    // Generate password hash
     const hash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS);
 
-    if (rows && rows.length > 0) {
-      const id = rows[0].id;
-      console.log(`Admin user exists (id=${id}), updating password and role.`);
-      await conn.execute('UPDATE users SET password_hash = ?, role = ? WHERE id = ?', [hash, 'admin', id]);
-      console.log('Admin user updated.');
+    if (existingUser && !selectError) {
+      // Admin exists, update password and role
+      console.log(`\n✓ Admin user exists (id=${existingUser.id}), updating password and role...`);
+      
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          password_hash: hash,
+          role: 'admin',
+          is_active: true
+        })
+        .eq('id', existingUser.id);
+
+      if (updateError) throw updateError;
+      
+      console.log('✓ Admin user updated successfully!');
+      console.log('\n📧 Email:', ADMIN_EMAIL);
+      console.log('🔑 Password:', ADMIN_PASSWORD);
     } else {
-      console.log('Admin user not found - creating new admin user.');
-      const [res] = await conn.execute(
-        'INSERT INTO users (email, password_hash, first_name, last_name, role) VALUES (?, ?, ?, ?, ?)',
-        [ADMIN_EMAIL, hash, 'Admin', 'User', 'admin']
-      );
-      console.log('Admin created with id=', res.insertId);
+      // Admin doesn't exist, create new
+      console.log('\n✓ Admin user not found - creating new admin user...');
+      
+      const { data: newUser, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          email: ADMIN_EMAIL,
+          password_hash: hash,
+          first_name: 'Admin',
+          last_name: 'BillSnack',
+          role: 'admin',
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      
+      console.log('✓ Admin created successfully with id:', newUser.id);
+      console.log('\n📧 Email:', ADMIN_EMAIL);
+      console.log('🔑 Password:', ADMIN_PASSWORD);
     }
+    
+    console.log('\n✅ Done! You can now login with these credentials.\n');
   } catch (err) {
-    console.error('Failed to upsert admin', err);
+    console.error('\n❌ Failed to upsert admin:', err.message);
+    if (err.details) console.error('Details:', err.details);
+    if (err.hint) console.error('Hint:', err.hint);
     process.exitCode = 2;
-  } finally {
-    conn.release();
-    // close pool to exit cleanly
-    await pool.end().catch(() => {});
   }
 }
 
 if (require.main === module) {
-  upsertAdmin().then(() => console.log('Done.')).catch((e) => { console.error(e); process.exit(1); });
+  upsertAdmin()
+    .then(() => process.exit(0))
+    .catch((e) => { 
+      console.error(e); 
+      process.exit(1); 
+    });
 }
 

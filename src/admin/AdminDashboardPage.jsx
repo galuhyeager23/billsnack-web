@@ -101,110 +101,98 @@ const AdminDashboardPage = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case "Selesai":
-        return "text-green-600 bg-green-100";
+        return "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300";
       case "Menunggu":
-        return "text-yellow-600 bg-yellow-100";
+        return "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300";
       case "Gagal":
-        return "text-red-600 bg-red-100";
+        return "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "bg-surface-alt text-muted";
     }
   };
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+    <div className="pb-4">
+      <h1 className="text-3xl font-bold mb-2 text-gradient">Dashboard</h1>
       <div className="flex items-center gap-4 mb-8">
-        <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg font-semibold text-gray-700 overflow-hidden">
+        <div className="w-12 h-12 rounded-full bg-surface-alt border border-base flex items-center justify-center text-lg font-semibold text-muted overflow-hidden">
           {displayAvatar ? (
             // allow inlined base64 images or remote urls
             <img src={displayAvatar} alt={`${displayName || 'Admin'} avatar`} className="w-full h-full object-cover" />
           ) : (
-            <span className="select-none">{displayInitials || 'A'}</span>
+            <span className="select-none accent-text">{displayInitials || 'A'}</span>
           )}
         </div>
         <div>
-          <p className="text-lg text-gray-600">
-            Selamat datang kembali, <span className="font-medium">{displayName || 'Admin'}</span>!
+          <p className="text-lg text-muted">
+            Selamat datang kembali, <span className="font-medium accent-text">{displayName || 'Admin'}</span>!
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-700">
-            Total Produk
-          </h2>
-          <p className="text-5xl font-bold mt-2 text-blue-600">
-            {products.length}
-          </p>
+        <div className="rounded-lg p-6 shadow-md bg-surface-alt border border-base">
+          <h2 className="text-xl font-semibold text-muted">Total Produk</h2>
+          <p className="text-5xl font-bold mt-2 accent-text">{products.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-700">
-            Total Kategori
-          </h2>
-          <p className="text-5xl font-bold mt-2 text-green-600">
-            {new Set(products.map((p) => p.category)).size}
-          </p>
+        <div className="rounded-lg p-6 shadow-md bg-surface-alt border border-base">
+          <h2 className="text-xl font-semibold text-muted">Total Kategori</h2>
+          <p className="text-5xl font-bold mt-2 accent-text">{new Set(products.map((p) => p.category)).size}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-xl font-semibold text-gray-700">
-            Total Transaksi
-          </h2>
-          <p className="text-5xl font-bold mt-2 text-purple-600">
-            {transactions.length}
-          </p>
+        <div className="rounded-lg p-6 shadow-md bg-surface-alt border border-base">
+          <h2 className="text-xl font-semibold text-muted">Total Transaksi</h2>
+          <p className="text-5xl font-bold mt-2 accent-text">{transactions.length}</p>
         </div>
       </div>
 
       <div className="mt-12">
-        <h2 className="text-2xl font-bold mb-4">Transaksi Terbaru</h2>
-        {loadingTx && <div className="text-sm text-gray-600 mb-2">Memuat transaksi terbaru...</div>}
+        <h2 className="text-2xl font-bold mb-4 accent-text">Transaksi Terbaru</h2>
+        {loadingTx && <div className="text-sm text-muted mb-2">Memuat transaksi terbaru...</div>}
         {txError && <div className="text-sm text-red-600 mb-2">Error: {txError}</div>}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="rounded-lg shadow-md overflow-hidden bg-surface-alt border border-base">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-surface-alt/60">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     ID Transaksi
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     ID Pesanan
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Pelanggan
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Jumlah
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Metode Pembayaran
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                     Tanggal
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-base">
                 {transactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={transaction.id} className="hover:bg-surface-alt/70">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       {transaction.id}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                       {transaction.orderId}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
                       {transaction.customer}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm accent-text font-semibold">
                       Rp{formatPrice(transaction.amount)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                       {transaction.paymentMethod}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -212,7 +200,7 @@ const AdminDashboardPage = () => {
                         {transaction.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                       {transaction.date}
                     </td>
                   </tr>

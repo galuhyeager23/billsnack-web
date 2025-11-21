@@ -1,14 +1,11 @@
-/** @type {import('tailwindcss').Config} */
+/** Tailwind config simplified for stability (no custom color utilities) */
 export default {
+  darkMode: 'class',
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
-      colors: {
-        primary: "#000",
-        secondary: "#f0f0f0",
-      },
       fontFamily: {
-        sans: ["system-ui", "Avenir", "Helvetica", "Arial", "sans-serif"],
+        sans: ["Inter", "system-ui", "Avenir", "Helvetica", "Arial", "sans-serif"],
       },
     },
   },

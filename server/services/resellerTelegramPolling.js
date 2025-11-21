@@ -2,10 +2,10 @@
 const ResellerTelegramCommandHandler = require('./resellerTelegramCommands');
 
 class ResellerTelegramPolling {
-  constructor(db) {
-    this.db = db;
+  constructor(supabase) {
+    this.supabase = supabase;
     this.isRunning = false;
-    this.commandHandler = new ResellerTelegramCommandHandler(db, null);
+    this.commandHandler = new ResellerTelegramCommandHandler(supabase, null);
     this.lastUpdateId = 0;
     this.pollingInterval = 1000; // 1 second
   }

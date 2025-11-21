@@ -54,73 +54,74 @@ const InstagramIcon = () => (
 
 const Footer = () => {
   return (
-  <footer className="bg-gradient-to-r from-yellow-700 to-yellow-600 text-white">
-      <div className="px-6 sm:px-12 lg:px-16 py-12 max-w-6xl mx-auto">
+    <footer className="relative bg-surface dark:bg-neutral-900 text-gray-700 dark:text-neutral-300 border-t border-base overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none opacity-30 bg-[radial-gradient(circle_at_25%_30%,rgba(var(--accent)/0.18),transparent_65%),radial-gradient(circle_at_80%_70%,rgba(var(--accent)/0.12),transparent_70%)]"></div>
+      <div className="px-6 sm:px-12 lg:px-16 py-12 max-w-6xl mx-auto relative">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-yellow-400 flex items-center justify-center text-white font-extrabold">B</div>
+              <div className="w-12 h-12 rounded-lg accent-bg flex items-center justify-center font-extrabold shadow-sm">B</div>
               <div>
-                <h3 className="text-2xl font-bold tracking-wider text-white">Bilsnack.id</h3>
-                <p className="text-white text-sm">Camilan enak, layanan cepat. Ikuti kami untuk promo dan update produk baru setiap minggu.</p>
+                <h3 className="text-2xl font-bold tracking-wider text-gradient">Bilsnack.id</h3>
+                <p className="text-sm text-muted max-w-xs">Camilan enak, layanan cepat. Ikuti kami untuk promo dan update produk baru setiap minggu.</p>
               </div>
             </div>
 
             <div className="flex gap-3 mt-4">
-              <a href="#" aria-label="Twitter" className="text-white hover:text-yellow-50 transition-colors">
+              <a href="#" aria-label="Twitter" className="text-muted hover:text-[rgb(var(--accent))] transition-colors">
                 <TwitterIcon />
               </a>
-              <a href="#" aria-label="Facebook" className="text-white hover:text-yellow-50 transition-colors">
+              <a href="#" aria-label="Facebook" className="text-muted hover:text-[rgb(var(--accent))] transition-colors">
                 <FacebookIcon />
               </a>
-              <a href="#" aria-label="Instagram" className="text-white hover:text-yellow-50 transition-colors">
+              <a href="#" aria-label="Instagram" className="text-muted hover:text-[rgb(var(--accent))] transition-colors">
                 <InstagramIcon />
               </a>
             </div>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-3 text-white">Bantuan</h4>
-            <ul className="space-y-2">
-              <li><Link to="/" className="text-white/90 hover:text-white transition-colors">Beranda</Link></li>
-              <li><Link to="/shop" className="text-white/90 hover:text-white transition-colors">Semua Produk</Link></li>
-              <li><Link to="/profile" className="text-white/90 hover:text-white transition-colors">Akun Saya</Link></li>
-              <li><Link to="/contact" className="text-white/90 hover:text-white transition-colors">Kontak</Link></li>
+            <h4 className="font-semibold mb-3 text-gray-800 dark:text-neutral-200">Bantuan</h4>
+            <ul className="space-y-2 text-sm">
+              <li><Link to="/" className="text-muted hover:accent-text transition-colors">Beranda</Link></li>
+              <li><Link to="/shop" className="text-muted hover:accent-text transition-colors">Semua Produk</Link></li>
+              <li><Link to="/profile" className="text-muted hover:accent-text transition-colors">Akun Saya</Link></li>
+              <li><Link to="/contact" className="text-muted hover:accent-text transition-colors">Kontak</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-3 text-white">Perusahaan</h4>
-            <ul className="space-y-2">
-              <li><a href="#" className="text-white/90 hover:text-white transition-colors">Tentang Kami</a></li>
-              <li><a href="#" className="text-white/90 hover:text-white transition-colors">Karir</a></li>
-              <li><a href="#" className="text-white/90 hover:text-white transition-colors">Syarat & Ketentuan</a></li>
-              <li><a href="#" className="text-white/90 hover:text-white transition-colors">Kebijakan Privasi</a></li>
+            <h4 className="font-semibold mb-3 text-gray-800 dark:text-neutral-200">Perusahaan</h4>
+            <ul className="space-y-2 text-sm">
+              <li><a href="#" className="text-muted hover:accent-text transition-colors">Tentang Kami</a></li>
+              <li><a href="#" className="text-muted hover:accent-text transition-colors">Karir</a></li>
+              <li><a href="#" className="text-muted hover:accent-text transition-colors">Syarat & Ketentuan</a></li>
+              <li><a href="#" className="text-muted hover:accent-text transition-colors">Kebijakan Privasi</a></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-semibold mb-3 text-white">Newsletter</h4>
-            <p className="text-white text-sm mb-3">Daftar untuk dapatkan promo terbaru</p>
+            <h4 className="font-semibold mb-3 text-gray-800 dark:text-neutral-200">Newsletter</h4>
+            <p className="text-sm text-muted mb-3">Daftar untuk dapatkan promo terbaru</p>
             <form className="flex gap-2">
-              <input type="email" placeholder="Email Anda" aria-label="Email untuk newsletter" className="w-full rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-300" />
-              <button className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white px-4 rounded-md">Ikut</button>
+              <input type="email" placeholder="Email Anda" aria-label="Email untuk newsletter" className="w-full rounded-md px-3 py-2 bg-surface-alt border border-base text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 dark:focus:ring-amber-300" />
+              <button className="btn-primary px-4 py-2 rounded-md text-sm">Ikut</button>
             </form>
 
             <div className="mt-6">
-              <h5 className="text-white text-sm mb-2">Metode Pembayaran</h5>
+              <h5 className="text-sm font-medium text-gray-800 dark:text-neutral-200 mb-2">Metode Pembayaran</h5>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-6 bg-white rounded-sm flex items-center justify-center text-gray-800 text-xs">VISA</div>
-                <div className="w-10 h-6 bg-white rounded-sm flex items-center justify-center text-gray-800 text-xs">MC</div>
-                <div className="w-10 h-6 bg-white rounded-sm flex items-center justify-center text-gray-800 text-xs">PAY</div>
+                <div className="w-10 h-6 bg-surface-alt rounded-sm flex items-center justify-center text-muted text-xs border border-base">VISA</div>
+                <div className="w-10 h-6 bg-surface-alt rounded-sm flex items-center justify-center text-muted text-xs border border-base">MC</div>
+                <div className="w-10 h-6 bg-surface-alt rounded-sm flex items-center justify-center text-muted text-xs border border-base">PAY</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 border-t border-gray-800 pt-6 flex flex-col md:flex-row items-center justify-between">
-          <p className="text-sm text-white/90">&copy; {new Date().getFullYear()} Bilsnack.id. Semua hak dilindungi.</p>
-          <a href="#top" className="text-sm mt-3 md:mt-0 text-white hover:text-yellow-50">Kembali ke atas ↑</a>
+        <div className="mt-10 border-t border-base pt-6 flex flex-col md:flex-row items-center justify-between">
+          <p className="text-sm text-muted">&copy; {new Date().getFullYear()} Bilsnack.id. Semua hak dilindungi.</p>
+          <a href="#top" className="text-sm mt-3 md:mt-0 accent-text hover:underline">Kembali ke atas ↑</a>
         </div>
       </div>
     </footer>

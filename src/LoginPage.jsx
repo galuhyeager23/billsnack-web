@@ -30,13 +30,13 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-white px-6 py-12">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-6 py-12">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         {/* Left illustration / promo */}
         <div className="hidden md:flex flex-col items-start justify-center space-y-6 px-6">
-          <div className="bg-gradient-to-br from-yellow-200 via-yellow-100 to-white p-6 rounded-3xl shadow-lg">
-            <h2 className="text-2xl font-extrabold text-yellow-800">Bilsnack</h2>
-            <p className="text-gray-600 mt-2">Belanja cemilan favoritmu dengan cepat dan mudah.</p>
+          <div className="p-6 rounded-3xl bg-surface-alt border border-base shadow-lg">
+            <h2 className="text-2xl font-extrabold text-gradient">Bilsnack</h2>
+            <p className="text-muted mt-2">Belanja cemilan favoritmu dengan cepat dan mudah.</p>
           </div>
           <div className="w-full rounded-xl overflow-hidden shadow-md">
             <img src="/hero-food.jpg" alt="snack" className="w-full object-cover h-64" onError={(e)=>{e.target.style.display='none'}} />
@@ -45,15 +45,15 @@ const LoginPage = () => {
 
         {/* Right: auth card */}
         <div className="flex items-center justify-center">
-          <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl">
+          <form onSubmit={handleSubmit} className="w-full max-w-md bg-surface-alt border border-base p-8 rounded-2xl shadow-xl">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Masuk</h1>
-              <span className="text-sm text-gray-500">Selamat datang kembali 👋</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Masuk</h1>
+              <span className="text-sm text-muted">Selamat datang kembali 👋</span>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">Alamat Email</label>
+                <label className="block text-sm font-medium text-muted mb-1" htmlFor="email">Alamat Email</label>
                 <input
                   id="email"
                   type="email"
@@ -61,12 +61,12 @@ const LoginPage = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-gray-200 py-3 px-4 placeholder-gray-400 focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
+                  className="w-full rounded-lg border border-base bg-surface px-4 py-3 placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">Kata Sandi</label>
+                <label className="block text-sm font-medium text-muted mb-1" htmlFor="password">Kata Sandi</label>
                 <div className="relative">
                   <input
                     id="password"
@@ -75,14 +75,14 @@ const LoginPage = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full rounded-lg border border-gray-200 py-3 px-4 pr-12 placeholder-gray-400 focus:ring-2 focus:ring-yellow-300 focus:border-transparent"
+                    className="w-full rounded-lg border border-base bg-surface px-4 py-3 pr-12 placeholder:text-muted focus:border-accent focus:ring-0 transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(s => !s)}
                     aria-pressed={showPassword}
                     aria-label={showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:accent-text"
                   >
                     {showPassword ? 'Sembunyikan' : 'Tampilkan'}
                   </button>
@@ -97,20 +97,20 @@ const LoginPage = () => {
 
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white font-semibold py-3 rounded-full shadow-md transition transform hover:-translate-y-0.5 active:scale-95 disabled:opacity-60"
+                className="w-full btn-primary rounded-full py-3 font-semibold disabled:opacity-60"
                 disabled={submitting}
               >
                 {submitting ? 'Memproses...' : 'Masuk'}
               </button>
 
               <div className="flex items-center gap-3">
-                <div className="h-px flex-1 bg-gray-200" />
-                <div className="text-sm text-gray-400">atau masuk dengan</div>
-                <div className="h-px flex-1 bg-gray-200" />
+                <div className="h-px flex-1 bg-border" />
+                <div className="text-sm text-muted">atau masuk dengan</div>
+                <div className="h-px flex-1 bg-border" />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <button type="button" aria-label="Masuk dengan Google" className="flex items-center justify-center gap-2 border border-gray-200 py-2 rounded-lg hover:shadow-sm">
+                <button type="button" aria-label="Masuk dengan Google" className="flex items-center justify-center gap-2 border border-base py-2 rounded-lg bg-surface hover:bg-surface-alt transition-colors">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 533.5 544.3" className="w-5 h-5">
                     <path fill="#4285f4" d="M533.5 278.4c0-18.6-1.5-36.6-4.3-54H272v102.3h146.9c-6.3 34-25 62.8-53.4 82v68.2h86.3c50.4-46.4 81.7-114.8 81.7-198.5z"/>
                     <path fill="#34a853" d="M272 544.3c72.6 0 133.6-24.1 178.2-65.3l-86.3-68.2c-24 16.1-54.8 25.6-91.9 25.6-70.7 0-130.6-47.7-152.1-111.7H30.1v70.3C74.4 492 166.7 544.3 272 544.3z"/>
@@ -119,26 +119,26 @@ const LoginPage = () => {
                   </svg>
                   Google
                 </button>
-                <button type="button" aria-label="Masuk dengan Twitter" className="flex items-center justify-center gap-2 border border-gray-200 py-2 rounded-lg hover:shadow-sm">
+                <button type="button" aria-label="Masuk dengan Twitter" className="flex items-center justify-center gap-2 border border-base py-2 rounded-lg bg-surface hover:bg-surface-alt transition-colors">
                   <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z" fill="#1DA1F2"/></svg>
                   Twitter
                 </button>
               </div>
 
-              <p className="text-center text-gray-500 text-sm mt-4">
+              <p className="text-center text-muted text-sm mt-4">
                 Belum punya akun?
-                <Link to="/register" className="ml-2 inline-block text-yellow-700 font-semibold px-3 py-1 border border-yellow-200 rounded-full hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-300">
+                <Link to="/register" className="ml-2 inline-block accent-text font-semibold px-3 py-1 border border-accent/30 rounded-full hover:bg-accent/10 focus:outline-none focus:ring-2 focus:ring-accent/40">
                   Daftar
                 </Link>
               </p>
 
-              <div className="mt-6 pt-6 border-t border-gray-200">
-                <p className="text-center text-gray-600 text-sm mb-3">
+              <div className="mt-6 pt-6 border-t border-base">
+                <p className="text-center text-muted text-sm mb-3">
                   Masuk sebagai Reseller?
                 </p>
                 <Link 
                   to="/reseller/login" 
-                  className="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+                  className="w-full block text-center btn-secondary font-semibold py-2 px-4 rounded-lg"
                 >
                   Masuk Sebagai Reseller
                 </Link>
