@@ -461,7 +461,26 @@ Jika menemukan masalah:
 
 ## 🚀 Deployment
 
-### Backend (Server)
+### Deploy ke Vercel (Recommended)
+
+**Panduan lengkap deployment:** [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
+
+**Quick Deploy:**
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/galuhyeager23/billsnack-web)
+
+1. Push code ke GitHub
+2. Import project di Vercel
+3. Set environment variables (lihat [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md))
+4. Deploy!
+
+Vercel akan otomatis:
+
+- Build frontend dengan Vite
+- Setup serverless functions untuk API
+- Supabase tetap berfungsi normal
+
+### Backend (Server) - Alternative Deployment
 
 **Railway / Render / Heroku:**
 
@@ -492,7 +511,7 @@ pm2 save
 pm2 startup
 ```
 
-### Frontend
+### Frontend - Alternative Deployment
 
 **Vercel / Netlify:**
 

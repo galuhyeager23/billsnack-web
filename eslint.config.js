@@ -28,11 +28,13 @@ export default defineConfig([
   },
   // Server-side files use Node globals and CommonJS
   {
-    files: ['server/**', 'server/**/*.{js,jsx}'],
+    files: ['server/**', 'server/**/*.{js,jsx}', 'api/**', 'api/**/*.{js,jsx}'],
     languageOptions: {
       globals: globals.node,
       parserOptions: { ecmaVersion: 'latest', sourceType: 'script' },
     },
-    rules: {},
+    rules: {
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_|next' }],
+    },
   },
 ])
