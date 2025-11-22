@@ -92,11 +92,22 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="px-8 sm:px-12 lg:px-16 py-12 bg-bg">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-8 text-gradient">Profil Saya</h1>
+    <div className="bg-surface dark:bg-[rgb(var(--bg))] min-h-screen">
+      <div className="px-8 sm:px-12 lg:px-16 py-12 max-w-4xl mx-auto">
+        {/* Breadcrumb */}
+        <nav className="flex items-center text-sm text-gray-500 dark:text-muted mb-8">
+          <a href="/" className="hover:text-[rgb(var(--accent))]">
+            Beranda
+          </a>{" "}
+          <svg className="w-4 h-4 mx-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m9 18 6-6-6-6" />
+          </svg>
+          <span className="text-gray-700 dark:text-neutral-200 font-medium">Profil Saya</span>
+        </nav>
 
-        <form onSubmit={handleSubmit} className="bg-surface-alt border border-base p-8 rounded-lg shadow-md space-y-6">
+        <h1 className="text-4xl font-bold mb-8 text-gray-900 dark:text-white">Profil Saya</h1>
+
+        <form onSubmit={handleSubmit} className="bg-surface-alt dark:bg-[rgb(var(--surface-alt))] border border-base p-8 rounded-xl shadow-sm space-y-6">
           <div className="flex items-center gap-6">
             <div className="relative">
               <div className="w-24 h-24 rounded-full overflow-hidden bg-surface-alt border border-base flex items-center justify-center">

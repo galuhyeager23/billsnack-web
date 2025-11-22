@@ -140,14 +140,14 @@ const AdminResellersPage = () => {
         ) : (
           <table className="w-full text-left table-auto">
             <thead>
-              <tr className="border-b bg-gray-50">
-                <th className="p-4 font-semibold">Nama Toko</th>
-                <th className="p-4 font-semibold">Email</th>
-                <th className="p-4 font-semibold">Telepon</th>
-                <th className="p-4 font-semibold">Produk</th>
-                <th className="p-4 font-semibold">Penjualan</th>
-                <th className="p-4 font-semibold">Status</th>
-                <th className="p-4 font-semibold">Aksi</th>
+              <tr className="bg-yellow-500 text-white">
+                <th className="p-4 font-semibold text-white">Nama Toko</th>
+                <th className="p-4 font-semibold text-white">Email</th>
+                <th className="p-4 font-semibold text-white">Telepon</th>
+                <th className="p-4 font-semibold text-white">Produk</th>
+                <th className="p-4 font-semibold text-white">Penjualan</th>
+                <th className="p-4 font-semibold text-white">Status</th>
+                <th className="p-4 font-semibold text-white">Aksi</th>
               </tr>
             </thead>
             <tbody>

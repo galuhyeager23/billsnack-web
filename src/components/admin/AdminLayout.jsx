@@ -147,6 +147,8 @@ const AdminLayout = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("adminAuth");
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("adminUser");
     navigate("/perloginan");
   };
 
@@ -165,8 +167,8 @@ const AdminLayout = () => {
   const navLinkClasses = ({ isActive }) =>
     `flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors ${
       isActive
-        ? "bg-gray-700 text-white"
-        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+        ? "bg-yellow-500 text-white"
+        : "text-gray-300 hover:bg-yellow-500 hover:text-white"
     }`;
 
   return (
@@ -188,7 +190,7 @@ const AdminLayout = () => {
           </div>
           <button
             onClick={handleLogout}
-            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-300"
           >
             Logout
           </button>

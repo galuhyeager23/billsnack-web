@@ -1,43 +1,31 @@
 import React, { useEffect, useState } from "react";
 import { useProducts } from "../contexts/ProductContext";
-import { useAuth } from "../contexts/AuthContext";
+// import { useAuth } from "../contexts/AuthContext";
 import formatPrice from "../utils/format";
 
 const AdminDashboardPage = () => {
   const { products } = useProducts();
-  const { user } = useAuth();
+  // Jangan gunakan user dari AuthContext, hanya ambil data admin dari localStorage
 
   // derive a friendly display name for the admin and avatar
   const { displayName, displayAvatar, displayInitials } = (() => {
     let name = null;
     let avatar = null;
-    // prefer in-memory user from context
-    if (user) {
-      if (user.name) name = user.name;
-      const fn = user.firstName || user.first_name || '';
-      const ln = user.lastName || user.last_name || '';
-      const combined = `${fn} ${ln}`.trim();
-      if (!name && combined) name = combined;
-      if (!name && user.email) name = String(user.email).split('@')[0];
-      if (user.profileImage) avatar = user.profileImage;
-      if (!avatar && user.profileImageUrl) avatar = user.profileImageUrl;
-    }
-
-    // fallback to persisted user in localStorage (if any)
-    if ((!name || !avatar) && typeof window !== 'undefined') {
+    // Hanya ambil dari localStorage adminUser
+    if (typeof window !== 'undefined') {
       try {
-        const raw = localStorage.getItem('billsnack_user');
-        if (raw) {
-          const lu = JSON.parse(raw);
-          if (lu) {
-            if (!name && lu.name) name = lu.name;
-            const fn = lu.firstName || lu.first_name || '';
-            const ln = lu.lastName || lu.last_name || '';
+        const adminRaw = localStorage.getItem('adminUser');
+        if (adminRaw) {
+          const au = JSON.parse(adminRaw);
+          if (au) {
+            if (au.name) name = au.name;
+            const fn = au.firstName || au.first_name || '';
+            const ln = au.lastName || au.last_name || '';
             const combined = `${fn} ${ln}`.trim();
             if (!name && combined) name = combined;
-            if (!name && lu.email) name = String(lu.email).split('@')[0];
-            if (!avatar && (lu.profileImage || lu.profile_image || lu.profileImageUrl || lu.profile_image_url)) {
-              avatar = lu.profileImage || lu.profile_image || lu.profileImageUrl || lu.profile_image_url;
+            if (!name && au.email) name = String(au.email).split('@')[0];
+            if (au.profileImage || au.profile_image || au.profileImageUrl || au.profile_image_url) {
+              avatar = au.profileImage || au.profile_image || au.profileImageUrl || au.profile_image_url;
             }
           }
         }
@@ -45,14 +33,12 @@ const AdminDashboardPage = () => {
         // ignore
       }
     }
-
     // initials fallback
     let initials = null;
     if (name) {
       const parts = name.split(/\s+/).filter(Boolean);
       initials = parts.length === 0 ? null : ((parts[0][0] || '') + (parts[1] ? (parts[1][0] || '') : '')).toUpperCase();
     }
-
     return { displayName: name, displayAvatar: avatar, displayInitials: initials };
   })();
 
@@ -149,65 +135,39 @@ const AdminDashboardPage = () => {
         <h2 className="text-2xl font-bold mb-4 accent-text">Transaksi Terbaru</h2>
         {loadingTx && <div className="text-sm text-muted mb-2">Memuat transaksi terbaru...</div>}
         {txError && <div className="text-sm text-red-600 mb-2">Error: {txError}</div>}
-        <div className="rounded-lg shadow-md overflow-hidden bg-surface-alt border border-base">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-surface-alt/60">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                    ID Transaksi
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                    ID Pesanan
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                    Pelanggan
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                    Jumlah
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                    Metode Pembayaran
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
-                    Tanggal
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-base">
+        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left table-auto">
+            <thead>
+              <tr className="bg-yellow-500 text-white">
+                <th className="p-4 font-semibold text-white">ID Transaksi</th>
+                <th className="p-4 font-semibold text-white">ID Pesanan</th>
+                <th className="p-4 font-semibold text-white">Pelanggan</th>
+                <th className="p-4 font-semibold text-white">Jumlah</th>
+                <th className="p-4 font-semibold text-white">Metode Pembayaran</th>
+                <th className="p-4 font-semibold text-white">Status</th>
+                <th className="p-4 font-semibold text-white">Tanggal</th>
+              </tr>
+            </thead>
+            <tbody>
                 {transactions.map((transaction) => (
-                  <tr key={transaction.id} className="hover:bg-surface-alt/70">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      {transaction.id}
+                  <tr key={transaction.id} className="border-b hover:bg-gray-50">
+                    <td className="p-4">{transaction.id}</td>
+                    <td className="p-4">{transaction.orderId}</td>
+                    <td className="p-4">{transaction.customer}</td>
+                    <td className="p-4">
+                      <span className="font-semibold text-yellow-600">Rp{formatPrice(transaction.amount)}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
-                      {transaction.orderId}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {transaction.customer}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm accent-text font-semibold">
-                      Rp{formatPrice(transaction.amount)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
-                      {transaction.paymentMethod}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(transaction.status)}`}>
+                    <td className="p-4">{transaction.paymentMethod}</td>
+                    <td className="p-4">
+                      <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${getStatusColor(transaction.status)}`}>
                         {transaction.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
-                      {transaction.date}
-                    </td>
+                    <td className="p-4">{transaction.date}</td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

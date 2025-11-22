@@ -376,7 +376,7 @@ const AdminProductFormPage = () => {
         <div className="flex items-center space-x-4">
           <button
             type="submit"
-            className="bg-amber-500 text-white px-6 py-3 rounded-md font-semibold hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition-colors"
+            className="bg-yellow-500 text-white px-6 py-3 rounded-md font-semibold hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors"
           >
             {isEditing ? "Perbarui Produk" : "Simpan Produk"}
           </button>

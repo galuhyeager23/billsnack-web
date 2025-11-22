@@ -579,7 +579,6 @@ const CheckoutPage = () => {
                   </div>
                   <div className="mt-2 ml-2 text-sm text-right">
                     <p className="text-muted">Subtotal: Rp{formatPrice(sellerSubtotal)}</p>
-                    <p className="text-red-500">Diskon: -Rp{formatPrice(sellerDiscount)}</p>
                     <p className="font-semibold accent-text">Total Toko: Rp{formatPrice(sellerTotal)}</p>
                   </div>
                 </div>
@@ -590,12 +589,6 @@ const CheckoutPage = () => {
               <div className="flex justify-between">
                 <span className="text-muted">Total Belanja</span>
                 <span className="font-semibold">Rp{formatPrice(subtotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted">Total Diskon (20%)</span>
-                <span className="font-semibold text-red-500">
-                  -Rp{formatPrice(discount)}
-                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted">

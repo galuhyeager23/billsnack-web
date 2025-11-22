@@ -13,13 +13,13 @@ const HomePage = () => {
     : (products || []).slice().sort((a, b) => (Number(b.reviewCount || 0) - Number(a.reviewCount || 0))).slice(0, 4);
 
   return (
-    <div>
+    <div className="w-full">
       {/* Hero Section */}
-      <section className="relative">
+      <section className="relative w-full">
         {/* Subtle neutral gradient backdrop replacing bright amber */}
         <div className="absolute inset-0 bg-gradient-to-br from-[rgb(var(--surface-alt))] via-[rgb(var(--surface))] to-[rgb(var(--bg))] dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900" />
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_25%_30%,rgba(var(--accent)/0.18),transparent_65%),radial-gradient(circle_at_80%_70%,rgba(var(--accent)/0.12),transparent_70%)]" />
-        <div className="relative px-6 sm:px-12 lg:px-16 py-20 lg:py-28 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-14 items-center">
+        <div className="relative px-2 sm:px-6 lg:px-12 py-20 lg:py-28 w-full grid grid-cols-1 md:grid-cols-2 gap-14 items-center">
           <div className="text-center md:text-left">
             <span className="inline-block mb-4 px-3 py-1 rounded-full accent-bg text-xs font-semibold tracking-wide shadow-sm">PROMO HARI INI</span>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-gray-900 dark:text-white">
@@ -63,8 +63,8 @@ const HomePage = () => {
       </section>
 
       {/* Category Navigation */}
-      <section className="bg-surface dark:bg-neutral-900 py-12">
-        <div className="px-8 sm:px-12 lg:px-16">
+      <section className="bg-surface dark:bg-neutral-900 py-12 w-full">
+        <div className="px-2 sm:px-6 lg:px-12 w-full">
           <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">JELAJAHI KATEGORI</h2>
           <div className="flex justify-center">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-5xl">
@@ -138,8 +138,8 @@ const HomePage = () => {
       </section>
 
       {/* New Arrivals */}
-      <section className="bg-surface py-20">
-        <div className="px-8 sm:px-12 lg:px-16">
+      <section className="bg-surface py-20 w-full">
+        <div className="px-2 sm:px-6 lg:px-12 w-full">
           <h2 className="text-4xl font-bold text-center mb-12">PRODUK TERBARU</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {newArrivals.map((product) => (
@@ -158,8 +158,8 @@ const HomePage = () => {
       </section>
 
       {/* Top Selling */}
-      <section className="bg-surface py-20">
-        <div className="px-8 sm:px-12 lg:px-16">
+      <section className="bg-surface py-20 w-full">
+        <div className="px-2 sm:px-6 lg:px-12 w-full">
           <h2 className="text-4xl font-bold text-center mb-12">TERLARIS</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {topSelling.map((product) => (

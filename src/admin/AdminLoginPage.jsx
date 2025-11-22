@@ -10,7 +10,6 @@ const AdminLoginPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -25,17 +24,28 @@ const AdminLoginPage = () => {
     setError("");
     setSubmitting(true);
     try {
-      const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
+      const apiBase =
+        import.meta.env.VITE_API_URL ||
+        (import.meta.env.PROD
+          ? window.location.origin
+          : "http://localhost:4000");
       const res = await fetch(`${apiBase}/api/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         // send admin:true so backend can treat this as an admin login attempt
-        body: JSON.stringify({ email: formData.email, password: formData.password, admin: true }),
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          admin: true,
+        }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
         // Prefer server-provided error message when available
-        const msg = (data && data.error) ? data.error : 'Kredensial admin tidak valid. Silakan coba lagi.';
+        const msg =
+          data && data.error
+            ? data.error
+            : "Kredensial admin tidak valid. Silakan coba lagi.";
         setError(msg);
         setSubmitting(false);
         return;
@@ -43,32 +53,34 @@ const AdminLoginPage = () => {
       // expected { user, token }
       if (data && data.token) {
         // store token for admin API calls
-        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem("adminToken", data.token);
         // also persist admin user info so Admin dashboard can display the admin name
         if (data.user) {
           try {
-            localStorage.setItem('billsnack_user', JSON.stringify(data.user));
+            localStorage.setItem("adminUser", JSON.stringify(data.user));
           } catch {
             // ignore storage errors
           }
-          // also persist standard token so AuthProvider can pick it up after reload
-          try { localStorage.setItem('billsnack_token', data.token); } catch { /* ignore */ }
         }
         // keep a simple adminAuth flag for layout checks
         localStorage.setItem(
-          'adminAuth',
-          JSON.stringify({ isLoggedIn: true, email: (data.user && data.user.email) || formData.email, loginTime: new Date().toISOString() })
+          "adminAuth",
+          JSON.stringify({
+            isLoggedIn: true,
+            email: (data.user && data.user.email) || formData.email,
+            loginTime: new Date().toISOString(),
+          })
         );
         setSubmitting(false);
         // navigate then reload so AuthProvider reads the persisted user/token
-        navigate('/admin');
+        navigate("/admin");
         window.location.reload();
       } else {
-        setError('Login gagal - respon tidak valid');
+        setError("Login gagal - respon tidak valid");
       }
     } catch (err) {
-      console.error('Admin login error', err);
-      setError('Terjadi kesalahan saat menghubungkan server');
+      console.error("Admin login error", err);
+      setError("Terjadi kesalahan saat menghubungkan server");
       setSubmitting(false);
     }
   };
@@ -99,8 +111,9 @@ const AdminLoginPage = () => {
                 value={formData.email}
                 onChange={handleInputChange}
                 placeholder="Masukan email admin"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500"
                 required
+                aria-label="Email Admin"
               />
             </div>
 
@@ -114,17 +127,18 @@ const AdminLoginPage = () => {
                 value={formData.password}
                 onChange={handleInputChange}
                 placeholder="Masukkan kata sandi admin"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-black"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500"
                 required
+                aria-label="Kata Sandi Admin"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-amber-500 text-white font-semibold py-3 px-4 rounded-full hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
+              className="w-full bg-yellow-500 text-white font-semibold py-3 px-4 rounded-full hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition duration-300"
               disabled={submitting}
             >
-              {submitting ? 'Memproses...' : 'Masuk'}
+              {submitting ? "Memproses..." : "Masuk"}
             </button>
           </form>
           {/* Demo credentials removed for security - contact admin to obtain credentials */}
