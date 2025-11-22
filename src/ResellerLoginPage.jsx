@@ -116,7 +116,7 @@ const ResellerLoginPage = () => {
               <p className="text-center text-muted text-sm mt-4">
                 Belum terdaftar sebagai reseller?
                 <a
-                  href={`https://wa.me/6289524452716?text=${encodeURIComponent(prefillResellerMessage)}`}
+                  href={`https://wa.me/6288973294105?text=${encodeURIComponent(prefillResellerMessage)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-2 inline-block text-yellow-700 font-semibold px-3 py-1 border border-yellow-200 rounded-full hover:bg-yellow-50 focus:outline-none focus:ring-2 focus:ring-yellow-300"

@@ -130,6 +130,8 @@ const OrderConfirmationPage = () => {
   const [modalProduct, setModalProduct] = useState(null);
   const [reviewBtnHover, setReviewBtnHover] = useState(false);
 
+  // helper to build WhatsApp message/link (avoid nested template literals in JSX)
+
   const getPaymentInstructions = () => {
     switch (paymentMethod) {
       case "qris":
@@ -138,9 +140,9 @@ const OrderConfirmationPage = () => {
             <h3 className="font-semibold text-muted">
               QRIS Payment Instructions
             </h3>
-            <p className="text-sm text-muted mt-2">
-              Silakan selesaikan pembayaran QRIS Anda menggunakan aplikasi e-wallet pilihan Anda.
-              Pesanan akan diproses setelah pembayaran dikonfirmasi.
+            <div className="text-sm text-muted mt-2">
+              <p>Silakan selesaikan pembayaran QRIS Anda menggunakan aplikasi e-wallet pilihan Anda.
+              Pesanan akan diproses setelah pembayaran dikonfirmasi.</p>
                 {/* WhatsApp payment proof UI (styled card) */}
                 <div className="mt-4 w-full max-w-md">
                   <div className="card p-4">
@@ -186,7 +188,7 @@ const OrderConfirmationPage = () => {
                           </button>
 
                           <a
-                            href={`https://wa.me/6289524452716?text=${encodeURIComponent(`Halo, saya sudah melakukan pembayaran untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`)}`}
+                            href={`https://wa.me/6288973294105?text=${encodeURIComponent(`Halo, saya sudah melakukan pembayaran untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="whatsapp-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
@@ -201,7 +203,7 @@ const OrderConfirmationPage = () => {
                     </div>
                   </div>
                 </div>
-            </p>
+              </div>
             <div className="mt-4 flex flex-col items-center justify-center">
               <p className="text-sm font-medium text-blue-800 mb-2">Scan QRIS Code:</p>
               <div className="w-64 h-64 bg-surface rounded-lg p-3 shadow-md border border-base">
@@ -209,7 +211,7 @@ const OrderConfirmationPage = () => {
                   src="/qrisbillsnack.jpg"
                   alt="QRIS BillSnack"
                   className="w-full h-full object-contain"
-                  onError={(e) => {
+                  onError={() => {
                     console.error('Failed to load QRIS image');
                   }}
                 />
@@ -286,7 +288,7 @@ const OrderConfirmationPage = () => {
                     {copySuccess && <span className="text-sm text-muted">{copySuccess}</span>}
                   </div>
                   <a
-                    href={`https://wa.me/6289524452716?text=${encodeURIComponent(`Halo, saya sudah transfer ke BCA 1234567890 a.n BillSnack Store untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`)}`}
+                    href={`https://wa.me/6288973294105?text=${encodeURIComponent(`Halo, saya sudah transfer ke BCA 1234567890 a.n BillSnack Store untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="whatsapp-btn inline-block px-3 py-1 rounded text-sm"
