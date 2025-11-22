@@ -245,46 +245,40 @@ const ResellerDashboardPage = () => {
 
       {/* Sold Products Table */}
       {soldProducts.length > 0 && (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+        <div className="mb-8">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Produk Terjual</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nama Produk
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Harga Satuan
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Jumlah Terjual
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Pesanan
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Total Pendapatan
-                  </th>
+          <div className="bg-white rounded-lg shadow-md overflow-hidden mb-0">
+            <table className="w-full table-auto text-left">
+              <thead>
+                <tr className="bg-yellow-500 text-white">
+                  <th className="p-4 font-semibold text-white">Nama Produk</th>
+                  <th className="p-4 font-semibold text-white">Harga Satuan</th>
+                  <th className="p-4 font-semibold text-white">Jumlah Terjual</th>
+                  <th className="p-4 font-semibold text-white">Total Pesanan</th>
+                  <th className="p-4 font-semibold text-white">Total Pendapatan</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+            </table>
+          </div>
+          <div className="bg-white overflow-x-auto rounded-lg shadow-md">
+            <table className="w-full table-auto text-left">
+              <tbody>
                 {soldProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                  <tr key={product.id} className="border-b hover:bg-gray-50">
+                    <td className="p-4">
+                      <div className="font-semibold text-gray-900">{product.name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{formatPrice(product.price)}</div>
+                    <td className="p-4">
+                      <div className="font-semibold text-yellow-600">{formatPrice(product.price)}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.totalQuantitySold}</div>
+                    <td className="p-4">
+                      <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">{product.totalQuantitySold}</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.orderCount}</div>
+                    <td className="p-4">
+                      <div className="text-gray-900">{product.orderCount}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-semibold text-green-600">{formatPrice(product.totalRevenue)}</div>
+                    <td className="p-4">
+                      <div className="font-semibold text-green-600">{formatPrice(product.totalRevenue)}</div>
                     </td>
                   </tr>
                 ))}

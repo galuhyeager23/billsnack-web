@@ -56,6 +56,7 @@ const CartItemRow = ({ item }) => {
         <button
           onClick={() => updateQuantity(cartItemId, item.quantity - 1)}
           className="text-muted text-xl hover:text-[rgb(var(--accent))]"
+          aria-label="Kurangi jumlah"
         >
           -
         </button>
@@ -63,6 +64,7 @@ const CartItemRow = ({ item }) => {
         <button
           onClick={() => updateQuantity(cartItemId, item.quantity + 1)}
           className="text-muted text-xl hover:text-[rgb(var(--accent))]"
+          aria-label="Tambah jumlah"
         >
           +
         </button>
@@ -73,6 +75,7 @@ const CartItemRow = ({ item }) => {
       <button
         onClick={() => removeFromCart(cartItemId)}
         className="text-red-500 hover:text-red-700 ml-4"
+        aria-label={`Hapus ${item.name} dari keranjang`}
       >
         <TrashIcon />
       </button>
@@ -157,10 +160,6 @@ const CartPage = () => {
                       <div className="flex justify-between text-sm text-muted">
                         <span>Subtotal</span>
                         <span className="font-medium text-gray-700 dark:text-neutral-200">Rp {formatPrice(subtotal)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-muted">
-                        <span>Diskon (20%)</span>
-                        <span className="font-medium text-red-500">-Rp {formatPrice(discount)}</span>
                       </div>
                       <div className="flex justify-between font-semibold text-base border-t border-base pt-2">
                         <span className="text-muted">Total Toko</span>

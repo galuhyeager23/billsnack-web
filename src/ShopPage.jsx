@@ -5,11 +5,28 @@ import { useProducts } from "./contexts/ProductContext";
 import ProductCard from "./components/ProductCard";
 import SkeletonCard from "./components/SkeletonCard";
 
+const ChevronRightIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="m9 18 6-6-6-6" />
+  </svg>
+);
+
 const ShopPage = () => {
   const { products, loading } = useProducts();
   const location = useLocation();
   const qs = new URLSearchParams(location.search);
   const category = qs.get('category') || '';
+  const search = qs.get('search') || '';
   const [sort, setSort] = useState('');
 
   const categories = useMemo(() => {
@@ -20,14 +37,30 @@ const ShopPage = () => {
 
   const filtered = useMemo(() => {
     let base = category ? products.filter(p => String(p.category || '').toLowerCase() === String(category).toLowerCase()) : products;
+    if (search) {
+      base = base.filter(p => 
+        String(p.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        String(p.category || '').toLowerCase().includes(search.toLowerCase()) ||
+        String(p.brand || '').toLowerCase().includes(search.toLowerCase())
+      );
+    }
     if (sort === 'price-asc') base = [...base].sort((a,b) => Number(a.price) - Number(b.price));
     if (sort === 'price-desc') base = [...base].sort((a,b) => Number(b.price) - Number(a.price));
     if (sort === 'rating-desc') base = [...base].sort((a,b) => Number(b.rating||0) - Number(a.rating||0));
     return base;
-  }, [products, category, sort]);
+  }, [products, category, search, sort]);
 
   return (
     <div className="px-8 sm:px-12 lg:px-16 py-12">
+      {/* Breadcrumb */}
+      <nav className="flex items-center text-sm text-gray-500 dark:text-muted mb-8">
+        <Link to="/" className="hover:text-[rgb(var(--accent))]">
+          Beranda
+        </Link>{" "}
+        <ChevronRightIcon />
+        <span className="text-gray-700 dark:text-neutral-200 font-medium">Toko</span>
+      </nav>
+
       {/* Header */}
       <div className="text-center mb-10">
         <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">Koleksi Snack</h1>
@@ -62,14 +95,19 @@ const ShopPage = () => {
             <div>
               {category ? (
                 <h2 className="text-2xl font-semibold">Kategori: {category}</h2>
+              ) : search ? (
+                <h2 className="text-2xl font-semibold">Hasil Pencarian: "{search}"</h2>
               ) : (
                 <h2 className="text-2xl font-semibold">Semua Produk</h2>
               )}
               {category && (
                 <div className="text-sm text-gray-500">Menampilkan produk untuk kategori <strong>{category}</strong></div>
               )}
+              {search && (
+                <div className="text-sm text-gray-500">Menampilkan produk yang cocok dengan <strong>"{search}"</strong></div>
+              )}
             </div>
-            {category && (
+            {(category || search) && (
               <div>
                 <Link to="/shop" className="text-sm text-blue-600 hover:underline">Bersihkan filter</Link>
               </div>

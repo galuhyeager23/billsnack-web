@@ -126,25 +126,30 @@ const ResellerProductsPage = () => {
         <div className="p-4 mb-4 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-100 dark:border-red-800/40 rounded">{errorMsg} (status: {statusCode})</div>
       )}
 
-      <div className="bg-surface p-6 rounded-lg shadow-md overflow-x-auto border border-base">
-        {products.length === 0 && !loading ? (
-          <div className="p-12 text-center text-muted">Belum ada produk</div>
-        ) : (
-          <table className="w-full table-auto text-left">
-            <thead>
-              <tr className="border-b border-base bg-surface-alt">
-                <th className="p-4 font-semibold">Gambar</th>
-                <th className="p-4 font-semibold">Nama</th>
-                <th className="p-4 font-semibold">Kategori</th>
-                <th className="p-4 font-semibold">Harga</th>
-                <th className="p-4 font-semibold">Stock</th>
-                <th className="p-4 font-semibold">Approval</th>
-                <th className="p-4 font-semibold">Aksi</th>
+      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+        <table className="w-full table-auto text-left">
+          <thead>
+            <tr className="bg-yellow-500 text-white">
+              <th className="p-4 font-semibold text-white">Gambar</th>
+              <th className="p-4 font-semibold text-white">Nama</th>
+              <th className="p-4 font-semibold text-white">Harga</th>
+              <th className="p-4 font-semibold text-white">Stock</th>
+              <th className="p-4 font-semibold text-white">Approval</th>
+              <th className="p-4 font-semibold text-white">Aksi</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      <div className="bg-white overflow-x-auto rounded-lg shadow-md">
+        <table className="w-full table-auto text-left">
+          <tbody>
+            {products.length === 0 && !loading ? (
+              <tr>
+                <td colSpan={6} className="p-12 text-center text-gray-500">Belum ada produk</td>
               </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.id} className="border-b border-base hover:bg-surface-alt">
+            ) : (
+              products.map((product) => (
+                <tr key={product.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     {(() => {
                       const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
@@ -159,54 +164,62 @@ const ResellerProductsPage = () => {
                             if (e.target.nextElementSibling) e.target.nextElementSibling.style.display = 'flex';
                           }}
                         />
-                      ) : null;
-                    })()}
-                    {(() => {
-                      const img = Array.isArray(product.images) && product.images.length > 0 ? product.images[0] : null;
-                      const src = img ? (typeof img === 'string' ? img : (img.thumb || img.original || '')) : '';
-                      return !src ? (
-                        <div className="w-16 h-16 bg-surface-alt rounded-md flex items-center justify-center text-xs text-muted border border-base">
+                      ) : (
+                        <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center text-xs text-gray-500">
                           No image
                         </div>
-                      ) : null;
+                      );
                     })()}
                   </td>
-                  <td className="p-4 font-medium">
-                    {product.name}
-                    <div className="text-sm text-muted">{product.sellerName || ''}</div>
-                  </td>
-                  <td className="p-4 text-muted">{product.category}</td>
-                  <td className="p-4 font-medium">{formatPrice(product.price)}</td>
                   <td className="p-4">
-                    <div className="flex items-center gap-3">
-                      <span className="font-bold accent-text">{product.stock} unit</span>
+                    <div className="font-semibold text-gray-900">{product.name}</div>
+                    <div className="text-sm text-gray-600">{product.category}</div>
+                  </td>
+                  <td className="p-4">
+                    <span className="font-semibold text-yellow-600">{formatPrice(product.price)}</span>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex flex-col gap-2">
+                      <span className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold w-fit">{product.stock} unit</span>
                       <label className="inline-flex items-center">
                         <input
                           type="checkbox"
                           checked={!!toggleStates[product.id]}
                           onChange={() => handleToggleStock(product)}
-                          className="accent-[rgb(var(--accent))] focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]/50"
+                          className="focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
                         />
-                        <span className="ml-2 text-sm">Tersedia</span>
+                        <span className="ml-2 text-sm text-gray-700">Tersedia</span>
                       </label>
                     </div>
                   </td>
                   <td className="p-4">
                     {product.is_approved ? (
-                      <span className="inline-block bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs px-3 py-1 rounded-full">Disetujui</span>
+                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">Disetujui</span>
                     ) : (
-                      <span className="inline-block bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs px-3 py-1 rounded-full">Menunggu</span>
+                      <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">Menunggu</span>
                     )}
                   </td>
                   <td className="p-4">
-                    <Link to={`/reseller/products/edit/${product.id}`} className="accent-text hover:underline mr-4">Edit</Link>
-                    <button onClick={() => handleDelete(product.id)} className="text-red-600 hover:underline">Hapus</button>
+                    <div className="flex gap-2">
+                      <Link to={`/reseller/products/edit/${product.id}`} className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold transition-colors flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                      </Link>
+                      <button onClick={() => handleDelete(product.id)} className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-md text-sm font-semibold transition-colors flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Hapus
+                      </button>
+                    </div>
                   </td>
                 </tr>
-              ))}
+              ))
+            )}
             </tbody>
           </table>
-        )}
       </div>
     </div>
   );

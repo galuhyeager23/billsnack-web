@@ -246,62 +246,46 @@ const AdminTransactionsPage = () => {
             Total Jumlah: Rp {formatPrice(totalAmount)}
           </p>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID Transaksi
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID Pesanan
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Pelanggan
-                </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Peran Pengguna
-                  </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Jumlah
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Metode Pembayaran
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tanggal
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Aksi
-                </th>
+        <div className="bg-white rounded-lg shadow-md overflow-x-auto">
+          <table className="w-full text-left table-auto">
+            <thead>
+              <tr className="bg-yellow-500 text-white">
+                <th className="p-4 font-semibold text-white">ID Transaksi</th>
+                <th className="p-4 font-semibold text-white">ID Pesanan</th>
+                <th className="p-4 font-semibold text-white">Pelanggan</th>
+                <th className="p-4 font-semibold text-white">Peran Pengguna</th>
+                <th className="p-4 font-semibold text-white">Jumlah</th>
+                <th className="p-4 font-semibold text-white">Metode Pembayaran</th>
+                <th className="p-4 font-semibold text-white">Status</th>
+                <th className="p-4 font-semibold text-white">Tanggal</th>
+                <th className="p-4 font-semibold text-white">Aksi</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {filteredTransactions.map((transaction) => (
-                <tr key={(transaction.id || transaction.order_id || transaction.orderId)} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {transaction.id || transaction.order_id || ''}
+                <tr key={(transaction.id || transaction.order_id || transaction.orderId)} className="border-b hover:bg-gray-50">
+                  <td className="p-4">
+                    {transaction.id || transaction.txn_id || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.order_id || transaction.orderId || ''}
+                  <td className="p-4">
+                    {transaction.order_id || transaction.orderId || transaction.order_number || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {transaction.email || transaction.customer || transaction.name || transaction.order_email || transaction.user_email || ''}
+                  <td className="p-4">
+                    <div>
+                      <p className="font-semibold text-gray-900">{transaction.first_name ? `${transaction.first_name} ${transaction.last_name || ''}`.trim() : (transaction.name || '-')}</p>
+                      <p className="text-sm text-gray-500">{transaction.email || transaction.order_email || '-'}</p>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {transaction.user_role || transaction.role || transaction.user_status || '-'}
+                  <td className="p-4">
+                    {transaction.user_role === 'reseller' ? 'Reseller' : transaction.user_role === 'admin' ? 'Admin' : 'Pelanggan'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {/* Prefer order_total when available so displayed nominal matches order's stored total */}
-                    Rp {formatPrice(transaction.order_total ?? transaction.amount ?? transaction.total ?? 0)}
+                  <td className="p-4">
+                    <span className="font-semibold text-yellow-600">Rp {formatPrice(transaction.order_total ?? transaction.amount ?? transaction.total ?? 0)}</span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="p-4">
                     {transaction.payment_method || transaction.paymentMethod || ''}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="p-4">
                     {/* Allow admin to change status when an order_id is available */}
                     {(() => {
                       const curStatus = transaction.status || transaction.state || '';
@@ -363,13 +347,18 @@ const AdminTransactionsPage = () => {
                       );
                     })()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="p-4">
                     {transaction.created_at || transaction.date || ''}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    <button className="text-blue-600 hover:text-blue-900 mr-2" onClick={() => openTrackingModal(transaction)}>
-                      Set Tracking
-                    </button>
+                  <td className="p-4">
+                    <div className="flex gap-2">
+                      <button className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-semibold transition-colors flex items-center gap-1" onClick={() => openTrackingModal(transaction)}>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Tracking
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

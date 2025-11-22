@@ -1,6 +1,10 @@
-// Fix: Populating App to set up the main application structure, as the file was empty. This also fixes the module error in index.
 import React, { useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { ProductProvider } from "./contexts/ProductContext";
@@ -30,34 +34,52 @@ import AdminTransactionsPage from "./admin/AdminTransactionsPage";
 import ResellerLoginPage from "./ResellerLoginPage";
 import ResellerLayout from "./components/reseller/ResellerLayout";
 
-// Public-only shell: applies stored theme preference, forces light mode on admin/reseller paths
+// Public-only shell
 const PublicShell = () => {
   const location = useLocation();
+  const isHomePage = location.pathname === "/";
+
   useEffect(() => {
-    const isBackoffice = location.pathname.startsWith('/admin') || location.pathname.startsWith('/reseller') || location.pathname.startsWith('/perloginan');
+    const isBackoffice =
+      location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/reseller") ||
+      location.pathname.startsWith("/perloginan");
     if (isBackoffice) {
-      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.remove("dark");
       return;
     }
     try {
-      const pref = localStorage.getItem('theme');
-      if (pref === 'dark') document.documentElement.classList.add('dark');
-      else document.documentElement.classList.remove('dark');
-    } catch { /* ignore */ }
+      const pref = localStorage.getItem("theme");
+      if (pref === "dark") document.documentElement.classList.add("dark");
+      else document.documentElement.classList.remove("dark");
+    } catch {
+      /* ignore */
+    }
   }, [location]);
+
   return (
     <div className="flex flex-col min-h-screen relative">
       <div className="pointer-events-none absolute inset-0 [mask-image:radial-gradient(circle_at_center,white,transparent)] bg-[linear-gradient(120deg,rgba(255,183,3,0.15),transparent_35%,rgba(255,183,3,0.15))] opacity-40 dark:opacity-30"></div>
+
       <Header />
-      <main className="flex-grow pt-4 pb-12">
-        <div className="container-custom relative">
+
+      {/* PERUBAHAN ADA DI SINI: tambahkan 'pt-20' (padding top 80px) */}
+      <main className={`flex-grow pt-20 ${isHomePage ? "" : "pb-12"}`}>
+        <div
+          className={
+            isHomePage ? "w-full relative" : "container-custom relative"
+          }
+        >
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/shop" element={<ShopPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
+            <Route
+              path="/order-confirmation"
+              element={<OrderConfirmationPage />}
+            />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/profile" element={<ProfilePage />} />
@@ -65,6 +87,7 @@ const PublicShell = () => {
           </Routes>
         </div>
       </main>
+
       <Footer />
     </div>
   );
