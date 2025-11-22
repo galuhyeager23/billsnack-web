@@ -47,12 +47,12 @@ function ReviewModal({ open, product, onClose, onSuccess, onError }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-green-50 rounded-lg p-6 w-full max-w-lg border border-green-100">
+      <div className="card p-6 w-full max-w-lg">
         <div className="flex items-center space-x-4 mb-3">
           {product && product.image ? (
             <img src={product.image} alt={product.name} className="w-12 h-12 object-cover rounded" />
           ) : (
-            <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-500">No</div>
+            <div className="w-12 h-12 bg-surface rounded flex items-center justify-center text-sm text-muted">No</div>
           )}
           <h3 className="text-lg font-semibold">Tinggalkan Ulasan — {product && product.name}</h3>
         </div>
@@ -68,7 +68,7 @@ function ReviewModal({ open, product, onClose, onSuccess, onError }) {
             <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4} className="mt-1 w-full rounded-md border px-3 py-2" />
           </div>
           <div className="flex justify-end space-x-2">
-            <button type="button" onClick={() => onClose && onClose()} className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-gray-50">Batal</button>
+            <button type="button" onClick={() => onClose && onClose()} className="btn-secondary">Batal</button>
             <button
               type="submit"
               disabled={submitting}
@@ -102,6 +102,29 @@ const OrderConfirmationPage = () => {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // WhatsApp copy/link state
+  const [copySuccess, setCopySuccess] = useState(null);
+  // helper to download images (used for QR download)
+  const downloadImage = async (url, filename) => {
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('Network response not ok');
+      const blob = await resp.blob();
+      const urlObj = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = urlObj;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(urlObj);
+      showToast('Mengunduh QR berhasil');
+    } catch (err) {
+      console.error('Download failed', err);
+      showToast('Gagal mengunduh gambar', 'error');
+    }
+  };
+
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalProduct, setModalProduct] = useState(null);
@@ -111,17 +134,77 @@ const OrderConfirmationPage = () => {
     switch (paymentMethod) {
       case "qris":
         return (
-          <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
-            <h3 className="font-semibold text-blue-800">
+          <div className="mt-4 p-4 bg-surface-alt border-base rounded-lg">
+            <h3 className="font-semibold text-muted">
               QRIS Payment Instructions
             </h3>
-            <p className="text-sm text-blue-700 mt-2">
+            <p className="text-sm text-muted mt-2">
               Silakan selesaikan pembayaran QRIS Anda menggunakan aplikasi e-wallet pilihan Anda.
               Pesanan akan diproses setelah pembayaran dikonfirmasi.
+                {/* WhatsApp payment proof UI (styled card) */}
+                <div className="mt-4 w-full max-w-md">
+                  <div className="card p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-green-700" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.478A11.773 11.773 0 0012 .5C6.201.5 1.5 5.201 1.5 11c0 1.945.507 3.78 1.477 5.397L.75 23.25l6.962-2.273A11.986 11.986 0 0012 23.5c5.799 0 10.5-4.701 10.5-10.5 0-2.975-1.168-5.71-3.98-9.522z"/></svg>
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                          <h4 className="text-sm font-semibold">Kirim Bukti Pembayaran ke Admin</h4>
+                          <div className="text-xs text-muted">Admin: <strong className="text">+62 895-2445-2716</strong></div>
+                        </div>
+                        <p className="text-sm text-muted mt-1">Setelah melakukan pembayaran, kirim bukti lewat WhatsApp dan sertakan foto bukti serta Order ID.</p>
+
+                        <textarea
+                          readOnly
+                          rows={3}
+                          value={`Halo, saya sudah melakukan pembayaran untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`}
+                          className="mt-3 w-full text-sm p-3 rounded-lg border border-base bg-surface resize-none text-muted"
+                        />
+
+                        <div className="mt-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const msg = `Halo, saya sudah melakukan pembayaran untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`;
+                              try {
+                                await navigator.clipboard.writeText(msg);
+                                setCopySuccess('Tersalin');
+                                setTimeout(() => setCopySuccess(null), 2500);
+                              } catch (err) {
+                                console.error('Copy failed', err);
+                                setCopySuccess('Gagal menyalin');
+                                setTimeout(() => setCopySuccess(null), 2500);
+                              }
+                            }}
+                            className="btn-primary"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 17l4 4 4-4m0-12l-4 4-4-4"/></svg>
+                            <span className="ml-2">Salin Pesan</span>
+                          </button>
+
+                          <a
+                            href={`https://wa.me/6289524452716?text=${encodeURIComponent(`Halo, saya sudah melakukan pembayaran untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="whatsapp-btn inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.52 3.478A11.773 11.773 0 0012 .5C6.201.5 1.5 5.201 1.5 11c0 1.945.507 3.78 1.477 5.397L.75 23.25l6.962-2.273A11.986 11.986 0 0012 23.5c5.799 0 10.5-4.701 10.5-10.5 0-2.975-1.168-5.71-3.98-9.522z"/></svg>
+                            Kirim via WhatsApp
+                          </a>
+
+                          {copySuccess && <span className="ml-2 text-sm accent-text">{copySuccess}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
             </p>
             <div className="mt-4 flex flex-col items-center justify-center">
               <p className="text-sm font-medium text-blue-800 mb-2">Scan QRIS Code:</p>
-              <div className="w-64 h-64 bg-white rounded-lg p-3 shadow-md border border-gray-200">
+              <div className="w-64 h-64 bg-surface rounded-lg p-3 shadow-md border border-base">
                 <img
                   src="/qrisbillsnack.jpg"
                   alt="QRIS BillSnack"
@@ -131,16 +214,26 @@ const OrderConfirmationPage = () => {
                   }}
                 />
               </div>
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => downloadImage('/qrisbillsnack.jpg', `qris-${orderId || 'order'}.jpg`)}
+                    className="btn-secondary"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5 5 5M12 5v12"/></svg>
+                    <span className="ml-2">Unduh QR</span>
+                  </button>
+                </div>
             </div>
           </div>
         );
       case "bank":
         return (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
-            <h3 className="font-semibold text-green-800">
+          <div className="mt-4 p-4 bg-surface-alt border-base rounded-lg">
+            <h3 className="font-semibold text-muted">
               Bank Transfer Instructions
             </h3>
-            <div className="text-sm text-green-700 mt-2 space-y-1">
+            <div className="text-sm text-muted mt-2 space-y-1">
               <p>
                 <strong>Bank:</strong> BCA
               </p>
@@ -154,22 +247,67 @@ const OrderConfirmationPage = () => {
                 <strong>Amount:</strong> Rp{formatPrice(total)}
               </p>
             </div>
-            <p className="text-sm text-green-700 mt-2">
+            <p className="text-sm text-muted mt-2">
               Please include order ID <strong>{orderId}</strong> in the transfer
               description. Processing time: 1-2 business days.
             </p>
+            {/* WhatsApp payment proof UI for bank transfer */}
+            <div className="mt-4 w-full max-w-xs text-left">
+              <p className="text-sm font-medium mb-2">Kirim Bukti Transfer ke Admin</p>
+              <p className="text-sm text-muted">Setelah melakukan transfer, kirimkan bukti transfer melalui WhatsApp ke admin. Sertakan informasi transfer dan Order ID.</p>
+              <div className="card mt-3 p-3">
+                <label className="block text-xs text-muted mb-1">Pesan (tersiap otomatis)</label>
+                <textarea
+                  readOnly
+                  rows={3}
+                  value={`Halo, saya sudah transfer ke BCA 1234567890 a.n BillSnack Store untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`}
+                  className="w-full text-sm p-2 border rounded resize-none bg-surface text-muted border-base"
+                />
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const msg = `Halo, saya sudah transfer ke BCA 1234567890 a.n BillSnack Store untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`;
+                        try {
+                          await navigator.clipboard.writeText(msg);
+                          setCopySuccess('Tersalin');
+                          setTimeout(() => setCopySuccess(null), 2500);
+                        } catch (err) {
+                          console.error('Copy failed', err);
+                          setCopySuccess('Gagal menyalin');
+                          setTimeout(() => setCopySuccess(null), 2500);
+                        }
+                      }}
+                      className="btn-primary"
+                    >
+                      Salin Pesan
+                    </button>
+                    {copySuccess && <span className="text-sm text-muted">{copySuccess}</span>}
+                  </div>
+                  <a
+                    href={`https://wa.me/6289524452716?text=${encodeURIComponent(`Halo, saya sudah transfer ke BCA 1234567890 a.n BillSnack Store untuk Order ID: ${orderId}. Total: Rp${formatPrice(total)}. Mohon konfirmasi. Terima kasih.`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="whatsapp-btn inline-block px-3 py-1 rounded text-sm"
+                  >
+                    Kirim via WhatsApp
+                  </a>
+                </div>
+                <p className="mt-2 text-xs text-muted">Nomor admin: <strong className="text">+62 895-2445-2716</strong></p>
+              </div>
+            </div>
           </div>
         );
       case "cod":
         return (
-          <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded">
-            <h3 className="font-semibold text-orange-800">
+          <div className="mt-4 p-4 bg-surface-alt border-base rounded-lg">
+            <h3 className="font-semibold text-muted">
               Cash on Delivery Instructions
             </h3>
-            <p className="text-sm text-orange-700 mt-2">
+            <p className="text-sm text-muted mt-2">
               You will pay in cash when your order is delivered to your address.
-              Please prepare the exact amount of{" "}
-              <strong>Rp{formatPrice(total)}</strong> for faster service.
+              Please prepare the exact amount of <strong className="text">Rp{formatPrice(total)}</strong> for faster service.
             </p>
           </div>
         );
@@ -180,7 +318,7 @@ const OrderConfirmationPage = () => {
 
   return (
     <div className="px-8 sm:px-12 lg:px-16 py-20 text-center">
-      <div className="bg-white p-12 rounded-lg shadow-lg max-w-4xl mx-auto">
+      <div className="card p-12 max-w-4xl mx-auto">
         <svg
           className="h-16 w-16 text-green-500 mx-auto mb-4"
           fill="none"
@@ -194,47 +332,25 @@ const OrderConfirmationPage = () => {
             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
-        <h1 className="text-3xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold">
           Thank You For Your Order!
         </h1>
-        <p className="text-gray-600 mt-4">
+        <p className="text-sm text-muted mt-4">
           Your order has been placed successfully. A confirmation email has been
           sent to you.
         </p>
-        <div className="mt-8 border-t border-b py-4">
-          <p className="text-lg">
-            Order ID:{" "}
-            <span className="font-semibold text-black">{orderId}</span>
+        <div className="mt-8 border-t border-b border-base py-4">
+          <p className="text-lg text-muted">
+            Order ID: <span className="font-semibold text">{orderId}</span>
           </p>
-          <p className="text-lg">
-            Order Total: {" "}
-            <span className="font-semibold text-black">
-              Rp{formatPrice(total)}
-            </span>
+          <p className="text-lg text-muted">
+            Order Total: <span className="font-semibold text">Rp{formatPrice(total)}</span>
           </p>
-          <p className="text-lg">
-            Payment Method:{" "}
-            <span className="font-semibold text-black">
-              {paymentMethod === "qris"
-                ? "QRIS"
-                : paymentMethod === "bank"
-                ? "Bank Transfer"
-                : paymentMethod === "cod"
-                ? "Cash on Delivery"
-                : paymentMethod}
-            </span>
+          <p className="text-lg text-muted">
+            Payment Method: <span className="font-semibold text">{paymentMethod === "qris" ? "QRIS" : paymentMethod === "bank" ? "Bank Transfer" : paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod}</span>
           </p>
-          <p className="text-lg">
-            Shipping Method:{" "}
-            <span className="font-semibold text-black">
-              {shippingMethod === "gosend"
-                ? "GoSend (Instant)"
-                : shippingMethod === "jne"
-                ? "JNE (2-3 days)"
-                : shippingMethod === "jnt"
-                ? "JNT (1-2 days)"
-                : shippingMethod}
-            </span>
+          <p className="text-lg text-muted">
+            Shipping Method: <span className="font-semibold text">{shippingMethod === "gosend" ? "GoSend (Instant)" : shippingMethod === "jne" ? "JNE (2-3 days)" : shippingMethod === "jnt" ? "JNT (1-2 days)" : shippingMethod}</span>
           </p>
         </div>
   {getPaymentInstructions()}
@@ -252,17 +368,17 @@ const OrderConfirmationPage = () => {
             <h3 className="text-lg font-semibold mb-3">Produk yang dibeli</h3>
             <div className="space-y-3">
               {location.state.items.map((it) => (
-                <div key={it.id} className="flex items-center justify-between p-3 border rounded bg-green-50 border-green-100">
+                <div key={it.id} className="flex items-center justify-between p-3 border rounded card">
                   <div className="flex items-center space-x-3">
                     {it.image ? (
                       <img src={it.image} alt={it.name} className="w-16 h-16 object-cover rounded" />
                     ) : (
-                      <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center text-sm text-gray-500">No Image</div>
+                      <div className="w-16 h-16 bg-surface rounded flex items-center justify-center text-sm text-muted">No Image</div>
                     )}
                     <div className="font-medium">{it.name}</div>
                   </div>
                   <div className="space-x-2">
-                    <Link to={`/product/${it.id}`} className="text-sm text-blue-600 underline">Lihat Produk</Link>
+                    <Link to={`/product/${it.id}`} className="text-sm accent-text underline">Lihat Produk</Link>
                     <button
                       onClick={() => { setModalProduct(it); setModalOpen(true); }}
                       onMouseEnter={() => setReviewBtnHover(true)}

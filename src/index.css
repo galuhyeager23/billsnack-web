@@ -98,6 +98,15 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
     color: rgb(var(--accent-hover));
   }
   .dark .badge { background-color: rgb(var(--accent)/0.25); color: rgb(var(--accent)); }
+  /* WhatsApp style button aware of dark mode */
+  .whatsapp-btn {
+    @apply inline-flex items-center justify-center font-semibold;
+    background-color: #25D366;
+    color: #ffffff;
+    border: 1px solid rgba(0,0,0,0.06);
+  }
+  .whatsapp-btn:hover { filter: brightness(.95); }
+  .dark .whatsapp-btn { background-color: #128C7E; color: #ffffff; border-color: rgba(255,255,255,0.06); }
   /* Unified icon button style for header/profile/cart/theme */
   .icon-btn {
     @apply w-10 h-10 rounded-full flex items-center justify-center border transition shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400;
