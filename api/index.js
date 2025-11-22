@@ -63,7 +63,7 @@ const notificationService = new NotificationService(supabase);
 app.locals.notificationService = notificationService;
 
 // Root endpoint
-app.get('/api', (req, res) => {
+app.get('/', (req, res) => {
   res.json({ 
     ok: true, 
     message: 'Billsnack API running on Vercel with Supabase',
@@ -72,7 +72,7 @@ app.get('/api', (req, res) => {
 });
 
 // Health check
-app.get('/api/health', async (req, res) => {
+app.get('/health', async (req, res) => {
   try {
     const { error } = await supabase.from('users').select('count', { count: 'exact', head: true });
     if (error) throw error;
@@ -92,19 +92,19 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Mount API routes
-app.use('/api/products', productsRouter);
-app.use('/api/auth', authRouter);
-app.use('/api/admin', adminRouter);
-app.use('/api/orders', ordersRouter);
-app.use('/api/reviews', reviewsRouter);
-app.use('/api/notifications', notificationsRouter);
-app.use('/api/resellers', resellerRouter);
-app.use('/api/shipping', shippingRouter);
-app.use('/api/uploads', uploadsRouter);
-app.use('/api/telegram', telegramRouter);
-app.use('/api/telegram', telegramResellerRouter);
-app.use('/api/telegram', telegramRegistrationRouter);
+// Mount API routes (no /api prefix - Vercel routes handle that)
+app.use('/products', productsRouter);
+app.use('/auth', authRouter);
+app.use('/admin', adminRouter);
+app.use('/orders', ordersRouter);
+app.use('/reviews', reviewsRouter);
+app.use('/notifications', notificationsRouter);
+app.use('/resellers', resellerRouter);
+app.use('/shipping', shippingRouter);
+app.use('/uploads', uploadsRouter);
+app.use('/telegram', telegramRouter);
+app.use('/telegram', telegramResellerRouter);
+app.use('/telegram', telegramRegistrationRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
