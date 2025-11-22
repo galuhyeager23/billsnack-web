@@ -4,9 +4,9 @@
  */
 
 // Base API URL - uses environment variable or defaults to localhost
-// In production (Vercel), API is on same domain, so use relative URLs
+// In production (Vercel), use same origin (window.location.origin)
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 
-  (import.meta.env.PROD ? '' : 'http://localhost:4000');
+  (import.meta.env.PROD ? (typeof window !== 'undefined' ? window.location.origin : '') : 'http://localhost:4000');
 
 /**
  * Get authorization headers with JWT token
