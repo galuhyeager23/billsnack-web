@@ -116,6 +116,15 @@ app.use((err, req, res, next) => {
 });
 
 // Export for Vercel serverless function
-// Vercel needs the app to handle requests
-module.exports = app;
-module.exports.default = app;
+// Vercel automatically handles requests to /api/index.js
+module.exports = (req, res) => {
+  // Strip /api prefix if present (Vercel may or may not include it)
+  const originalUrl = req.url;
+  if (originalUrl.startsWith('/api')) {
+    req.url = originalUrl.substring(4) || '/';
+  }
+  return app(req, res);
+};
+
+// Also export the app for compatibility
+module.exports.app = app;
