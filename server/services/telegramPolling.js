@@ -75,6 +75,12 @@ class TelegramPolling {
       const result = await response.json();
 
       if (!result.ok) {
+        // Handle 409 Conflict - another instance is polling
+        if (response.status === 409 || (result.error_code === 409)) {
+          console.warn('Telegram API 409 Conflict - Another instance is polling. Stopping this instance.');
+          this.stopPolling();
+          return;
+        }
         console.error('Telegram API error:', result.description);
         return;
       }

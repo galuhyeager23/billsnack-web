@@ -108,13 +108,36 @@ const AdminProductsPage = () => {
     })();
   }, []);
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (
       window.confirm(
         "Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan."
       )
     ) {
-      deleteProduct(id);
+      try {
+        await deleteProduct(id);
+        // Refresh the product list after successful deletion
+        const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+        const res = await fetch('/api/admin/products', {
+          headers: adminToken ? { Authorization: `Bearer ${adminToken}` } : {},
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const normalized = Array.isArray(data)
+            ? data.map((p) => ({
+                ...p,
+                stock: typeof p.stock === 'number' ? p.stock : (p.quantity || 0),
+                inStock: typeof p.inStock !== 'undefined'
+                  ? p.inStock
+                  : (typeof p.in_stock !== 'undefined' ? Boolean(p.in_stock) : ( (typeof p.stock === 'number') ? p.stock > 0 : true )),
+              }))
+            : data;
+          setAllProducts(normalized);
+        }
+      } catch (err) {
+        console.error('Failed to delete product:', err);
+        // Error already shown by deleteProduct
+      }
     }
   };
 

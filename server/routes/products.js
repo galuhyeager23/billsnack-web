@@ -20,8 +20,24 @@ function requireReseller(req, res, next) {
 }
 
 // Helper to rewrite localhost image URLs to current host (handles string or object entries)
+// For development: keep localhost URLs as-is
+// For production: can be configured to replace with production domain
 function rewriteImageEntry(entry, host) {
-  const baseReplace = (val) => typeof val === 'string' ? val.replace('http://localhost:4000', `https://${host}`) : val;
+  // In development, don't rewrite localhost URLs
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (isDev) {
+    // Return as-is for local development
+    return entry;
+  }
+  
+  // In production, rewrite localhost to current host
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+  const baseReplace = (val) => {
+    if (typeof val !== 'string') return val;
+    // Replace localhost with current host
+    return val.replace(/http:\/\/localhost:\d+/, `${protocol}://${host}`);
+  };
+  
   if (typeof entry === 'string') return baseReplace(entry);
   if (entry && typeof entry === 'object') {
     const out = { ...entry };
@@ -386,63 +402,7 @@ router.delete('/reseller/:id', verifyToken, requireReseller, async (req, res) =>
   }
 });
 
-// Get single product (public)
-router.get('/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const { data: r, error } = await supabase
-      .from('products')
-      .select(`
-        *,
-        users:reseller_id (
-          first_name,
-          last_name,
-          email,
-          reseller_profiles (store_name)
-        )
-      `)
-      .eq('id', id)
-      .single();
-
-    if (error || !r) return res.status(404).json({ error: 'Product not found' });
-
-    // Hide unapproved reseller products from public
-    if (r.reseller_id && !r.is_approved) return res.status(404).json({ error: 'Product not found' });
-
-    const host = req.headers.host;
-    const imagesRaw = sanitizeImages(r.images) || [];
-    const images = imagesRaw.map(img => rewriteImageEntry(img, host));
-    const colors = sanitizeColors(r.colors) || [];
-    const rp = r.users?.reseller_profiles;
-    let storeNameRaw = null;
-    if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
-    else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
-    const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
-    const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
-    
-    const out = {
-      id: r.id,
-      name: r.name,
-      description: r.description,
-      price: Number(r.price),
-      stock: r.stock,
-      category: r.category,
-      images,
-      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
-      rating: r.rating !== null ? Number(r.rating) : 0,
-      reviewCount: r.review_count || 0,
-      colors,
-      is_approved: r.is_approved === true,
-      sellerName,
-      resellerId: r.reseller_id,
-      createdAt: r.created_at,
-    };
-    res.json(out);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Failed to fetch product' });
-  }
-});
+// ===== ADMIN ROUTES (must be before GET /:id) =====
 
 // Create product (admin)
 router.post('/', verifyToken, requireAdmin, async (req, res) => {
@@ -640,16 +600,128 @@ router.put('/:id', verifyToken, requireAdmin, async (req, res) => {
 router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
   const { id } = req.params;
   try {
-    const { error } = await supabase
+    // Check if product exists
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('id, name')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !product) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Check if product has associated orders
+    const { data: orderItems, error: orderCheckError } = await supabase
+      .from('order_items')
+      .select('id')
+      .eq('product_id', id)
+      .limit(1);
+
+    if (orderCheckError) {
+      console.error('Error checking order items:', orderCheckError);
+      throw orderCheckError;
+    }
+
+    // If product has orders, don't delete - set stock to 0 and mark as unavailable instead
+    if (orderItems && orderItems.length > 0) {
+      const { error: updateError } = await supabase
+        .from('products')
+        .update({ 
+          stock: 0, 
+          in_stock: false,
+          // Optionally add a deleted_at timestamp or is_deleted flag
+          name: `[DISCONTINUED] ${product.name}`
+        })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
+
+      return res.json({ 
+        ok: true, 
+        message: 'Product cannot be deleted because it has order history. Product has been marked as discontinued instead.',
+        discontinued: true 
+      });
+    }
+
+    // If no orders, safe to delete
+    const { error: deleteError } = await supabase
       .from('products')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
-    res.json({ ok: true });
+    if (deleteError) throw deleteError;
+    res.json({ ok: true, deleted: true });
+  } catch (err) {
+    console.error('Delete product error:', err);
+    
+    // Handle foreign key constraint error
+    if (err.code === '23503') {
+      return res.status(409).json({ 
+        error: 'Cannot delete product with existing orders. Product will be marked as discontinued instead.',
+        code: 'FOREIGN_KEY_CONSTRAINT'
+      });
+    }
+    
+    res.status(500).json({ error: 'Failed to delete product' });
+  }
+});
+
+// Get single product (public) - must be after admin routes
+router.get('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { data: r, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        users:reseller_id (
+          first_name,
+          last_name,
+          email,
+          reseller_profiles (store_name)
+        )
+      `)
+      .eq('id', id)
+      .single();
+
+    if (error || !r) return res.status(404).json({ error: 'Product not found' });
+
+    // Hide unapproved reseller products from public
+    if (r.reseller_id && !r.is_approved) return res.status(404).json({ error: 'Product not found' });
+
+    const host = req.headers.host;
+    const imagesRaw = sanitizeImages(r.images) || [];
+    const images = imagesRaw.map(img => rewriteImageEntry(img, host));
+    const colors = sanitizeColors(r.colors) || [];
+    const rp = r.users?.reseller_profiles;
+    let storeNameRaw = null;
+    if (Array.isArray(rp)) storeNameRaw = rp[0]?.store_name;
+    else if (rp && typeof rp === 'object') storeNameRaw = rp.store_name;
+    const storeName = storeNameRaw && typeof storeNameRaw === 'string' ? storeNameRaw.trim() : null;
+    const sellerName = r.reseller_id ? (storeName || 'Toko Reseller') : 'BillSnack Store';
+    
+    const out = {
+      id: r.id,
+      name: r.name,
+      description: r.description,
+      price: Number(r.price),
+      stock: r.stock,
+      category: r.category,
+      images,
+      originalPrice: r.original_price !== null ? Number(r.original_price) : undefined,
+      rating: r.rating !== null ? Number(r.rating) : 0,
+      reviewCount: r.review_count || 0,
+      colors,
+      is_approved: r.is_approved === true,
+      sellerName,
+      resellerId: r.reseller_id,
+      createdAt: r.created_at,
+    };
+    res.json(out);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to delete product' });
+    res.status(500).json({ error: 'Failed to fetch product' });
   }
 });
 

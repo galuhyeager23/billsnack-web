@@ -58,6 +58,11 @@ class ResellerTelegramPolling {
       });
 
       if (!response.ok) {
+        if (response.status === 409) {
+          console.warn('Telegram API 409 Conflict - Another instance is polling. Stopping this instance.');
+          this.stop();
+          return;
+        }
         console.error(`Telegram API error: ${response.status}`);
         return;
       }

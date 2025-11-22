@@ -147,20 +147,52 @@ export const ProductProvider = ({ children }) => {
       const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
       const token = adminToken || (typeof window !== 'undefined' ? localStorage.getItem('billsnack_token') : null);
       
-      const headers = {};
+      if (!token) {
+        throw new Error('Authentication required. Please login as admin.');
+      }
+      
+      const headers = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
       
+      console.log('Deleting product:', id, 'with token:', token ? 'Present' : 'Missing');
       const res = await fetch(`${API_BASE}/api/products/${id}`, { method: 'DELETE', headers });
       
       if (!res.ok) {
         const errorText = await res.text();
         console.error('Delete product failed:', res.status, errorText);
-        throw new Error(`Failed to delete product: ${res.status}`);
+        let errorMsg = `Failed to delete product: ${res.status}`;
+        try {
+          const errJson = JSON.parse(errorText);
+          errorMsg = errJson.error || errorMsg;
+          
+          // Special handling for foreign key constraint
+          if (errJson.code === 'FOREIGN_KEY_CONSTRAINT' || res.status === 409) {
+            throw new Error(errJson.error || 'Product has existing orders and cannot be deleted. It will be marked as discontinued.');
+          }
+        } catch (parseErr) {
+          if (parseErr.message.includes('discontinued')) throw parseErr;
+          // ignore parse error
+        }
+        throw new Error(errorMsg);
       }
-      setProducts((prev) => prev.filter((p) => Number(p.id) !== Number(id)));
+      
+      const data = await res.json();
+      
+      // Handle discontinued vs deleted
+      if (data.discontinued) {
+        alert('Produk tidak dapat dihapus karena memiliki riwayat pesanan. Produk telah ditandai sebagai "discontinued".');
+        // Refresh products to show updated status
+        await fetchProducts();
+      } else {
+        // Remove from local state
+        setProducts((prev) => prev.filter((p) => Number(p.id) !== Number(id)));
+        alert('Produk berhasil dihapus!');
+      }
+      
       return true;
     } catch (err) {
-      console.error(err);
+      console.error('Delete product error:', err);
+      alert(`Gagal menghapus produk: ${err.message}`);
       throw err;
     }
   };
