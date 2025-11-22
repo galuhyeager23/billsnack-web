@@ -30,7 +30,7 @@ const ResellerDashboardPage = () => {
     // fetch other resellers and existing connections (only for reseller role)
     const fetchResellers = async () => {
       try {
-        const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+        const base = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
         const r1 = await fetch(`${base}/api/resellers?excludeSelf=1`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
@@ -56,7 +56,7 @@ const ResellerDashboardPage = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+        const base = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
         const res = await fetch(`${base}/api/products/reseller`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
         if (!res.ok) return;
         const data = await res.json();
@@ -93,7 +93,7 @@ const ResellerDashboardPage = () => {
 
   const toggleConnect = async (targetId) => {
     try {
-      const base = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+      const base = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
       const res = await fetch(`${base}/api/resellers/${targetId}/connect`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },

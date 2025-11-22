@@ -53,7 +53,7 @@ const ResellerProductsPage = () => {
   // Fetch using relative endpoint first, then fallback to explicit backend origin
   useEffect(() => {
     let cancelled = false;
-    const API_FALLBACK = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+    const API_FALLBACK = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
     const endpoints = ['/api/products/reseller', `${API_FALLBACK.replace(/\/$/, '')}/api/products/reseller`];
 
     const doFetch = async () => {

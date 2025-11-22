@@ -60,7 +60,7 @@ const ProductDetailPage = () => {
   };
 
   // relatedProducts computed below after we ensure product exists
-  const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+  const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
   const [reviews, setReviews] = useState([]);
   const [canReview, setCanReview] = useState(false);
   const [newRating, setNewRating] = useState(5);

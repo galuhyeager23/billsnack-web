@@ -25,7 +25,8 @@ const AdminLoginPage = () => {
     setError("");
     setSubmitting(true);
     try {
-      const res = await fetch(`${(import.meta.env.VITE_API_URL || 'http://localhost:4000')}/api/auth/login`, {
+      const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
+      const res = await fetch(`${apiBase}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         // send admin:true so backend can treat this as an admin login attempt

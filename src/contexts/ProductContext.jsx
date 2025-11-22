@@ -6,7 +6,7 @@ import { API_ENDPOINTS, apiGet, apiPost, apiPut, apiDelete } from '../config/api
 
 const ProductContext = createContext(undefined);
 
-const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? (typeof window !== 'undefined' ? window.location.origin : '') : 'http://localhost:4000');
 
 export const ProductProvider = ({ children }) => {
   const [products, setProducts] = useState(PRODUCTS || []);

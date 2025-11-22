@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import formatPrice from "./utils/format";
 
-const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? (typeof window !== 'undefined' ? window.location.origin : '') : 'http://localhost:4000');
 
 // Simple inline modal component to allow leaving a review without navigating away
 function ReviewModal({ open, product, onClose, onSuccess, onError }) {

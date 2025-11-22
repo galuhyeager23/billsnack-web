@@ -79,7 +79,7 @@ const CheckoutPage = () => {
   const discount = subtotal * 0.2;
 
   // Fetch distance-based shipping fee when dependencies change
-  const API_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) || 'http://localhost:4000';
+  const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? window.location.origin : 'http://localhost:4000');
 
   useEffect(() => {
     if (!formData.city || !shippingMethod) return; // wait until required data entered
