@@ -29,8 +29,8 @@ export const getAuthHeaders = (token) => {
  * API Endpoints - All endpoints centralized for easy maintenance
  */
 export const API_ENDPOINTS = {
-  // Health Check
-  HEALTH: '/health',
+  // Health Check (server exposes /api/health externally)
+  HEALTH: '/api/health',
   
   // Authentication
   AUTH: {

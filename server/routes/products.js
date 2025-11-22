@@ -19,6 +19,19 @@ function requireReseller(req, res, next) {
   return res.status(403).json({ error: 'Reseller privileges required' });
 }
 
+// Helper to rewrite localhost image URLs to current host (handles string or object entries)
+function rewriteImageEntry(entry, host) {
+  const baseReplace = (val) => typeof val === 'string' ? val.replace('http://localhost:4000', `https://${host}`) : val;
+  if (typeof entry === 'string') return baseReplace(entry);
+  if (entry && typeof entry === 'object') {
+    const out = { ...entry };
+    if (out.original) out.original = baseReplace(out.original);
+    if (out.thumb) out.thumb = baseReplace(out.thumb);
+    return out;
+  }
+  return entry;
+}
+
 // Get all products (public - only approved reseller products)
 router.get('/', async (req, res) => {
   try {
@@ -38,8 +51,10 @@ router.get('/', async (req, res) => {
 
     if (error) throw error;
 
+    const host = req.headers.host;
     const parsed = (rows || []).map((r) => {
-      const images = sanitizeImages(r.images) || [];
+      const imagesRaw = sanitizeImages(r.images) || [];
+      const images = imagesRaw.map(img => rewriteImageEntry(img, host));
       const colors = sanitizeColors(r.colors) || [];
       const rp = r.users?.reseller_profiles;
       let storeNameRaw = null;
@@ -118,8 +133,10 @@ router.get('/top-selling', async (req, res) => {
       .sort((a, b) => b.sold_qty - a.sold_qty)
       .slice(0, limit);
 
+    const host = req.headers.host;
     const parsed = sorted.map((r) => {
-      const images = sanitizeImages(r.images) || [];
+      const imagesRaw = sanitizeImages(r.images) || [];
+      const images = imagesRaw.map(img => rewriteImageEntry(img, host));
       const colors = sanitizeColors(r.colors) || [];
       const rp = r.users?.reseller_profiles;
       let storeNameRaw = null;
@@ -173,8 +190,10 @@ router.get('/reseller', verifyToken, requireReseller, async (req, res) => {
 
     if (error) throw error;
 
+    const host = req.headers.host;
     const parsed = (rows || []).map((r) => {
-      const images = sanitizeImages(r.images) || [];
+      const imagesRaw = sanitizeImages(r.images) || [];
+      const images = imagesRaw.map(img => rewriteImageEntry(img, host));
       const colors = sanitizeColors(r.colors) || [];
       const rp = r.users?.reseller_profiles;
       let storeNameRaw = null;
@@ -390,7 +409,9 @@ router.get('/:id', async (req, res) => {
     // Hide unapproved reseller products from public
     if (r.reseller_id && !r.is_approved) return res.status(404).json({ error: 'Product not found' });
 
-    const images = sanitizeImages(r.images) || [];
+    const host = req.headers.host;
+    const imagesRaw = sanitizeImages(r.images) || [];
+    const images = imagesRaw.map(img => rewriteImageEntry(img, host));
     const colors = sanitizeColors(r.colors) || [];
     const rp = r.users?.reseller_profiles;
     let storeNameRaw = null;
@@ -481,7 +502,9 @@ router.post('/', verifyToken, requireAdmin, async (req, res) => {
     if (error) throw error;
 
     const r = data;
-    const images = sanitizeImages(r.images) || [];
+    const host = req.headers.host;
+    const imagesRaw = sanitizeImages(r.images) || [];
+    const images = imagesRaw.map(img => rewriteImageEntry(img, host));
     const colors = sanitizeColors(r.colors) || [];
     const rp = r.users?.reseller_profiles;
     let storeNameRaw = null;
@@ -580,7 +603,9 @@ router.put('/:id', verifyToken, requireAdmin, async (req, res) => {
 
     if (fetchError) throw fetchError;
 
-    const images = sanitizeImages(r.images) || [];
+    const host = req.headers.host;
+    const imagesRaw = sanitizeImages(r.images) || [];
+    const images = imagesRaw.map(img => rewriteImageEntry(img, host));
     const colors = sanitizeColors(r.colors) || [];
     const rp = r.users?.reseller_profiles;
     let storeNameRaw = null;
