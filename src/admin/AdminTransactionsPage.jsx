@@ -159,37 +159,37 @@ const AdminTransactionsPage = () => {
       {error && <div className="p-4 text-red-600">Error: {error}</div>}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Total Transaksi</h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h3 className="text-lg font-semibold text-gray-800">Total Transaksi</h3>
           <p className="text-3xl font-bold mt-2 text-blue-600">{transactions.length}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Selesai</h3>
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h3 className="text-lg font-semibold text-gray-800">Selesai</h3>
           <p className="text-3xl font-bold mt-2 text-green-600">
             {transactions.filter(t => t.status === "Selesai").length}
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Menunggu</h3>
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h3 className="text-lg font-semibold text-gray-800">Menunggu</h3>
           <p className="text-3xl font-bold mt-2 text-yellow-600">
             {transactions.filter(t => t.status === "Menunggu").length}
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Dikirim</h3>
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h3 className="text-lg font-semibold text-gray-800">Dikirim</h3>
           <p className="text-3xl font-bold mt-2 text-blue-600">
             {transactions.filter(t => t.status === "Dikirim").length}
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Dalam Pengiriman</h3>
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h3 className="text-lg font-semibold text-gray-800">Dalam Pengiriman</h3>
           <p className="text-3xl font-bold mt-2 text-orange-600">
             {transactions.filter(t => t.status === "Dalam Pengiriman").length}
           </p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="text-lg font-semibold text-gray-700">Total Pendapatan</h3>
+        <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h3 className="text-lg font-semibold text-gray-800">Total Pendapatan</h3>
           <p className="text-3xl font-bold mt-2 text-purple-600">
             Rp{formatPrice(transactions.filter(t => t.status === "Selesai" || t.status === "Dikirim").reduce((sum, t) => sum + (Number(t.amount) || 0), 0))}
           </p>

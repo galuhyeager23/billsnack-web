@@ -116,14 +116,76 @@ const CartPage = () => {
         <h1 className="text-4xl font-bold mb-8">KERANJANG ANDA</h1>
 
         {cartItems.length === 0 ? (
-          <div className="bg-surface-alt p-12 rounded-lg shadow text-center border border-base">
-            <h2 className="text-2xl font-semibold">Keranjang Anda kosong</h2>
-            <Link
-              to="/shop"
-              className="mt-4 inline-block btn-primary font-semibold py-3 px-8 rounded-full text-lg focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300"
-            >
-              Lanjut Belanja
-            </Link>
+          <div className="max-w-4xl mx-auto">
+            {/* Empty Cart Illustration */}
+            <div className="bg-surface-alt p-12 rounded-2xl shadow-lg text-center border border-base mb-8">
+              <div className="mb-6">
+                <svg className="w-24 h-24 mx-auto text-muted opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.1 5H19M7 13l-1.1 5M7 13h10m0 0v8a2 2 0 01-2 2H9a2 2 0 01-2-2v-8m10 0l1.1-5" />
+                </svg>
+              </div>
+              <h2 className="text-3xl font-bold mb-4 text-gradient">Keranjang Belanja Kosong</h2>
+              <p className="text-muted text-lg mb-8 max-w-md mx-auto">
+                Yuk mulai berbelanja! Temukan berbagai camilan favorit Anda dengan harga terbaik.
+              </p>
+              <Link
+                to="/shop"
+                className="inline-flex items-center btn-primary font-semibold py-4 px-8 rounded-full text-lg focus:outline-none focus:ring-2 focus:ring-amber-300 transition duration-300 hover:scale-105 transform"
+              >
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="9" cy="21" r="1"></circle>
+                  <circle cx="20" cy="21" r="1"></circle>
+                  <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                </svg>
+                Mulai Belanja Sekarang
+              </Link>
+            </div>
+
+            {/* Cross-sell Suggestions */}
+            <div className="bg-surface-alt p-8 rounded-2xl shadow-lg border border-base">
+              <h3 className="text-2xl font-bold mb-6 text-center text-gradient">Rekomendasi Untuk Anda</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Popular Categories */}
+                <div className="text-center p-6 bg-surface rounded-lg border border-base hover:shadow-md transition-shadow">
+                  <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-lg mb-2">Camilan Populer</h4>
+                  <p className="text-muted text-sm mb-4">Temukan camilan favorit pelanggan lainnya</p>
+                  <Link to="/shop?category=popular" className="text-accent hover:underline font-medium">
+                    Lihat Semua →
+                  </Link>
+                </div>
+
+                <div className="text-center p-6 bg-surface rounded-lg border border-base hover:shadow-md transition-shadow">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-lg mb-2">Promo Spesial</h4>
+                  <p className="text-muted text-sm mb-4">Diskon hingga 50% untuk produk terpilih</p>
+                  <Link to="/shop?promo=true" className="text-accent hover:underline font-medium">
+                    Lihat Promo →
+                  </Link>
+                </div>
+
+                <div className="text-center p-6 bg-surface rounded-lg border border-base hover:shadow-md transition-shadow">
+                  <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                  </div>
+                  <h4 className="font-semibold text-lg mb-2">Produk Terlaris</h4>
+                  <p className="text-muted text-sm mb-4">Camilan yang paling diminati pelanggan</p>
+                  <Link to="/shop?bestseller=true" className="text-accent hover:underline font-medium">
+                    Lihat Terlaris →
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -137,7 +199,9 @@ const CartPage = () => {
                     <div>
                       <h2 className="text-xl font-bold flex items-center text-gradient">
                         <svg className="w-5 h-5 mr-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                          <circle cx="9" cy="21" r="1"></circle>
+                          <circle cx="20" cy="21" r="1"></circle>
+                          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                         </svg>
                         {sellerCart.sellerName}
                       </h2>

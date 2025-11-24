@@ -40,13 +40,13 @@ const ResellerLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg px-6 py-12">
+    <div className="h-screen flex items-center justify-center bg-white dark:bg-neutral-900 px-6 py-12">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
         {/* Left illustration / promo */}
         <div className="hidden md:flex flex-col items-start justify-center space-y-6 px-6">
-          <div className="p-6 rounded-3xl bg-surface-alt border border-base shadow-lg">
-            <h2 className="text-2xl font-extrabold text-gradient">Bilsnack</h2>
-            <p className="text-muted mt-2">Portal khusus untuk mitra reseller kami. Kelola dan jual produk dengan mudah.</p>
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:to-amber-800/20 border border-yellow-200 dark:border-yellow-700/30 shadow-lg hover:shadow-xl transition-all duration-300">
+            <h2 className="text-2xl font-extrabold text-amber-800 dark:text-amber-200">Bilsnack</h2>
+            <p className="text-amber-700 dark:text-amber-300 mt-2">Portal khusus untuk mitra reseller kami. Kelola dan jual produk dengan mudah.</p>
           </div>
           <div className="w-full rounded-xl overflow-hidden shadow-md">
             <img src="/hero-food.jpg" alt="snack" className="w-full object-cover h-64" onError={(e)=>{e.target.style.display='none'}} />
@@ -55,15 +55,15 @@ const ResellerLoginPage = () => {
 
         {/* Right: auth card */}
         <div className="flex items-center justify-center">
-          <form onSubmit={handleSubmit} className="w-full max-w-md bg-surface-alt border border-base p-8 rounded-2xl shadow-xl">
+          <form onSubmit={handleSubmit} className="w-full max-w-md bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:to-amber-800/20 border border-yellow-200 dark:border-yellow-700/30 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
             <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-gradient">Masuk</h1>
-              <span className="text-sm text-muted">Selamat datang kembali 👋</span>
+              <h1 className="text-2xl sm:text-3xl font-bold text-amber-800 dark:text-amber-200">Masuk</h1>
+              <span className="text-sm text-amber-700 dark:text-amber-300">Selamat datang kembali 👋</span>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-muted mb-1" htmlFor="email">Alamat Email</label>
+                <label className="block text-sm font-medium text-amber-800 dark:text-amber-200 mb-1" htmlFor="email">Alamat Email</label>
                 <input
                   id="email"
                   type="email"
@@ -76,7 +76,7 @@ const ResellerLoginPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-muted mb-1" htmlFor="password">Kata Sandi</label>
+                <label className="block text-sm font-medium text-amber-800 dark:text-amber-200 mb-1" htmlFor="password">Kata Sandi</label>
                 <div className="relative">
                   <input
                     id="password"
@@ -113,7 +113,7 @@ const ResellerLoginPage = () => {
                 {submitting ? 'Memproses...' : 'Masuk'}
               </button>
 
-              <p className="text-center text-muted text-sm mt-4">
+              <p className="text-center text-amber-700 dark:text-amber-300 text-sm mt-4">
                 Belum terdaftar sebagai reseller?
                 <a
                   href={`https://wa.me/6288973294105?text=${encodeURIComponent(prefillResellerMessage)}`}
@@ -125,8 +125,8 @@ const ResellerLoginPage = () => {
                 </a>
               </p>
 
-              <div className="mt-6 pt-6 border-t border-base">
-                <p className="text-center text-muted text-sm mb-3">
+              <div className="mt-6 pt-6 border-t border-yellow-200 dark:border-yellow-700/30">
+                <p className="text-center text-amber-700 dark:text-amber-300 text-sm mb-3">
                   Kembali ke login pelanggan
                 </p>
                 <Link 

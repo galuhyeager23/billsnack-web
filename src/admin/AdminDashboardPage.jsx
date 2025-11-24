@@ -99,7 +99,7 @@ const AdminDashboardPage = () => {
 
   return (
     <div className="pb-4">
-      <h1 className="text-3xl font-bold mb-2 text-gradient">Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-2 text-black">Dashboard</h1>
       <div className="flex items-center gap-4 mb-8">
         <div className="w-12 h-12 rounded-full bg-surface-alt border border-base flex items-center justify-center text-lg font-semibold text-muted overflow-hidden">
           {displayAvatar ? (
@@ -117,17 +117,17 @@ const AdminDashboardPage = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="rounded-lg p-6 shadow-md bg-surface-alt border border-base">
-          <h2 className="text-xl font-semibold text-muted">Total Produk</h2>
-          <p className="text-5xl font-bold mt-2 accent-text">{products.length}</p>
+        <div className="glass rounded-2xl p-6 shadow-xl bg-white/80 backdrop-blur-sm border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h2 className="text-xl font-semibold text-gray-800">Total Produk</h2>
+          <p className="text-5xl font-bold mt-2 text-blue-600">{products.length}</p>
         </div>
-        <div className="rounded-lg p-6 shadow-md bg-surface-alt border border-base">
-          <h2 className="text-xl font-semibold text-muted">Total Kategori</h2>
-          <p className="text-5xl font-bold mt-2 accent-text">{new Set(products.map((p) => p.category)).size}</p>
+        <div className="glass rounded-2xl p-6 shadow-xl bg-white/80 backdrop-blur-sm border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h2 className="text-xl font-semibold text-gray-800">Total Kategori</h2>
+          <p className="text-5xl font-bold mt-2 text-green-600">{new Set(products.map((p) => p.category)).size}</p>
         </div>
-        <div className="rounded-lg p-6 shadow-md bg-surface-alt border border-base">
-          <h2 className="text-xl font-semibold text-muted">Total Transaksi</h2>
-          <p className="text-5xl font-bold mt-2 accent-text">{transactions.length}</p>
+        <div className="glass rounded-2xl p-6 shadow-xl bg-white/80 backdrop-blur-sm border border-white/20 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <h2 className="text-xl font-semibold text-gray-800">Total Transaksi</h2>
+          <p className="text-5xl font-bold mt-2 text-purple-600">{transactions.length}</p>
         </div>
       </div>
 

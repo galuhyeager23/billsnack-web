@@ -244,6 +244,60 @@ const CheckoutPage = () => {
   return (
     <div className="bg-surface">
       <div className="px-8 sm:px-12 lg:px-16 py-12">
+        {/* Progress Indicator */}
+        <div className="max-w-4xl mx-auto mb-8">
+          <div className="flex items-center justify-center space-x-4">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <span className="ml-2 text-sm font-medium text-green-600 dark:text-green-400">Keranjang</span>
+            </div>
+            <div className="w-12 h-0.5 bg-green-500"></div>
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
+                <span className="text-white text-sm font-bold">2</span>
+              </div>
+              <span className="ml-2 text-sm font-medium accent-text">Checkout</span>
+            </div>
+            <div className="w-12 h-0.5 bg-gray-300 dark:bg-gray-600"></div>
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                <span className="text-gray-500 dark:text-gray-400 text-sm font-bold">3</span>
+              </div>
+              <span className="ml-2 text-sm font-medium text-muted">Pembayaran</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="max-w-4xl mx-auto mb-8">
+          <div className="bg-surface-alt border border-base rounded-lg p-4">
+            <div className="flex items-center justify-center space-x-8 text-sm text-muted">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Pembayaran Aman 100%</span>
+              </div>
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <span>Gratis Ongkir</span>
+              </div>
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>Garansi Uang Kembali</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <nav className="flex items-center text-sm text-muted mb-8">
           <Link to="/" className="hover:text-[rgb(var(--accent))]">
             Beranda
@@ -553,7 +607,9 @@ const CheckoutPage = () => {
                 <div key={sellerCart.sellerId} className={`${index > 0 ? 'mt-6 pt-6 border-t border-base' : ''}`}>
                   <div className="mb-3 flex items-center">
                     <svg className="w-5 h-5 mr-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                      <circle cx="9" cy="21" r="1"></circle>
+                      <circle cx="20" cy="21" r="1"></circle>
+                      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
                     </svg>
                     <div>
                       <p className="font-semibold accent-text">{sellerCart.sellerName}</p>

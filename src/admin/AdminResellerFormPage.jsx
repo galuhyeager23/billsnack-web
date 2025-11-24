@@ -7,7 +7,8 @@ const AdminResellerFormPage = () => {
   const { id } = useParams();
   const isEditing = !!id;
   const { token } = useAuth() || {};
-  const adminToken = typeof window !== 'undefined' ? localStorage.getItem('adminToken') : null;
+  const adminToken =
+    typeof window !== "undefined" ? localStorage.getItem("adminToken") : null;
   const authHeaderToken = adminToken || token || null;
 
   const [formData, setFormData] = useState({
@@ -29,14 +30,14 @@ const AdminResellerFormPage = () => {
       try {
         // try to load from API if token available, otherwise keep dummy/demo behavior
         if (authHeaderToken) {
-          console.log('Loading reseller data for ID:', id);
+          console.log("Loading reseller data for ID:", id);
           const resp = await fetch(`/api/admin/users/${id}`, {
             headers: { Authorization: `Bearer ${authHeaderToken}` },
           });
           if (!resp.ok) throw new Error("Failed to load user");
           const data = await resp.json();
-          console.log('Loaded user data:', data);
-          
+          console.log("Loaded user data:", data);
+
           setFormData((prev) => ({
             ...prev,
             name: data.store_name || data.first_name || "",
@@ -45,8 +46,8 @@ const AdminResellerFormPage = () => {
             address: data.address || "",
             status: data.is_active ? "active" : "inactive",
           }));
-          
-          console.log('Form data set to:', {
+
+          console.log("Form data set to:", {
             name: data.store_name || data.first_name || "",
             email: data.email || "",
             phone: data.phone || data.rp_phone || "",
@@ -105,7 +106,8 @@ const AdminResellerFormPage = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = "Nama toko harus diisi";
     if (!formData.email.trim()) newErrors.email = "Email harus diisi";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "Email tidak valid";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      newErrors.email = "Email tidak valid";
     if (!formData.phone.trim()) newErrors.phone = "Nomor telepon harus diisi";
     if (!formData.address.trim()) newErrors.address = "Alamat harus diisi";
     setErrors(newErrors);
@@ -116,12 +118,12 @@ const AdminResellerFormPage = () => {
     e.preventDefault();
     if (!validateForm()) return;
     setSubmitting(true);
-    
-    console.log('=== SUBMIT RESELLER FORM ===');
-    console.log('Form Data:', formData);
-    console.log('Is Editing:', isEditing);
-    console.log('User ID:', id);
-    
+
+    console.log("=== SUBMIT RESELLER FORM ===");
+    console.log("Form Data:", formData);
+    console.log("Is Editing:", isEditing);
+    console.log("User ID:", id);
+
     try {
       const payload = {
         email: formData.email,
@@ -131,13 +133,13 @@ const AdminResellerFormPage = () => {
       };
       if (formData.password) payload.password = formData.password;
 
-      console.log('Payload to send:', JSON.stringify(payload, null, 2));
+      console.log("Payload to send:", JSON.stringify(payload, null, 2));
 
       if (authHeaderToken) {
         if (isEditing) {
           payload.is_active = formData.status === "active";
-          console.log('Updating user at:', `/api/admin/users/${id}`);
-          
+          console.log("Updating user at:", `/api/admin/users/${id}`);
+
           const resp = await fetch(`/api/admin/users/${id}`, {
             method: "PUT",
             headers: {
@@ -146,22 +148,22 @@ const AdminResellerFormPage = () => {
             },
             body: JSON.stringify(payload),
           });
-          
-          console.log('Response status:', resp.status);
-          
+
+          console.log("Response status:", resp.status);
+
           if (!resp.ok) {
             const errorText = await resp.text();
-            console.error('Update failed:', errorText);
+            console.error("Update failed:", errorText);
             throw new Error(`Update failed: ${resp.status}`);
           }
-          
+
           const result = await resp.json();
-          console.log('Update result:', result);
+          console.log("Update result:", result);
           alert("Reseller berhasil diupdate!");
         } else {
           payload.role = "reseller";
-          console.log('Creating new user at:', '/api/admin/users');
-          
+          console.log("Creating new user at:", "/api/admin/users");
+
           const resp = await fetch("/api/admin/users", {
             method: "POST",
             headers: {
@@ -170,29 +172,33 @@ const AdminResellerFormPage = () => {
             },
             body: JSON.stringify(payload),
           });
-          
-          console.log('Response status:', resp.status);
-          
+
+          console.log("Response status:", resp.status);
+
           if (!resp.ok) {
             const err = await resp.json().catch(() => null);
-            console.error('Create failed:', err);
+            console.error("Create failed:", err);
             throw new Error(err && err.error ? err.error : "Create failed");
           }
-          
+
           const result = await resp.json();
-          console.log('Create result:', result);
+          console.log("Create result:", result);
           alert("Reseller berhasil ditambahkan!");
         }
       } else {
         // No token / offline mode - simulate success
-        console.warn('No auth token, simulating success');
-        alert(isEditing ? "Reseller berhasil diupdate!" : "Reseller berhasil ditambahkan!");
+        console.warn("No auth token, simulating success");
+        alert(
+          isEditing
+            ? "Reseller berhasil diupdate!"
+            : "Reseller berhasil ditambahkan!"
+        );
       }
 
       navigate("/admin/resellers");
     } catch (err) {
-      console.error('=== SUBMIT ERROR ===');
-      console.error('Error:', err);
+      console.error("=== SUBMIT ERROR ===");
+      console.error("Error:", err);
       alert(err.message || "Gagal menyimpan reseller");
     } finally {
       setSubmitting(false);
@@ -200,22 +206,19 @@ const AdminResellerFormPage = () => {
   };
 
   return (
-    <div className="p-6">
-      <div className="max-w-3xl mx-auto mb-6">
-        <h1 className="text-2xl font-bold">
-          {isEditing ? "Edit Reseller" : "Tambah Reseller Baru"}
-        </h1>
-        <p className="text-gray-600 mt-2">
-          {isEditing
-            ? "Perbarui informasi reseller"
-            : "Isi formulir di bawah untuk menambahkan reseller baru"}
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-        <div className="bg-white rounded-lg shadow-md p-8">
+    <div>
+      <h1 className="text-3xl font-bold mb-6">
+        {isEditing ? "Edit Reseller" : "Tambah Reseller Baru"}
+      </h1>
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-8 rounded-lg shadow-md space-y-6"
+      >
           <div className="mb-6">
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Nama Toko <span className="text-red-600">*</span>
             </label>
             <input
@@ -229,12 +232,17 @@ const AdminResellerFormPage = () => {
                 errors.name ? "border-red-500" : "border-gray-200"
               }`}
             />
-            {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-red-600 text-sm mt-1">{errors.name}</p>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email <span className="text-red-600">*</span>
               </label>
               <input
@@ -248,11 +256,16 @@ const AdminResellerFormPage = () => {
                   errors.email ? "border-red-500" : "border-gray-200"
                 }`}
               />
-              {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
+              {errors.email && (
+                <p className="text-red-600 text-sm mt-1">{errors.email}</p>
+              )}
             </div>
 
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Nomor Telepon <span className="text-red-600">*</span>
               </label>
               <input
@@ -266,12 +279,17 @@ const AdminResellerFormPage = () => {
                   errors.phone ? "border-red-500" : "border-gray-200"
                 }`}
               />
-              {errors.phone && <p className="text-red-600 text-sm mt-1">{errors.phone}</p>}
+              {errors.phone && (
+                <p className="text-red-600 text-sm mt-1">{errors.phone}</p>
+              )}
             </div>
           </div>
 
           <div className="mb-6">
-            <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="address"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Alamat <span className="text-red-600">*</span>
             </label>
             <textarea
@@ -285,11 +303,16 @@ const AdminResellerFormPage = () => {
                 errors.address ? "border-red-500" : "border-gray-200"
               }`}
             />
-            {errors.address && <p className="text-red-600 text-sm mt-1">{errors.address}</p>}
+            {errors.address && (
+              <p className="text-red-600 text-sm mt-1">{errors.address}</p>
+            )}
           </div>
 
           <div className="mb-6">
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="status"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Status <span className="text-red-600">*</span>
             </label>
             <select
@@ -305,8 +328,11 @@ const AdminResellerFormPage = () => {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-              Password 
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Password
             </label>
             <input
               type="password"
@@ -314,7 +340,11 @@ const AdminResellerFormPage = () => {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder={isEditing ? "Kosongkan jika tidak ingin mengubah password" : "Password untuk reseller"}
+              placeholder={
+                isEditing
+                  ? "Kosongkan jika tidak ingin mengubah password"
+                  : "Password untuk reseller"
+              }
               className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-300 focus:border-transparent border-gray-200`}
             />
           </div>
@@ -325,7 +355,13 @@ const AdminResellerFormPage = () => {
               disabled={submitting}
               className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? (isEditing ? "Memperbarui..." : "Menambahkan...") : isEditing ? "Update Reseller" : "Tambah Reseller"}
+              {submitting
+                ? isEditing
+                  ? "Memperbarui..."
+                  : "Menambahkan..."
+                : isEditing
+                ? "Update Reseller"
+                : "Tambah Reseller"}
             </button>
             <button
               type="button"
@@ -335,16 +371,9 @@ const AdminResellerFormPage = () => {
               Batal
             </button>
           </div>
-        </div>
-
-        <div className="bg-green-50 border-l-4 border-green-600 rounded-lg p-4 mt-6">
-          <p className="text-sm text-green-800">
-            <strong>Catatan:</strong> Pastikan semua data reseller yang Anda input sudah benar sebelum menyimpan.
-          </p>
-        </div>
-      </form>
-    </div>
-  );
-};
+        </form>
+      </div>
+    );
+  };
 
 export default AdminResellerFormPage;

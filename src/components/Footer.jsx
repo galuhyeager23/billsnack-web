@@ -63,184 +63,93 @@ const InstagramIcon = () => (
 
 const Footer = () => {
   return (
-    <footer className="relative bg-gradient-to-br from-surface via-surface-alt to-bg dark:from-neutral-900 dark:via-neutral-800 dark:to-neutral-900 text-gray-700 dark:text-neutral-300 border-t border-base overflow-hidden">
-      {/* Animated Background Pattern */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(var(--accent)/0.15),transparent_50%),radial-gradient(circle_at_80%_20%,rgba(var(--accent)/0.1),transparent_50%),radial-gradient(circle_at_40%_80%,rgba(var(--accent)/0.08),transparent_50%)] animate-pulse"></div>
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-transparent to-[rgba(var(--accent)/0.05)]"></div>
+    <footer className="relative glass border-t border-base overflow-hidden" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.1) 50%, rgba(245, 158, 11, 0.15) 100%)' }}>
+      {/* Decorative Elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-0 left-0 w-32 h-32 bg-yellow-400 rounded-full -translate-x-16 -translate-y-16 blur-sm"></div>
+        <div className="absolute top-0 right-0 w-24 h-24 bg-yellow-400 rounded-full translate-x-12 -translate-y-12 blur-sm"></div>
+        <div className="absolute bottom-0 left-1/4 w-20 h-20 bg-yellow-400 rounded-full translate-y-10 blur-sm"></div>
+        <div className="absolute bottom-0 right-1/3 w-16 h-16 bg-yellow-400 rounded-full translate-y-8 blur-sm"></div>
       </div>
 
-      <div className="px-6 sm:px-12 lg:px-16 py-16 max-w-7xl mx-auto relative">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <div className="px-6 py-8 max-w-6xl mx-auto relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="col-span-1 lg:col-span-1">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="relative">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[rgb(var(--accent))] to-[rgb(var(--accent-hover))] flex items-center justify-center font-extrabold text-white shadow-lg transform hover:scale-110 transition-transform duration-300">
-                  B
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white dark:border-neutral-900 animate-pulse"></div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-lg flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">B</span>
               </div>
               <div>
-                <h3 className="text-3xl font-bold tracking-wider bg-gradient-to-r from-gray-900 via-[rgb(var(--accent))] to-gray-900 dark:from-white dark:via-[rgb(var(--accent))] dark:to-white bg-clip-text text-transparent">
-                  Bilsnack.id
-                </h3>
-                <p className="text-sm text-muted max-w-xs leading-relaxed mt-1">
-                  Camilan enak, layanan cepat. Ikuti kami untuk promo dan update produk baru setiap minggu.
-                </p>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Bilsnack.id</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Camilan enak untuk semua</p>
               </div>
             </div>
 
-            <div className="flex gap-4">
-              <SocialIcon href="#" label="Twitter">
-                <TwitterIcon />
-              </SocialIcon>
-              <SocialIcon href="#" label="Facebook">
+            <div className="flex gap-3">
+              <a href="#" className="w-8 h-8 bg-yellow-500/30 rounded-full flex items-center justify-center hover:bg-yellow-500/50 transition-colors backdrop-blur-sm">
                 <FacebookIcon />
-              </SocialIcon>
-              <SocialIcon href="#" label="Instagram">
+              </a>
+              <a href="#" className="w-8 h-8 bg-yellow-500/30 rounded-full flex items-center justify-center hover:bg-yellow-500/50 transition-colors backdrop-blur-sm">
+                <TwitterIcon />
+              </a>
+              <a href="#" className="w-8 h-8 bg-yellow-500/30 rounded-full flex items-center justify-center hover:bg-yellow-500/50 transition-colors backdrop-blur-sm">
                 <InstagramIcon />
-              </SocialIcon>
+              </a>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <div className="space-y-6">
-            <h4 className="font-bold text-lg text-gray-900 dark:text-white relative">
-              Bantuan
-              <div className="absolute -bottom-2 left-0 w-8 h-0.5 bg-gradient-to-r from-[rgb(var(--accent))] to-transparent"></div>
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <Link to="/" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Beranda
-                </Link>
-              </li>
-              <li>
-                <Link to="/shop" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Semua Produk
-                </Link>
-              </li>
-              <li>
-                <Link to="/profile" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Akun Saya
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Kontak
-                </Link>
-              </li>
+          {/* Quick Links */}
+          <div>
+            <h4 className="font-semibold text-lg mb-4 text-gray-900 dark:text-white">Menu Cepat</h4>
+            <ul className="space-y-2">
+              <li><Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">Beranda</Link></li>
+              <li><Link to="/shop" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">Belanja</Link></li>
+              <li><Link to="/profile" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">Akun Saya</Link></li>
+              <li><Link to="/contact" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">Kontak</Link></li>
             </ul>
           </div>
 
-          {/* Company Links */}
-          <div className="space-y-6">
-            <h4 className="font-bold text-lg text-gray-900 dark:text-white relative">
-              Perusahaan
-              <div className="absolute -bottom-2 left-0 w-8 h-0.5 bg-gradient-to-r from-[rgb(var(--accent))] to-transparent"></div>
-            </h4>
-            <ul className="space-y-3">
-              <li>
-                <a href="#" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Tentang Kami
-                </a>
-              </li>
-              <li>
-                <a href="#" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Karir
-                </a>
-              </li>
-              <li>
-                <a href="#" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Syarat & Ketentuan
-                </a>
-              </li>
-              <li>
-                <a href="#" className="group flex items-center text-muted hover:text-[rgb(var(--accent))] transition-all duration-300 hover:translate-x-1">
-                  <span className="w-1.5 h-1.5 bg-[rgb(var(--accent))] rounded-full mr-3 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  Kebijakan Privasi
-                </a>
-              </li>
+          {/* Support */}
+          <div>
+            <h4 className="font-semibold text-lg mb-4 text-gray-900 dark:text-white">Bantuan</h4>
+            <ul className="space-y-2">
+              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">FAQ</a></li>
+              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">Pengiriman</a></li>
+              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">Pengembalian</a></li>
+              <li><a href="#" className="text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm">Kontak Kami</a></li>
             </ul>
           </div>
 
-          {/* Newsletter & Payment */}
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-bold text-lg text-gray-900 dark:text-white relative mb-4">
-                Newsletter
-                <div className="absolute -bottom-2 left-0 w-8 h-0.5 bg-gradient-to-r from-[rgb(var(--accent))] to-transparent"></div>
-              </h4>
-              <p className="text-sm text-muted mb-4 leading-relaxed">Daftar untuk dapatkan promo terbaru dan update eksklusif</p>
-              <form className="space-y-3">
-                <div className="relative">
-                  <input
-                    type="email"
-                    placeholder="Email Anda"
-                    aria-label="Email untuk newsletter"
-                    className="w-full rounded-lg px-4 py-3 bg-white dark:bg-neutral-800 border border-base text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent))] focus:border-transparent transition-all duration-300 hover:shadow-md"
-                  />
-                  <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-[rgb(var(--accent))/0.05] to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
-                </div>
-                <button className="w-full btn-primary px-6 py-3 rounded-lg text-sm font-semibold hover:scale-105 hover:shadow-lg transition-all duration-300 relative overflow-hidden group">
-                  <span className="relative z-10">Ikuti Newsletter</span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-[rgb(var(--accent-hover))] to-[rgb(var(--accent))] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                </button>
-              </form>
-            </div>
-
-            <div>
-              <h5 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Metode Pembayaran</h5>
-              <div className="flex items-center gap-3">
-                <div className="group relative w-12 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-md flex items-center justify-center text-white text-xs font-bold border border-blue-500 hover:scale-110 transition-all duration-300 shadow-md">
-                  <span>VISA</span>
-                  <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-md"></div>
-                </div>
-                <div className="group relative w-12 h-8 bg-gradient-to-br from-red-600 to-red-700 rounded-md flex items-center justify-center text-white text-xs font-bold border border-red-500 hover:scale-110 transition-all duration-300 shadow-md">
-                  <span>MC</span>
-                  <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-md"></div>
-                </div>
-                <div className="group relative w-12 h-8 bg-gradient-to-br from-green-600 to-green-700 rounded-md flex items-center justify-center text-white text-xs font-bold border border-green-500 hover:scale-110 transition-all duration-300 shadow-md">
-                  <span>PAY</span>
-                  <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-md"></div>
-                </div>
-              </div>
+          {/* Newsletter */}
+          <div>
+            <h4 className="font-semibold text-lg mb-4 text-gray-900 dark:text-white">Newsletter</h4>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-3">Dapatkan update promo terbaru</p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                placeholder="Email Anda"
+                className="flex-1 px-3 py-2 bg-white/60 dark:bg-gray-800/60 border border-yellow-200 dark:border-yellow-800 rounded-md text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500/50 backdrop-blur-sm"
+              />
+              <button className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-white rounded-md font-semibold hover:from-yellow-500 hover:to-yellow-600 transition-all duration-300 text-sm shadow-lg hover:shadow-xl">
+                Ikuti
+              </button>
             </div>
           </div>
         </div>
 
         {/* Bottom Section */}
-        <div className="mt-16 border-t border-base pt-8">
+        <div className="mt-8 pt-6 border-t border-yellow-200 dark:border-yellow-800">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-muted">
-                &copy; {new Date().getFullYear()} Bilsnack.id. Semua hak dilindungi.
-              </p>
-              <div className="hidden md:flex items-center gap-2 text-xs text-muted">
-                <span>Made with</span>
-                <span className="text-red-500 animate-pulse">♥</span>
-                <span>for snack lovers</span>
-              </div>
-            </div>
+            <p className="text-gray-600 dark:text-gray-300 text-sm text-center md:text-left">
+              &copy; {new Date().getFullYear()} Bilsnack.id. Dibuat dengan ❤️ untuk pecinta camilan.
+            </p>
             <a
               href="#top"
-              className="group flex items-center gap-2 text-sm accent-text hover:text-[rgb(var(--accent-hover))] transition-all duration-300 hover:scale-105"
+              className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors text-sm"
             >
               <span>Kembali ke atas</span>
-              <svg
-                className="w-4 h-4 transform group-hover:-translate-y-1 transition-transform duration-300"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
               </svg>
             </a>

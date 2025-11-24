@@ -98,6 +98,12 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
     color: rgb(var(--accent-hover));
   }
   .dark .badge { background-color: rgb(var(--accent)/0.25); color: rgb(var(--accent)); }
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
   /* WhatsApp style button aware of dark mode */
   .whatsapp-btn {
     @apply inline-flex items-center justify-center font-semibold;

@@ -9,6 +9,8 @@ const ResellerProductsPage = () => {
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState(null);
   const [statusCode, setStatusCode] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
   const { token } = useAuth();
   const location = useLocation();
 
@@ -109,16 +111,63 @@ const ResellerProductsPage = () => {
     return () => { cancelled = true; };
   }, [token, location]);
 
+  // Filter products based on search and status
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" ||
+      (filterStatus === "approved" && product.is_approved) ||
+      (filterStatus === "pending" && !product.is_approved);
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <div>
-      <div className="flex justify-between items-center p-6 mb-6">
-        <h1 className="text-3xl font-bold">Produk Saya</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-800">Produk Saya</h1>
         <Link
           to="/reseller/products/new"
-          className="accent-bg accent-text px-5 py-2 rounded-md font-semibold hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-[rgb(var(--accent))]/50 transition-colors"
+          className="bg-green-500 text-white px-5 py-2 rounded-md font-semibold hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-300 transition-colors flex items-center gap-2"
         >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
           Tambah Produk Baru
         </Link>
+      </div>
+
+      {/* Search and Filter Section */}
+      <div className="bg-white p-4 rounded-lg shadow-md mb-6">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="Cari produk..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">
+              Filter Status:
+            </label>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+            >
+              <option value="all">Semua Status</option>
+              <option value="approved">Disetujui</option>
+              <option value="pending">Menunggu</option>
+            </select>
+          </div>
+          <div className="text-sm text-gray-600 flex items-center justify-end">
+            Total: <span className="font-bold ml-2">{filteredProducts.length}</span>
+          </div>
+        </div>
       </div>
 
       {loading && <div className="p-4 text-sm text-muted">Memuat produk...</div>}
@@ -126,7 +175,7 @@ const ResellerProductsPage = () => {
         <div className="p-4 mb-4 bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border border-red-100 dark:border-red-800/40 rounded">{errorMsg} (status: {statusCode})</div>
       )}
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <table className="w-full table-auto text-left">
           <thead>
             <tr className="bg-yellow-500 text-white">
@@ -138,17 +187,13 @@ const ResellerProductsPage = () => {
               <th className="p-4 font-semibold text-white">Aksi</th>
             </tr>
           </thead>
-        </table>
-      </div>
-      <div className="bg-white overflow-x-auto rounded-lg shadow-md">
-        <table className="w-full table-auto text-left">
           <tbody>
-            {products.length === 0 && !loading ? (
+            {filteredProducts.length === 0 && !loading ? (
               <tr>
                 <td colSpan={6} className="p-12 text-center text-gray-500">Belum ada produk</td>
               </tr>
             ) : (
-              products.map((product) => (
+              filteredProducts.map((product) => (
                 <tr key={product.id} className="border-b hover:bg-gray-50">
                   <td className="p-4">
                     {(() => {
@@ -218,9 +263,10 @@ const ResellerProductsPage = () => {
                 </tr>
               ))
             )}
-            </tbody>
-          </table>
+          </tbody>
+        </table>
       </div>
+
     </div>
   );
 };

@@ -8,10 +8,10 @@ import logo from "../assets/bilsnack.png";
 const NavLink = ({ to, children }) => (
   <Link
     to={to}
-    className="relative group text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-amber-600 dark:hover:text-amber-400 transition-colors py-2"
+    className="relative group text-sm font-medium text-muted hover:accent-text transition-colors py-2"
   >
     {children}
-    <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 bg-amber-500 transition-all duration-300 group-hover:w-full rounded-full"></span>
+    <span className="absolute -bottom-0.5 left-0 w-0 h-0.5 accent-bg transition-all duration-300 group-hover:w-full rounded-full"></span>
   </Link>
 );
 
@@ -38,7 +38,7 @@ const UserAvatar = ({ name, src, size = 9 }) => {
   const sizeClass = size === 9 ? "w-9 h-9" : "w-10 h-10";
   return (
     <div
-      className={`user-avatar-inner ${sizeClass} rounded-full overflow-hidden flex items-center justify-center font-bold border-2 border-gray-100 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 text-gray-500 dark:text-gray-300 shadow-sm transition-transform`}
+      className={`user-avatar-inner ${sizeClass} rounded-full overflow-hidden flex items-center justify-center font-bold border-2 border-base bg-surface text-muted shadow-sm transition-transform`}
     >
       {src ? (
         <img
@@ -80,7 +80,7 @@ const CartIcon = ({ filled = false }) => (
     strokeLinecap="round"
     strokeLinejoin="round"
     className={`transition-colors duration-300 ${
-      filled ? "text-amber-600 scale-110" : "text-gray-600 dark:text-gray-300"
+      filled ? "accent-text scale-110" : "text-muted"
     }`}
   >
     <circle cx="9" cy="21" r="1"></circle>
@@ -170,7 +170,7 @@ const Header = () => {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-amber-400"
+        className="accent-text"
       >
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
       </svg>
@@ -185,7 +185,7 @@ const Header = () => {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="text-amber-500"
+        className="accent-text"
       >
         <circle cx="12" cy="12" r="4"></circle>
         <path d="M12 2v2m0 16v2m10-10h-2M4 12H2m15.07 6.07-1.42-1.42M8.35 8.35 6.93 6.93m0 10.14 1.42-1.42m9.72-9.72-1.42 1.42" />
@@ -194,10 +194,10 @@ const Header = () => {
 
   // Styling Classes
   const iconBtnClass =
-    "p-2 rounded-full hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors duration-200 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-amber-200 dark:focus:ring-amber-900";
+    "icon-btn";
 
   return (
-    <header className="fixed top-0 inset-x-0 z-50 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-neutral-800/50 shadow-sm transition-all duration-300">
+    <header className="fixed top-0 inset-x-0 z-50 glass border-b border-base shadow-sm transition-all duration-300" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.1) 50%, rgba(245, 158, 11, 0.15) 100%)' }}>
       <div className="px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="flex items-center justify-between h-20 gap-4">
           {/* Logo Section */}
@@ -210,9 +210,9 @@ const Header = () => {
                   className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
-              <span className="text-xl md:text-2xl font-bold tracking-tight bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent group-hover:from-amber-500 group-hover:to-amber-400 transition-all">
+              <span className="text-xl md:text-2xl font-bold tracking-tight text-gradient group-hover:from-accent-hover group-hover:to-accent transition-all">
                 Bilsnack
-                <span className="text-gray-800 dark:text-gray-200">.id</span>
+                <span className="text-muted">.id</span>
               </span>
             </Link>
           </div>
@@ -228,11 +228,11 @@ const Header = () => {
             <div
               className={`relative flex items-center transition-all duration-300 ease-out ${
                 isSearchFocused
-                  ? "flex-grow max-w-md ring-2 ring-amber-100 dark:ring-amber-900/30"
+                  ? "flex-grow max-w-md ring-2 ring-accent/20"
                   : "w-64"
-              } bg-gray-100/50 dark:bg-neutral-800/50 border border-gray-200 dark:border-neutral-700 rounded-full hover:border-amber-300 dark:hover:border-amber-700`}
+              } bg-surface-alt border border-base rounded-full hover:border-accent/50`}
             >
-              <div className="pl-4 text-gray-400">
+              <div className="pl-4 text-muted">
                 <SearchIcon className="w-4 h-4" />
               </div>
               <input
@@ -243,7 +243,7 @@ const Header = () => {
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full bg-transparent border-none py-2.5 pl-3 pr-4 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 focus:ring-0 focus:outline-none rounded-full"
+                className="w-full bg-transparent border-none py-2.5 pl-3 pr-4 text-sm placeholder:text-muted focus:ring-0 focus:outline-none rounded-full"
               />
             </div>
           </div>
@@ -282,9 +282,9 @@ const Header = () => {
                 <div ref={userMenuRef} className="relative">
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border border-gray-200 dark:border-neutral-700 hover:shadow-md transition-all duration-200 bg-white dark:bg-neutral-800"
+                    className="flex items-center gap-2 p-1 pl-2 pr-1 rounded-full border border-base hover:shadow-md transition-all duration-200 bg-surface"
                   >
-                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 max-w-[80px] truncate hidden lg:block">
+                    <span className="text-xs font-medium text-muted max-w-[80px] truncate hidden lg:block">
                       {user.name?.split(" ")[0]}
                     </span>
                     <UserAvatar name={user.name} src={user.profileImage} />
@@ -292,17 +292,17 @@ const Header = () => {
 
                   {/* Dropdown */}
                   <div
-                    className={`absolute right-0 mt-3 w-60 origin-top-right bg-white dark:bg-neutral-800 rounded-2xl shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none divide-y divide-gray-100 dark:divide-neutral-700 transition-all duration-200 ${
+                    className={`absolute right-0 mt-3 w-60 origin-top-right bg-surface rounded-2xl shadow-xl ring-1 ring-base focus:outline-none divide-y divide-base transition-all duration-200 ${
                       isUserMenuOpen
                         ? "opacity-100 scale-100 visible"
                         : "opacity-0 scale-95 invisible"
                     }`}
                   >
                     <div className="px-5 py-4">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-muted">
                         Halo,
                       </p>
-                      <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                      <p className="text-sm font-bold truncate">
                         {user.name}
                       </p>
                     </div>
@@ -310,14 +310,14 @@ const Header = () => {
                       <Link
                         to="/profile"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-5 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-neutral-700/50 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
+                        className="block px-5 py-2.5 text-sm hover:bg-surface-alt hover:accent-text transition-colors"
                       >
                         Profil Saya
                       </Link>
                       <Link
                         to="/orders"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="block px-5 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-neutral-700/50 hover:text-amber-700 dark:hover:text-amber-400 transition-colors"
+                        className="block px-5 py-2.5 text-sm hover:bg-surface-alt hover:accent-text transition-colors"
                       >
                         Riwayat Pesanan
                       </Link>
@@ -348,7 +348,7 @@ const Header = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+              className="md:hidden icon-btn"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -383,7 +383,7 @@ const Header = () => {
 
       {/* Mobile Navigation Menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out bg-white dark:bg-neutral-900 border-t border-gray-100 dark:border-neutral-800 ${
+        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out glass border-t border-base ${
           isMobileMenuOpen
             ? "max-h-screen opacity-100 shadow-xl"
             : "max-h-0 opacity-0"
@@ -393,7 +393,7 @@ const Header = () => {
           {/* Mobile Search */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon className="h-4 w-4 text-gray-400" />
+              <SearchIcon className="h-4 w-4 text-muted" />
             </div>
             <input
               type="text"
@@ -406,7 +406,7 @@ const Header = () => {
                   setIsMobileMenuOpen: () => setIsMobileMenuOpen(false),
                 }
               }
-              className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 dark:border-neutral-700 rounded-lg leading-5 bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 sm:text-sm transition-shadow"
+              className="block w-full pl-10 pr-3 py-2.5 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
             />
           </div>
 
@@ -414,20 +414,20 @@ const Header = () => {
             <Link
               to="/"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-neutral-800"
+              className="block px-3 py-2 rounded-md text-base font-medium text-muted hover:accent-text hover:bg-surface-alt"
             >
               Beranda
             </Link>
             <Link
               to="/shop"
               onClick={() => setIsMobileMenuOpen(false)}
-              className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-neutral-800"
+              className="block px-3 py-2 rounded-md text-base font-medium text-muted hover:accent-text hover:bg-surface-alt"
             >
               Semua Produk
             </Link>
           </div>
 
-          <div className="border-t border-gray-200 dark:border-neutral-800 pt-4">
+          <div className="border-t border-base pt-4">
             {user ? (
               <div className="flex items-center px-3">
                 <div className="flex-shrink-0">
@@ -438,10 +438,10 @@ const Header = () => {
                   />
                 </div>
                 <div className="ml-3">
-                  <div className="text-base font-medium leading-none text-gray-800 dark:text-white">
+                  <div className="text-base font-medium leading-none">
                     {user.name}
                   </div>
-                  <div className="text-sm font-medium leading-none text-gray-500 mt-1">
+                  <div className="text-sm font-medium leading-none text-muted mt-1">
                     {user.email}
                   </div>
                 </div>
@@ -463,14 +463,14 @@ const Header = () => {
                 <Link
                   to="/profile"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-gray-50 dark:hover:bg-neutral-800"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-muted hover:accent-text hover:bg-surface-alt"
                 >
                   Profil Saya
                 </Link>
                 <Link
                   to="/orders"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:text-gray-900 hover:bg-gray-50 dark:hover:bg-neutral-800"
+                  className="block px-3 py-2 rounded-md text-base font-medium text-muted hover:accent-text hover:bg-surface-alt"
                 >
                   Riwayat Pesanan
                 </Link>

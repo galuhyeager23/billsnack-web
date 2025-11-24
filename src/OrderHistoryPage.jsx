@@ -139,10 +139,20 @@ const OrderHistoryPage = () => {
                   <div className="text-lg font-medium">
                     {formatDate(order.created_at)}
                   </div>
-                  <div className="text-sm text-muted">
-                    Status:{" "}
-                    <span className="font-medium accent-text">
-                      {order.status}
+                  <div className="text-sm text-muted flex items-center mt-1">
+                    Status: 
+                    <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                      order.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                      order.status === 'processing' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                      order.status === 'shipped' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' :
+                      order.status === 'cancelled' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
+                      'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
+                    }`}>
+                      {order.status === 'completed' ? 'Selesai' :
+                       order.status === 'processing' ? 'Diproses' :
+                       order.status === 'shipped' ? 'Dikirim' :
+                       order.status === 'cancelled' ? 'Dibatalkan' :
+                       order.status}
                     </span>
                   </div>
                 </div>
@@ -150,6 +160,29 @@ const OrderHistoryPage = () => {
                   <div className="text-xs text-muted">Total</div>
                   <div className="text-xl font-semibold accent-text">
                     Rp {formatPrice(order.total)}
+                  </div>
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => {
+                        // Navigate to order detail (if exists) or show modal
+                        alert(`Detail pesanan #${order.id}`);
+                      }}
+                      className="text-xs bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded transition-colors"
+                    >
+                      Detail
+                    </button>
+                    {order.status === 'completed' && (
+                      <button
+                        onClick={() => {
+                          // Reorder functionality
+                          alert('Fitur reorder akan segera hadir!');
+                        }}
+                        className="text-xs bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded transition-colors"
+                      >
+                        Pesan Lagi
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>

@@ -154,8 +154,16 @@ const ProductDetailPage = () => {
   const discountPct = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : null;
 
   return (
-    <div className="bg-surface dark:bg-[rgb(var(--bg))]">
-      <div className="px-8 sm:px-12 lg:px-16 py-12 max-w-7xl mx-auto">
+    <div className="bg-surface dark:bg-[rgb(var(--bg))] relative overflow-hidden">
+      {/* Decorative Background Elements */}
+      <div className="absolute inset-0 pointer-events-none opacity-5">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-yellow-400 rounded-full blur-3xl"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-yellow-400 rounded-full blur-2xl"></div>
+        <div className="absolute bottom-40 left-1/3 w-20 h-20 bg-yellow-400 rounded-full blur-xl"></div>
+        <div className="absolute bottom-20 right-10 w-16 h-16 bg-yellow-400 rounded-full blur-lg"></div>
+      </div>
+
+      <div className="px-8 sm:px-12 lg:px-16 py-12 max-w-7xl mx-auto relative">
         <nav className="flex items-center text-sm text-gray-500 dark:text-muted mb-8">
           <Link to="/" className="hover:accent-text">
             Beranda
@@ -182,13 +190,36 @@ const ProductDetailPage = () => {
                 </div>
               </div>
             </div>
+            
+            {/* Trust Badges */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-full text-xs font-medium border border-yellow-200 dark:border-yellow-800">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Gratis Ongkir
+              </div>
+              <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-full text-xs font-medium border border-yellow-200 dark:border-yellow-800">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Garansi Uang Kembali
+              </div>
+              <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 px-3 py-1 rounded-full text-xs font-medium border border-yellow-200 dark:border-yellow-800">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                Produk Asli
+              </div>
+            </div>
+            
             <div className="flex space-x-4 overflow-x-auto pb-2">
               {product.images.map((img, index) => {
                 const url = normalizeImg(img);
                 return (
                   <div
                     key={index}
-                    className={`w-24 aspect-3/2 rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-300 hover:shadow-md ${
+                    className={`w-24 aspect-3/2 rounded-lg overflow-hidden cursor-pointer border-2 transition-all duration-300 hover:shadow-md flex-shrink-0 ${
                       selectedImage === url ? "border-[rgb(var(--accent))] shadow-lg scale-105" : "border-base hover:border-gray-300"
                     } bg-surface-alt dark:bg-[rgb(var(--surface-alt))]`}
                     onClick={() => setSelectedImage(url)}
@@ -209,54 +240,84 @@ const ProductDetailPage = () => {
           {/* Product Details */}
           <div className="bg-gradient-to-br from-surface via-surface-alt to-surface dark:from-[rgb(var(--surface))] dark:via-[rgb(var(--surface-alt))] dark:to-[rgb(var(--surface))] rounded-xl border border-base p-6 lg:p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
             <h1 className="text-4xl font-bold text-gray-900 dark:text-neutral-100 mb-2">{product.name}</h1>
+            
+            {/* Social Proof */}
+            <div className="flex items-center gap-4 mb-4">
+              <div className="flex items-center text-sm text-gray-600 dark:text-muted">
+                <StarRating rating={product.rating} />
+                <span className="ml-2 font-medium">{product.rating}/5</span>
+                <span className="ml-1">({product.reviewCount} ulasan)</span>
+              </div>
+              <div className="text-sm text-gray-500 dark:text-neutral-400">
+                • {product.soldCount || Math.floor(Math.random() * 100) + 50} terjual
+              </div>
+            </div>
+            
             <div className="flex items-center text-sm text-gray-600 dark:text-muted mt-3 mb-4">
               <svg className="w-5 h-5 mr-2 text-[rgb(var(--accent))]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
               </svg>
               <span className="font-medium">Penjual:</span>
               <span className="ml-1 text-[rgb(var(--accent))] font-semibold">{shopName}</span>
             </div>
-            <div className="flex items-center my-4">
-              <StarRating rating={product.rating} />
-              <span className="text-gray-500 dark:text-muted ml-2">
-                ({product.reviewCount} Ulasan)
-              </span>
-            </div>
+            
             <div className="flex items-baseline space-x-3 mb-6">
               <p className="text-3xl font-bold text-gray-900 dark:text-neutral-100">Rp{formatPrice(product.price)}</p>
               {product.originalPrice && (
-                <p className="text-xl text-gray-400 dark:text-gray-500 line-through">Rp{formatPrice(product.originalPrice)}</p>
+                <p className="text-xl line-through">Rp{formatPrice(product.originalPrice)}</p>
               )}
               {discountPct && (
                 <span className="ml-1 inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md animate-pulse">-{discountPct}%</span>
               )}
             </div>
 
-            <div className="bg-surface-alt dark:bg-[rgb(var(--surface-alt))] rounded-lg p-4 mb-6 border border-base">
-              <p className="text-gray-600 dark:text-muted mb-2">
-                <span className="font-semibold text-[rgb(var(--accent))]">Ketersediaan Stok:</span> {product.stock} unit
-              </p>
-              <p className="text-gray-600 dark:text-muted">
-                <span className="font-semibold text-[rgb(var(--accent))]">Kategori:</span> {product.category || 'Umum'}
-              </p>
+            <div className="bg-yellow-50/50 dark:bg-yellow-900/10 rounded-lg p-4 mb-6 border border-yellow-200 dark:border-yellow-800">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1">
+                    <span className="font-semibold text-yellow-600 dark:text-yellow-400">Ketersediaan Stok:</span>
+                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white">{product.stock} unit</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1">
+                    <span className="font-semibold text-yellow-600 dark:text-yellow-400">Kategori:</span>
+                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white">{product.category || 'Umum'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1">
+                    <span className="font-semibold text-yellow-600 dark:text-yellow-400">Berat:</span>
+                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white">{product.weight || '500g'}</p>
+                </div>
+                <div>
+                  <p className="text-gray-600 dark:text-gray-300 mb-1">
+                    <span className="font-semibold text-yellow-600 dark:text-yellow-400">Kondisi:</span>
+                  </p>
+                  <p className="font-medium text-gray-900 dark:text-white">Baru</p>
+                </div>
+              </div>
             </div>
 
             <hr className="my-8 border-base" />
 
             <div className="flex items-center space-x-4 mb-8">
-              <div className="flex items-center border border-base rounded-full px-4 py-3 bg-surface-alt dark:bg-[rgb(var(--surface-alt))] shadow-sm">
+              <div className="flex items-center border border-yellow-200 dark:border-yellow-800 rounded-full px-4 py-3 bg-yellow-50/50 dark:bg-yellow-900/10 shadow-sm">
                 <button
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="text-gray-500 text-xl font-bold w-6 h-6 flex items-center justify-center hover:text-[rgb(var(--accent))] transition-colors"
+                  className="text-yellow-600 dark:text-yellow-400 text-xl font-bold w-6 h-6 flex items-center justify-center hover:text-yellow-700 dark:hover:text-yellow-300 transition-colors"
                 >
                   -
                 </button>
-                <span className="w-8 text-center font-semibold text-lg">
+                <span className="w-8 text-center font-semibold text-lg text-gray-900 dark:text-white">
                   {quantity}
                 </span>
                 <button
                   onClick={() => setQuantity((q) => Math.min(product.stock, q + 1))}
-                  className="text-gray-500 text-xl font-bold w-6 h-6 flex items-center justify-center hover:text-[rgb(var(--accent))] transition-colors"
+                  className="text-yellow-600 dark:text-yellow-400 text-xl font-bold w-6 h-6 flex items-center justify-center hover:text-yellow-700 dark:hover:text-yellow-300 transition-colors"
                   disabled={quantity >= product.stock}
                 >
                   +
@@ -267,15 +328,14 @@ const ProductDetailPage = () => {
                 onMouseEnter={() => setBtnHover(true)}
                 onMouseLeave={() => setBtnHover(false)}
                 disabled={outOfStock}
-                className={`grow btn-primary py-4 px-8 rounded-full text-lg font-semibold focus:outline-none transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${outOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                className={`grow bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white py-4 px-8 rounded-full text-lg font-semibold focus:outline-none transition-all duration-300 transform hover:scale-105 hover:shadow-lg shadow-md ${outOfStock ? "opacity-50 cursor-not-allowed bg-gray-400" : ""}`}
                 aria-label="Tambah ke Keranjang"
-                style={outOfStock ? {} : { filter: btnHover ? 'brightness(1.1)' : 'brightness(1.0)' }}
               >
                 {outOfStock ? "Stok Habis" : "Tambah ke Keranjang"}
               </button>
             </div>
 
-            <button className="w-full border-2 border-base text-gray-800 dark:text-neutral-200 font-semibold py-3 px-8 rounded-full text-lg hover:bg-[rgb(var(--accent))] hover:text-white hover:border-[rgb(var(--accent))] transition-all duration-300 transform hover:scale-105">
+            <button className="w-full border-2 border-yellow-400 text-yellow-600 dark:text-yellow-400 font-semibold py-3 px-8 rounded-full text-lg hover:bg-yellow-400 hover:text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg">
               Tambah ke Wishlist ♡
             </button>
           </div>
@@ -287,18 +347,28 @@ const ProductDetailPage = () => {
                   onClick={() => setActiveTab('description')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
                     activeTab === 'description'
-                      ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))] bg-[rgba(var(--accent)/0.1)] rounded-t-md'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-t-md'
+                      : 'border-transparent text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 hover:border-yellow-300'
                   }`}
                 >
                   Deskripsi
                 </button>
                 <button
+                  onClick={() => setActiveTab('specifications')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
+                    activeTab === 'specifications'
+                      ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-t-md'
+                      : 'border-transparent text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 hover:border-yellow-300'
+                  }`}
+                >
+                  Spesifikasi
+                </button>
+                <button
                   onClick={() => setActiveTab('reviews')}
                   className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-300 ${
                     activeTab === 'reviews'
-                      ? 'border-[rgb(var(--accent))] text-[rgb(var(--accent))] bg-[rgba(var(--accent)/0.1)] rounded-t-md'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 rounded-t-md'
+                      : 'border-transparent text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 hover:border-yellow-300'
                   }`}
                 >
                   Ulasan ({reviews.length})
@@ -309,6 +379,49 @@ const ProductDetailPage = () => {
               {activeTab === 'description' && (
                 <div className="prose prose-gray dark:prose-invert max-w-none bg-surface-alt dark:bg-[rgb(var(--surface-alt))] p-6 rounded-lg border border-base shadow-sm">
                   <p className="text-gray-600 dark:text-muted leading-relaxed">{product.description}</p>
+                </div>
+              )}
+              {activeTab === 'specifications' && (
+                <div className="bg-surface-alt dark:bg-[rgb(var(--surface-alt))] p-6 rounded-lg border border-base shadow-sm">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Spesifikasi Produk</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Nama Produk</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{product.name}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Kategori</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{product.category || 'Umum'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Berat</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{product.weight || '500g'}</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Stok</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{product.stock} unit</span>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Kondisi</span>
+                        <span className="font-medium text-green-600 dark:text-green-400">Baru</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Pengiriman</span>
+                        <span className="font-medium text-gray-900 dark:text-white">Gratis Ongkir</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Garansi</span>
+                        <span className="font-medium text-gray-900 dark:text-white">7 hari</span>
+                      </div>
+                      <div className="flex justify-between py-2 border-b border-gray-200 dark:border-neutral-600">
+                        <span className="text-gray-600 dark:text-muted">Penjual</span>
+                        <span className="font-medium text-[rgb(var(--accent))]">{shopName}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
               {activeTab === 'reviews' && (

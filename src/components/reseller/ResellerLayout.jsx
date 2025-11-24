@@ -127,25 +127,25 @@ const ResellerLayout = () => {
   const navLinkClasses = ({ isActive }) =>
     `flex items-center space-x-3 py-3 px-4 rounded-lg transition-colors ${
       isActive
-        ? "bg-gray-700 text-white"
-        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+        ? "bg-amber-700 text-white shadow-md"
+        : "text-gray-800 hover:bg-amber-600 hover:text-white"
     }`;
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gradient-to-br from-yellow-50 to-amber-50">
       {/* Top Header Bar - Always visible */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-gray-800 border-b border-gray-700 z-50 flex items-center justify-between px-4 shadow-sm">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-yellow-500 to-amber-600 border-b border-yellow-400 z-50 flex items-center justify-between px-4 shadow-lg">
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="text-white hover:bg-gray-700 p-2 rounded-lg transition-colors"
+            className="text-gray-800 hover:bg-yellow-600 p-2 rounded-lg transition-colors"
           >
             {sidebarOpen ? <CloseIcon /> : <MenuIcon />}
           </button>
-          <h1 className="text-xl font-bold text-white">Reseller Panel</h1>
+          <h1 className="text-xl font-bold text-gray-800">Reseller Panel</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-300 truncate">
+          <div className="text-sm text-gray-700 truncate">
             {resellerEmail}
           </div>
           <button
@@ -169,12 +169,12 @@ const ResellerLayout = () => {
       <aside
         className={`${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed lg:fixed left-0 top-16 z-40 w-64 h-screen-minus-16 bg-gray-800 text-white p-4 flex flex-col transition-transform duration-300 ease-in-out overflow-y-auto`}
+        } fixed lg:fixed left-0 top-16 z-40 w-64 h-screen-minus-16 bg-gradient-to-b from-yellow-500 to-amber-600 text-gray-800 p-4 flex flex-col transition-transform duration-300 ease-in-out overflow-y-auto shadow-xl`}
         style={{ height: "calc(100vh - 4rem)" }}
       >
         {/* Sidebar Header - Removed to avoid duplication with top header */}
         <div className="mb-8">
-          <p className="text-sm text-gray-400">Menu Navigation</p>
+          <p className="text-sm text-gray-700 font-semibold">Menu Navigation</p>
         </div>
         <nav className="grow">
           <ul>

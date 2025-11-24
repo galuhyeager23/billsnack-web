@@ -62,6 +62,9 @@ const AdminLoginPage = () => {
             // ignore storage errors
           }
         }
+        // Clear any existing user login to keep admin and user sessions separate
+        localStorage.removeItem("billsnack_token");
+        localStorage.removeItem("billsnack_user");
         // keep a simple adminAuth flag for layout checks
         localStorage.setItem(
           "adminAuth",
@@ -86,70 +89,102 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="px-8 sm:px-12 lg:px-16 py-20 flex justify-center">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-lg shadow-lg p-8">
-          <h1 className="text-3xl font-bold text-center mb-2">Panel Admin</h1>
-          <p className="text-center text-gray-600 mb-8">
-            Akses Terbatas - Hanya Login Admin
-          </p>
-
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Admin
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                placeholder="Masukan email admin"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500"
-                required
-                aria-label="Email Admin"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Kata Sandi
-              </label>
-              <input
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleInputChange}
-                placeholder="Masukkan kata sandi admin"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-yellow-500"
-                required
-                aria-label="Kata Sandi Admin"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-yellow-500 text-white font-semibold py-3 px-4 rounded-full hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition duration-300"
-              disabled={submitting}
-            >
-              {submitting ? "Memproses..." : "Masuk"}
-            </button>
-          </form>
-          {/* Demo credentials removed for security - contact admin to obtain credentials */}
-
-          <div className="mt-6 text-center">
-            <p className="text-gray-600 text-sm">
-              Bukan admin?{" "}
-              <Link to="/" className="text-black font-semibold hover:underline">
-                Kembali ke Toko
-              </Link>
+    <div className="h-screen flex items-center justify-center bg-white dark:bg-neutral-900 px-6 py-12">
+      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        {/* Left illustration / promo */}
+        <div className="hidden md:flex flex-col items-start justify-center space-y-6 px-6">
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:to-amber-800/20 border border-yellow-200 dark:border-yellow-700/30 shadow-lg hover:shadow-xl transition-all duration-300">
+            <h2 className="text-2xl font-extrabold text-amber-800 dark:text-amber-200">
+              Bilsnack
+            </h2>
+            <p className="text-amber-700 dark:text-amber-300 mt-2">
+              Panel Admin Billsnack - Akses Terbatas.
             </p>
+          </div>
+          <div className="w-full rounded-xl overflow-hidden shadow-md">
+            <img
+              src="/hero-food.jpg"
+              alt="snack"
+              className="w-full object-cover h-64"
+              onError={(e) => {
+                e.target.style.display = "none";
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right: admin login card */}
+        <div className="flex items-center justify-center">
+          {/* PERBAIKAN: Mengganti <form> luar menjadi <div> agar tidak ada nested form */}
+          <div className="w-full max-w-md bg-gradient-to-br from-yellow-50 to-amber-100 dark:from-yellow-900/20 dark:to-amber-800/20 border border-yellow-200 dark:border-yellow-700/30 p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300">
+            <div className="flex items-center justify-between mb-6">
+              <h1 className="text-2xl sm:text-3xl font-bold text-amber-800 dark:text-amber-200">
+                Panel Admin
+              </h1>
+              <span className="text-sm text-amber-700 dark:text-amber-300">
+                Akses Terbatas 👑
+              </span>
+            </div>
+
+            {error && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-6">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                  Email Admin
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Masukan email admin"
+                  className="w-full px-4 py-3 border border-yellow-200 dark:border-yellow-700/30 bg-white dark:bg-neutral-800 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-colors"
+                  required
+                  aria-label="Email Admin"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                  Kata Sandi
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder="Masukkan kata sandi admin"
+                  className="w-full px-4 py-3 border border-yellow-200 dark:border-yellow-700/30 bg-white dark:bg-neutral-800 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-colors"
+                  required
+                  aria-label="Kata Sandi Admin"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-semibold py-3 px-4 rounded-full hover:from-amber-600 hover:to-yellow-600 focus:outline-none focus:ring-2 focus:ring-amber-300 transition-all duration-300 shadow-lg hover:shadow-xl"
+                disabled={submitting}
+              >
+                {submitting ? "Memproses..." : "Masuk"}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-6 border-t border-yellow-200 dark:border-yellow-700/30">
+              <p className="text-center text-amber-700 dark:text-amber-300 text-sm mb-3">
+                Kembali ke Toko Billsnack
+              </p>
+              <Link
+                to="/"
+                className="w-full block text-center btn-secondary font-semibold py-2 px-4 rounded-lg"
+              >
+                Kunjungi Toko
+              </Link>
+            </div>
           </div>
         </div>
       </div>

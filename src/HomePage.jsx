@@ -8,9 +8,15 @@ const HomePage = () => {
   const { products, topSelling: ctxTopSelling } = useProducts();
   const newArrivals = (products || []).slice(0, 4);
   // Prefer server-provided topSelling list when available, otherwise fall back to local calculation
-  const topSelling = (Array.isArray(ctxTopSelling) && ctxTopSelling.length > 0)
-    ? ctxTopSelling.slice(0, 4)
-    : (products || []).slice().sort((a, b) => (Number(b.reviewCount || 0) - Number(a.reviewCount || 0))).slice(0, 4);
+  const topSelling =
+    Array.isArray(ctxTopSelling) && ctxTopSelling.length > 0
+      ? ctxTopSelling.slice(0, 4)
+      : (products || [])
+          .slice()
+          .sort(
+            (a, b) => Number(b.reviewCount || 0) - Number(a.reviewCount || 0)
+          )
+          .slice(0, 4);
 
   return (
     <div className="w-full">
@@ -21,33 +27,55 @@ const HomePage = () => {
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_25%_30%,rgba(var(--accent)/0.18),transparent_65%),radial-gradient(circle_at_80%_70%,rgba(var(--accent)/0.12),transparent_70%)]" />
         <div className="relative px-2 sm:px-6 lg:px-12 py-20 lg:py-28 w-full grid grid-cols-1 md:grid-cols-2 gap-14 items-center">
           <div className="text-center md:text-left">
-            <span className="inline-block mb-4 px-3 py-1 rounded-full accent-bg text-xs font-semibold tracking-wide shadow-sm">PROMO HARI INI</span>
+            <span className="inline-block mb-4 px-3 py-1 rounded-full accent-bg text-xs font-semibold tracking-wide shadow-sm">
+              PROMO HARI INI
+            </span>
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-gray-900 dark:text-white">
-              Cemilan Enak, <span className="text-gradient">Mood Meningkat</span>.
+              Cemilan Enak,{" "}
+              <span className="text-gradient">Mood Meningkat</span>.
             </h1>
             <p className="mt-5 text-gray-600 dark:text-gray-300 text-lg max-w-xl mx-auto md:mx-0">
-              Temukan snack terbaik dari ratusan merek. Pengiriman cepat, harga bersahabat, dan selalu ada kejutan setiap minggu.
+              Temukan snack terbaik dari ratusan merek. Pengiriman cepat, harga
+              bersahabat, dan selalu ada kejutan setiap minggu.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row gap-3 sm:gap-4 items-center md:items-start">
-              <Link to="/shop" className="btn-primary w-full sm:w-auto justify-center">
+              <Link
+                to="/shop"
+                className="btn-primary w-full sm:w-auto justify-center"
+              >
                 Belanja Sekarang
               </Link>
-              <Link to="/register" className="btn-secondary w-full sm:w-auto justify-center">
+              <Link
+                to="/register"
+                className="btn-secondary w-full sm:w-auto justify-center"
+              >
                 Daftar Gratis
               </Link>
             </div>
             <div className="mt-8 grid grid-cols-3 gap-6 max-w-md mx-auto md:mx-0">
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">200+</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">Merek</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  200+
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                  Merek
+                </p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">2,000+</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">Produk</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  2,000+
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                  Produk
+                </p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">30,000+</p>
-                <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">Pelanggan</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  30,000+
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-xs font-medium">
+                  Pelanggan
+                </p>
               </div>
             </div>
           </div>
@@ -55,81 +83,94 @@ const HomePage = () => {
             <div className="relative w-80 h-80">
               <div className="absolute -inset-2 bg-[radial-gradient(circle_at_40%_35%,rgba(var(--accent)/0.25),transparent_70%)] rounded-3xl blur-xl" />
               <div className="relative w-full h-full bg-surface dark:bg-neutral-800 rounded-3xl shadow-lg flex items-center justify-center overflow-hidden border border-base">
-                <img src={logo} alt="Billsnack" className="w-64 h-64 object-contain select-none" />
+                <img
+                  src={logo}
+                  alt="Billsnack"
+                  className="w-64 h-64 object-contain select-none"
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
-
-      {/* Category Navigation */}
       <section className="bg-surface dark:bg-neutral-900 py-12 w-full">
         <div className="px-2 sm:px-6 lg:px-12 w-full">
-          <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">JELAJAHI KATEGORI</h2>
+          <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
+            JELAJAHI KATEGORI
+          </h2>
           <div className="flex justify-center">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 max-w-5xl">
               {/* All */}
-              <Link
-                to="/shop"
-                className="group"
-              >
+              <Link to="/shop" className="group">
                 <div className="bg-surface-alt rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition border border-base">
                   <div className="w-20 h-20 mb-3 flex items-center justify-center">
                     <span className="text-4xl">🛍️</span>
                   </div>
-                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">All</h3>
+                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">
+                    All
+                  </h3>
                 </div>
               </Link>
 
               {/* Chips & Crisps */}
               <Link
-                to={`/shop?category=${encodeURIComponent('Chips & Crisps')}`}
+                to={`/shop?category=${encodeURIComponent("Chips & Crisps")}`}
                 className="group"
               >
                 <div className="bg-surface-alt rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition border border-base">
                   <div className="w-20 h-20 mb-3 flex items-center justify-center">
                     <span className="text-4xl">🥨</span>
                   </div>
-                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">Chips & Crisps</h3>
+                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">
+                    Chips & Crisps
+                  </h3>
                 </div>
               </Link>
 
               {/* Candies & Sweets */}
               <Link
-                to={`/shop?category=${encodeURIComponent('Candies & Sweets')}`}
+                to={`/shop?category=${encodeURIComponent("Candies & Sweets")}`}
                 className="group"
               >
                 <div className="bg-surface-alt rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition border border-base">
                   <div className="w-20 h-20 mb-3 flex items-center justify-center">
                     <span className="text-4xl">🍬</span>
                   </div>
-                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">Candies & Sweets</h3>
+                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">
+                    Candies & Sweets
+                  </h3>
                 </div>
               </Link>
 
               {/* Cookies */}
               <Link
-                to={`/shop?category=${encodeURIComponent('Cookies')}`}
+                to={`/shop?category=${encodeURIComponent("Cookies")}`}
                 className="group"
               >
                 <div className="bg-surface-alt rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition border border-base">
                   <div className="w-20 h-20 mb-3 flex items-center justify-center">
                     <span className="text-4xl">🍪</span>
                   </div>
-                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">Cookies</h3>
+                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">
+                    Cookies
+                  </h3>
                 </div>
               </Link>
 
               {/* Nuts & Dried Fruits */}
               <Link
-                to={`/shop?category=${encodeURIComponent('Nuts & Dried Fruits')}`}
+                to={`/shop?category=${encodeURIComponent(
+                  "Nuts & Dried Fruits"
+                )}`}
                 className="group"
               >
                 <div className="bg-surface-alt rounded-xl p-6 h-48 flex flex-col items-center justify-center hover:shadow-lg transition border border-base">
                   <div className="w-20 h-20 mb-3 flex items-center justify-center">
                     <span className="text-4xl">🥜</span>
                   </div>
-                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">Nuts & Dried Fruits</h3>
+                  <h3 className="text-lg font-bold text-center text-gray-800 group-hover:text-black transition-colors">
+                    Nuts & Dried Fruits
+                  </h3>
                 </div>
               </Link>
             </div>
@@ -140,7 +181,9 @@ const HomePage = () => {
       {/* New Arrivals */}
       <section className="bg-surface py-20 w-full">
         <div className="px-2 sm:px-6 lg:px-12 w-full">
-          <h2 className="text-4xl font-bold text-center mb-12">PRODUK TERBARU</h2>
+          <h2 className="text-4xl font-bold text-center mb-12">
+            PRODUK TERBARU
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {newArrivals.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -173,6 +216,68 @@ const HomePage = () => {
             >
               Lihat Semua
             </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Customer Testimonials */}
+      <section className="bg-surface-alt dark:bg-neutral-900 py-20 w-full">
+        <div className="px-2 sm:px-6 lg:px-12 w-full">
+          <h2 className="text-4xl font-bold text-center mb-12">
+            Apa Kata Pelanggan Kami
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="bg-white dark:bg-neutral-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-neutral-700">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  A
+                </div>
+                <div className="ml-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    Ahmad S.
+                  </h4>
+                  <div className="flex text-yellow-400">★★★★★</div>
+                </div>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 italic">
+                "Snack-nya fresh banget! Pengiriman juga cepat. Sudah jadi
+                langganan di Billsnack."
+              </p>
+            </div>
+            <div className="bg-white dark:bg-neutral-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-neutral-700">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  S
+                </div>
+                <div className="ml-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    Sari P.
+                  </h4>
+                  <div className="flex text-yellow-400">★★★★★</div>
+                </div>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 italic">
+                "Variasi produknya lengkap, dari chips sampai coklat. Harganya
+                juga terjangkau."
+              </p>
+            </div>
+            <div className="bg-white dark:bg-neutral-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-neutral-700">
+              <div className="flex items-center mb-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                  R
+                </div>
+                <div className="ml-4">
+                  <h4 className="font-semibold text-gray-900 dark:text-white">
+                    Rina M.
+                  </h4>
+                  <div className="flex text-yellow-400">★★★★★</div>
+                </div>
+              </div>
+              <p className="text-gray-600 dark:text-gray-300 italic">
+                "Website-nya user friendly, mudah cari produk favorit.
+                Recommended banget!"
+              </p>
+            </div>
           </div>
         </div>
       </section>
