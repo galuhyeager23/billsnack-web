@@ -122,129 +122,64 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 dark:from-neutral-900 dark:to-neutral-800">
-      <div className="px-8 sm:px-12 lg:px-16 py-12 max-w-6xl mx-auto">
-        {/* Breadcrumb */}
-        <nav className="flex items-center text-sm text-muted mb-8">
-          <a href="/" className="hover:text-accent transition-colors">
-            Beranda
-          </a>{" "}
-          <svg
-            className="w-4 h-4 mx-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+    <div className="px-8 sm:px-12 lg:px-16 py-12 max-w-6xl mx-auto">
+      {/* Breadcrumb */}
+      <nav className="flex items-center text-sm text-muted mb-8">
+        <a
+          href="/"
+          className="hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
+        >
+          Beranda
+        </a>{" "}
+        <svg
+          className="w-4 h-4 mx-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="m9 18 6-6-6-6"
+          />
+        </svg>
+        <span className="text-gray-700 dark:text-neutral-200 font-medium">
+          Profil Saya
+        </span>
+      </nav>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Profile Summary Card */}
+        <div className="lg:col-span-1">
+          <div
+            className="glass rounded-2xl p-6 shadow-xl"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.1) 50%, rgba(245, 158, 11, 0.15) 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.2)",
+            }}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="m9 18 6-6-6-6"
-            />
-          </svg>
-          <span className="text-gray-700 dark:text-neutral-200 font-medium">
-            Profil Saya
-          </span>
-        </nav>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Summary Card */}
-          <div className="lg:col-span-1">
-            <div className="bg-surface-alt border border-base rounded-2xl p-6 shadow-lg">
-              <div className="text-center">
-                <div className="relative inline-block mb-4">
-                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-blue-100 to-purple-100 dark:from-neutral-700 dark:to-neutral-600 border-4 border-white dark:border-neutral-800 flex items-center justify-center shadow-lg">
-                    {avatarPreview ? (
-                      <img
-                        src={avatarPreview}
-                        alt="Avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="text-4xl font-bold text-gray-400 dark:text-gray-500">
-                        {user.firstName?.[0]?.toUpperCase() ||
-                          user.email?.[0]?.toUpperCase() ||
-                          "U"}
-                      </div>
-                    )}
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-neutral-800 flex items-center justify-center">
-                    <svg
-                      className="w-4 h-4 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  </div>
+            <div className="text-center">
+              <div className="relative inline-block mb-4">
+                <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-800 dark:to-yellow-700 border-4 border-white dark:border-gray-800 flex items-center justify-center shadow-lg">
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-4xl font-bold text-yellow-600 dark:text-yellow-400">
+                      {user.firstName?.[0]?.toUpperCase() ||
+                        user.email?.[0]?.toUpperCase() ||
+                        "U"}
+                    </div>
+                  )}
                 </div>
-                <h2 className="text-xl font-bold text-gradient mb-1">
-                  {user.firstName} {user.lastName}
-                </h2>
-                <p className="text-muted text-sm mb-4">{user.email}</p>
-
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="text-center p-3 bg-surface rounded-lg border border-base">
-                    <div className="text-lg font-bold text-accent">12</div>
-                    <div className="text-xs text-muted">Pesanan</div>
-                  </div>
-                  <div className="text-center p-3 bg-surface rounded-lg border border-base">
-                    <div className="text-lg font-bold text-accent">4.8</div>
-                    <div className="text-xs text-muted">Rating</div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-center text-xs text-muted bg-green-50 dark:bg-green-900/20 px-3 py-1 rounded-full">
-                    <svg
-                      className="w-3 h-3 mr-1 text-green-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    Akun Terverifikasi
-                  </div>
-                  <div className="flex items-center justify-center text-xs text-muted bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
-                    <svg
-                      className="w-3 h-3 mr-1 text-blue-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                      />
-                    </svg>
-                    Data Aman
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Main Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-surface-alt border border-base rounded-2xl shadow-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4">
-                <h1 className="text-2xl font-bold text-white flex items-center">
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center">
                   <svg
-                    className="w-6 h-6 mr-3"
+                    className="w-4 h-4 text-white"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -253,62 +188,158 @@ const ProfilePage = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  Informasi Pribadi
-                </h1>
-                <p className="text-blue-100 text-sm mt-1">
-                  Kelola data profil Anda dengan aman
-                </p>
+                </div>
               </div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">
+                {user.firstName} {user.lastName}
+              </h2>
+              <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                {user.email}
+              </p>
 
-              <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                {/* Avatar Section */}
-                <div className="bg-surface border border-base rounded-xl p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center text-gradient">
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    Foto Profil
-                  </h3>
-                  <div className="flex items-start gap-6">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-alt border-2 border-base flex items-center justify-center shadow-md">
-                        {avatarPreview ? (
-                          <img
-                            src={avatarPreview}
-                            alt="Avatar preview"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="text-2xl font-bold text-muted">
-                            {user.firstName?.[0]?.toUpperCase() ||
-                              user.email?.[0]?.toUpperCase() ||
-                              "U"}
-                          </div>
-                        )}
-                      </div>
-                      <label className="absolute -bottom-1 -right-1 bg-accent rounded-full p-2 shadow-lg border-2 border-white dark:border-neutral-800 cursor-pointer hover:bg-accent-hover transition-colors">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarChange}
-                          className="hidden"
+              <div className="space-y-2">
+                <div className="flex items-center justify-center text-xs text-green-700 dark:text-green-300 bg-green-50/80 dark:bg-green-900/30 px-3 py-1 rounded-full border border-green-200 dark:border-green-800 backdrop-blur-sm">
+                  <svg
+                    className="w-3 h-3 mr-1 text-green-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  Akun Terverifikasi
+                </div>
+                <div className="flex items-center justify-center text-xs text-blue-700 dark:text-blue-300 bg-blue-50/80 dark:bg-blue-900/30 px-3 py-1 rounded-full border border-blue-200 dark:border-blue-800 backdrop-blur-sm">
+                  <svg
+                    className="w-3 h-3 mr-1 text-blue-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                  Data Aman
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Form */}
+        <div className="lg:col-span-2">
+          <div
+            className="glass rounded-2xl shadow-xl overflow-hidden"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.1) 50%, rgba(245, 158, 11, 0.15) 100%)",
+              border: "1px solid rgba(245, 158, 11, 0.2)",
+            }}
+          >
+            <div className="bg-gradient-to-r from-yellow-400 to-yellow-500 px-6 py-4">
+              <h1 className="text-2xl font-bold text-white flex items-center">
+                <svg
+                  className="w-6 h-6 mr-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+                Informasi Pribadi
+              </h1>
+              <p className="text-blue-100 text-sm mt-1">
+                Kelola data profil Anda dengan aman
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-8">
+              {/* Avatar Section */}
+              <div className="bg-surface border border-base rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-4 flex items-center text-gradient">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Foto Profil
+                </h3>
+                <div className="flex items-start gap-6">
+                  <div className="relative">
+                    <div className="w-20 h-20 rounded-full overflow-hidden bg-surface-alt border-2 border-base flex items-center justify-center shadow-md">
+                      {avatarPreview ? (
+                        <img
+                          src={avatarPreview}
+                          alt="Avatar preview"
+                          className="w-full h-full object-cover"
                         />
+                      ) : (
+                        <div className="text-2xl font-bold text-muted">
+                          {user.firstName?.[0]?.toUpperCase() ||
+                            user.email?.[0]?.toUpperCase() ||
+                            "U"}
+                        </div>
+                      )}
+                    </div>
+                    <label className="absolute -bottom-1 -right-1 bg-accent rounded-full p-2 shadow-lg border-2 border-white dark:border-neutral-800 cursor-pointer hover:bg-accent-hover transition-colors">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarChange}
+                        className="hidden"
+                      />
+                      <svg
+                        className="w-4 h-4 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                        />
+                      </svg>
+                    </label>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex gap-3 mb-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          fileInputRef.current && fileInputRef.current.click()
+                        }
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium transition-colors"
+                      >
                         <svg
-                          className="w-4 h-4 text-white"
+                          className="w-4 h-4"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -317,19 +348,16 @@ const ProfilePage = () => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                           />
                         </svg>
-                      </label>
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex gap-3 mb-3">
+                        Unggah Foto
+                      </button>
+                      {avatarPreview && (
                         <button
                           type="button"
-                          onClick={() =>
-                            fileInputRef.current && fileInputRef.current.click()
-                          }
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg font-medium transition-colors"
+                          onClick={handleRemoveAvatar}
+                          className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
                         >
                           <svg
                             className="w-4 h-4"
@@ -341,126 +369,41 @@ const ProfilePage = () => {
                               strokeLinecap="round"
                               strokeLinejoin="round"
                               strokeWidth={2}
-                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                             />
                           </svg>
-                          Unggah Foto
+                          Hapus
                         </button>
-                        {avatarPreview && (
-                          <button
-                            type="button"
-                            onClick={handleRemoveAvatar}
-                            className="inline-flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                            Hapus
-                          </button>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted">
-                        Format: JPG, PNG, atau GIF. Maksimal 2MB.
-                      </p>
+                      )}
                     </div>
+                    <p className="text-sm text-muted">
+                      Format: JPG, PNG, atau GIF. Maksimal 2MB.
+                    </p>
                   </div>
                 </div>
-                {/* Personal Information */}
-                <div className="bg-surface border border-base rounded-xl p-6">
-                  <h3 className="text-lg font-semibold mb-6 flex items-center text-gradient">
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10m0 0l-2-2m2 2l2-2m6-6v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6a2 2 0 012-2h8a2 2 0 012 2z"
-                      />
-                    </svg>
-                    Data Pribadi
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-muted mb-2">
-                        Nama Depan
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg
-                            className="w-5 h-5 text-muted"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          name="firstName"
-                          value={formData.firstName}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                          placeholder="Masukkan nama depan"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted mb-2">
-                        Nama Belakang
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg
-                            className="w-5 h-5 text-muted"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          name="lastName"
-                          value={formData.lastName}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                          placeholder="Masukkan nama belakang"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
+              </div>
+              {/* Personal Information */}
+              <div className="bg-surface border border-base rounded-xl p-6">
+                <h3 className="text-lg font-semibold mb-6 flex items-center text-gradient">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 4v10m0 0l-2-2m2 2l2-2m6-6v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6a2 2 0 012-2h8a2 2 0 012 2z"
+                    />
+                  </svg>
+                  Data Pribadi
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
                     <label className="block text-sm font-medium text-muted mb-2">
-                      Username
+                      Nama Depan
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -474,25 +417,24 @@ const ProfilePage = () => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                           />
                         </svg>
                       </div>
                       <input
                         type="text"
-                        name="username"
-                        value={formData.username}
+                        name="firstName"
+                        value={formData.firstName}
                         onChange={handleChange}
                         className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                        placeholder="Masukkan username Anda"
+                        placeholder="Masukkan nama depan"
                         required
                       />
                     </div>
                   </div>
-
-                  <div className="mt-6">
+                  <div>
                     <label className="block text-sm font-medium text-muted mb-2">
-                      Alamat Email
+                      Nama Belakang
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -506,229 +448,293 @@ const ProfilePage = () => {
                             strokeLinecap="round"
                             strokeLinejoin="round"
                             strokeWidth={2}
-                            d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                           />
                         </svg>
                       </div>
                       <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
+                        type="text"
+                        name="lastName"
+                        value={formData.lastName}
                         onChange={handleChange}
                         className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                        placeholder="Masukkan alamat email"
+                        placeholder="Masukkan nama belakang"
                         required
                       />
                     </div>
                   </div>
-
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium text-muted mb-2">
-                      Nomor Telepon
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg
-                          className="w-5 h-5 text-muted"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                          />
-                        </svg>
-                      </div>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                        className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                        placeholder="Masukkan nomor telepon Anda"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium text-muted mb-3">
-                      Jenis Kelamin
-                    </label>
-                    <div className="flex gap-6">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="Laki-laki"
-                          checked={formData.gender === "Laki-laki"}
-                          onChange={handleChange}
-                          className="w-4 h-4 text-accent border-base focus:ring-accent/20 focus:ring-2"
-                          required
-                        />
-                        <span className="ml-2 text-sm">Laki-laki</span>
-                      </label>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="gender"
-                          value="Perempuan"
-                          checked={formData.gender === "Perempuan"}
-                          onChange={handleChange}
-                          className="w-4 h-4 text-accent border-base focus:ring-accent/20 focus:ring-2"
-                          required
-                        />
-                        <span className="ml-2 text-sm">Perempuan</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <label className="block text-sm font-medium text-muted mb-2">
-                      Alamat
-                    </label>
-                    <div className="relative">
-                      <div className="absolute top-3 left-3 pointer-events-none">
-                        <svg
-                          className="w-5 h-5 text-muted"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                          />
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                        </svg>
-                      </div>
-                      <textarea
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                        rows={3}
-                        className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200 resize-none"
-                        placeholder="Masukkan alamat lengkap Anda"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                    <div>
-                      <label className="block text-sm font-medium text-muted mb-2">
-                        Kode Pos
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg
-                            className="w-5 h-5 text-muted"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 21v-4a4 4 0 014-4h5a4 4 0 014 4v4M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.85M8 11a4 4 0 100-8 4 4 0 000 8z"
-                            />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          name="postalCode"
-                          value={formData.postalCode}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                          placeholder="12345"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted mb-2">
-                        Kota/Kecamatan
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg
-                            className="w-5 h-5 text-muted"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                            />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          name="city"
-                          value={formData.city}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                          placeholder="Jakarta"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-muted mb-2">
-                        Provinsi
-                      </label>
-                      <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg
-                            className="w-5 h-5 text-muted"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          name="province"
-                          value={formData.province}
-                          onChange={handleChange}
-                          className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
-                          placeholder="DKI Jakarta"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>{" "}
-                <div className="flex items-center justify-between pt-6 border-t border-base">
-                  <div className="text-sm text-muted">
-                    Pastikan semua data sudah benar sebelum menyimpan perubahan
-                  </div>
-                  <button
-                    type="submit"
-                    className="btn-primary px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 text-center"
-                  >
-                    Perbarui Profil
-                  </button>
                 </div>
-              </form>
-            </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    Username
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg
+                        className="w-5 h-5 text-muted"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                        />
+                      </svg>
+                    </div>
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
+                      placeholder="Masukkan username Anda"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    Alamat Email
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg
+                        className="w-5 h-5 text-muted"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </div>
+                    <input
+                      type="email"
+                      name="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
+                      placeholder="Masukkan alamat email"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    Nomor Telepon
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg
+                        className="w-5 h-5 text-muted"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                        />
+                      </svg>
+                    </div>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
+                      placeholder="Masukkan nomor telepon Anda"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-muted mb-3">
+                    Jenis Kelamin
+                  </label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="Laki-laki"
+                        checked={formData.gender === "Laki-laki"}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-accent border-base focus:ring-accent/20 focus:ring-2"
+                        required
+                      />
+                      <span className="ml-2 text-sm">Laki-laki</span>
+                    </label>
+                    <label className="flex items-center cursor-pointer">
+                      <input
+                        type="radio"
+                        name="gender"
+                        value="Perempuan"
+                        checked={formData.gender === "Perempuan"}
+                        onChange={handleChange}
+                        className="w-4 h-4 text-accent border-base focus:ring-accent/20 focus:ring-2"
+                        required
+                      />
+                      <span className="ml-2 text-sm">Perempuan</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="mt-6">
+                  <label className="block text-sm font-medium text-muted mb-2">
+                    Alamat
+                  </label>
+                  <div className="relative">
+                    <div className="absolute top-3 left-3 pointer-events-none">
+                      <svg
+                        className="w-5 h-5 text-muted"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                      </svg>
+                    </div>
+                    <textarea
+                      name="address"
+                      value={formData.address}
+                      onChange={handleChange}
+                      rows={3}
+                      className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200 resize-none"
+                      placeholder="Masukkan alamat lengkap Anda"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-2">
+                      Kode Pos
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg
+                          className="w-5 h-5 text-muted"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3 21v-4a4 4 0 014-4h5a4 4 0 014 4v4M16 3.13a4 4 0 010 7.75M21 21v-2a4 4 0 00-3-3.85M8 11a4 4 0 100-8 4 4 0 000 8z"
+                          />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="postalCode"
+                        value={formData.postalCode}
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
+                        placeholder="12345"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-2">
+                      Kota/Kecamatan
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg
+                          className="w-5 h-5 text-muted"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                          />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
+                        placeholder="Jakarta"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-muted mb-2">
+                      Provinsi
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg
+                          className="w-5 h-5 text-muted"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <input
+                        type="text"
+                        name="province"
+                        value={formData.province}
+                        onChange={handleChange}
+                        className="w-full pl-10 pr-3 py-3 border border-base rounded-lg bg-surface placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/20 transition-all duration-200"
+                        placeholder="DKI Jakarta"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>{" "}
+              <div className="flex items-center justify-between pt-6 border-t border-base">
+                <div className="text-sm text-muted">
+                  Pastikan semua data sudah benar sebelum menyimpan perubahan
+                </div>
+                <button
+                  type="submit"
+                  className="btn-primary px-6 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 text-center"
+                >
+                  Perbarui Profil
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
