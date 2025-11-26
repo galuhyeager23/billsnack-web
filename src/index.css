@@ -30,47 +30,118 @@
 }
 
 @layer base {
-  * { @apply box-border; }
-  html { @apply scroll-smooth; }
+  * {
+    @apply box-border;
+  }
+  html {
+    @apply scroll-smooth;
+  }
   body {
     font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     min-height: 100vh;
-    background: linear-gradient(120deg, rgb(var(--bg)) 0%, rgb(var(--surface)) 55%, rgb(var(--surface-alt)) 100%);
+    background: linear-gradient(
+      120deg,
+      rgb(var(--bg)) 0%,
+      rgb(var(--surface)) 55%,
+      rgb(var(--surface-alt)) 100%
+    );
     color: rgb(var(--text));
   }
   .dark body {
-    background: linear-gradient(160deg, rgb(var(--bg)) 0%, rgb(var(--bg-muted)) 60%, rgb(var(--surface)) 100%);
+    background: linear-gradient(
+      160deg,
+      rgb(var(--bg)) 0%,
+      rgb(var(--bg-muted)) 60%,
+      rgb(var(--surface)) 100%
+    );
     color: rgb(var(--text));
   }
-  a { @apply underline-offset-2 transition-colors; color: rgb(var(--accent)); }
-  a:hover { color: rgb(var(--accent-hover)); }
-  h1,h2,h3,h4,h5 { font-family: theme('fontFamily.sans'); letter-spacing: -0.015em; color: rgb(var(--text)); }
-  .dark h1,.dark h2,.dark h3,.dark h4,.dark h5 { color: rgb(var(--text)); }
-  button { @apply transition-all duration-200 active:scale-[.97]; }
-  input, textarea, select { @apply outline-none ring-0 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400; background-color: rgb(var(--surface)); color: rgb(var(--text)); border: 1px solid rgb(var(--border)); }
-  ::selection { background: rgb(var(--accent)); color: rgb(var(--accent-fg)); }
+  a {
+    @apply underline-offset-2 transition-colors;
+    color: rgb(var(--accent));
+  }
+  a:hover {
+    color: rgb(var(--accent-hover));
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    font-family: theme("fontFamily.sans");
+    letter-spacing: -0.015em;
+    color: rgb(var(--text));
+  }
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4,
+  .dark h5 {
+    color: rgb(var(--text));
+  }
+  button {
+    @apply transition-all duration-200 active:scale-[.97];
+  }
+  input,
+  textarea,
+  select {
+    @apply outline-none ring-0 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:focus:ring-amber-400;
+    background-color: rgb(var(--surface));
+    color: rgb(var(--text));
+    border: 1px solid rgb(var(--border));
+  }
+  ::selection {
+    background: rgb(var(--accent));
+    color: rgb(var(--accent-fg));
+  }
 }
 
 /* Scrollbar styling */
-::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
-html.dark ::-webkit-scrollbar-thumb { background: #374151; }
-html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #e2e8f0;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #cbd5e1;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #374151;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
 
 /* Components */
 @layer components {
-  .container-custom { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
   .btn-primary {
     @apply relative inline-flex items-center justify-center gap-2 font-semibold py-3 px-6 rounded-xl shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2;
-    background: linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--accent-hover)) 100%);
+    background: linear-gradient(
+      90deg,
+      rgb(var(--accent)) 0%,
+      rgb(var(--accent-hover)) 100%
+    );
     color: rgb(var(--accent-fg));
   }
-  .btn-primary:hover { filter: brightness(1.05); }
-  .dark .btn-primary { box-shadow: 0 4px 16px -4px rgba(var(--accent),0.25); }
-  .btn-primary:focus { --tw-ring-color: rgb(var(--accent)); --tw-ring-offset-color: rgb(var(--surface)); }
+  .btn-primary:hover {
+    filter: brightness(1.05);
+  }
+  .dark .btn-primary {
+    box-shadow: 0 4px 16px -4px rgba(var(--accent), 0.25);
+  }
+  .btn-primary:focus {
+    --tw-ring-color: rgb(var(--accent));
+    --tw-ring-offset-color: rgb(var(--surface));
+  }
 
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-2 font-medium py-3 px-6 rounded-xl shadow-sm border focus:outline-none focus:ring-2 focus:ring-offset-2;
@@ -78,26 +149,44 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
     color: rgb(var(--text));
     border-color: rgb(var(--border));
   }
-  .btn-secondary:hover { background-color: rgb(var(--surface-alt)); }
-  .dark .btn-secondary { box-shadow: 0 2px 6px -2px rgba(0,0,0,0.4); }
+  .btn-secondary:hover {
+    background-color: rgb(var(--surface-alt));
+  }
+  .dark .btn-secondary {
+    box-shadow: 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  }
 
   .glass {
     backdrop-filter: blur(6px);
-    background: rgba(var(--surface),0.75);
-    border: 1px solid rgba(var(--border),0.7);
+    background: rgba(var(--surface), 0.75);
+    border: 1px solid rgba(var(--border), 0.7);
   }
-  .dark .glass { background: rgba(var(--surface),0.55); }
+  .dark .glass {
+    background: rgba(var(--surface), 0.55);
+  }
 
-  .card { @apply rounded-2xl transition-shadow; background-color: rgb(var(--surface)); border: 1px solid rgb(var(--border)); }
-  .card:hover { box-shadow: 0 6px 20px -6px rgba(0,0,0,0.15); }
-  .dark .card { background-color: rgb(var(--surface)); border-color: rgba(var(--border),0.9); }
+  .card {
+    @apply rounded-2xl transition-shadow;
+    background-color: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
+  }
+  .card:hover {
+    box-shadow: 0 6px 20px -6px rgba(0, 0, 0, 0.15);
+  }
+  .dark .card {
+    background-color: rgb(var(--surface));
+    border-color: rgba(var(--border), 0.9);
+  }
 
   .badge {
     @apply inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold;
-    background-color: rgb(var(--accent)/0.15);
+    background-color: rgb(var(--accent) / 0.15);
     color: rgb(var(--accent-hover));
   }
-  .dark .badge { background-color: rgb(var(--accent)/0.25); color: rgb(var(--accent)); }
+  .dark .badge {
+    background-color: rgb(var(--accent) / 0.25);
+    color: rgb(var(--accent));
+  }
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -107,12 +196,18 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
   /* WhatsApp style button aware of dark mode */
   .whatsapp-btn {
     @apply inline-flex items-center justify-center font-semibold;
-    background-color: #25D366;
+    background-color: #25d366;
     color: #ffffff;
-    border: 1px solid rgba(0,0,0,0.06);
+    border: 1px solid rgba(0, 0, 0, 0.06);
   }
-  .whatsapp-btn:hover { filter: brightness(.95); }
-  .dark .whatsapp-btn { background-color: #128C7E; color: #ffffff; border-color: rgba(255,255,255,0.06); }
+  .whatsapp-btn:hover {
+    filter: brightness(0.95);
+  }
+  .dark .whatsapp-btn {
+    background-color: #128c7e;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.06);
+  }
   /* Unified icon button style for header/profile/cart/theme */
   .icon-btn {
     @apply w-10 h-10 rounded-full flex items-center justify-center border transition shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400;
@@ -124,14 +219,29 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
     background-color: rgb(var(--surface));
     color: rgb(var(--accent));
     border-color: rgb(var(--accent));
-    box-shadow: 0 0 0 2px rgba(var(--accent),0.35), 0 0 0 4px rgba(var(--accent),0.15);
+    box-shadow: 0 0 0 2px rgba(var(--accent), 0.35),
+      0 0 0 4px rgba(var(--accent), 0.15);
   }
-  .dark .icon-btn { box-shadow: 0 0 0 1px rgba(var(--border),0.3); }
-  .dark .icon-btn:hover { box-shadow: 0 0 0 2px rgba(var(--accent),0.55), 0 0 0 6px rgba(var(--accent),0.25); }
-  .icon-btn:hover .user-avatar-inner { border-color: rgb(var(--accent)); }
-  .icon-btn:hover .user-avatar-inner img { outline: 2px solid rgb(var(--accent)); outline-offset: 0; }
-  .icon-btn svg { stroke: currentColor; }
-  .icon-btn:hover svg { stroke: rgb(var(--accent)); }
+  .dark .icon-btn {
+    box-shadow: 0 0 0 1px rgba(var(--border), 0.3);
+  }
+  .dark .icon-btn:hover {
+    box-shadow: 0 0 0 2px rgba(var(--accent), 0.55),
+      0 0 0 6px rgba(var(--accent), 0.25);
+  }
+  .icon-btn:hover .user-avatar-inner {
+    border-color: rgb(var(--accent));
+  }
+  .icon-btn:hover .user-avatar-inner img {
+    outline: 2px solid rgb(var(--accent));
+    outline-offset: 0;
+  }
+  .icon-btn svg {
+    stroke: currentColor;
+  }
+  .icon-btn:hover svg {
+    stroke: rgb(var(--accent));
+  }
 }
 
 /* Utility overrides */
@@ -144,17 +254,44 @@ html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
      - Use .border-base for neutral borders (instead of border-gray-*).
      - Use .accent-bg / .accent-text for call-to-action elements.
      Keep existing error colors (red) as-is for clarity. */
-  .bg-surface { background-color: rgb(var(--surface)); }
-  .bg-surface-alt { background-color: rgb(var(--surface-alt)); }
-  .text-muted { color: rgb(var(--text-muted)); }
-  .border-base { border-color: rgb(var(--border)); }
-  .accent-bg { background-color: rgb(var(--accent)); color: rgb(var(--accent-fg)); }
-  .accent-bg:hover { background-color: rgb(var(--accent-hover)); }
-  .accent-text { color: rgb(var(--accent)); }
-  .accent-text:hover { color: rgb(var(--accent-hover)); }
-  .text-gradient { background: linear-gradient(90deg, rgb(var(--accent)) 0%, rgb(var(--accent-hover)) 100%); -webkit-background-clip: text; color: transparent; }
+  .bg-surface {
+    background-color: rgb(var(--surface));
+  }
+  .bg-surface-alt {
+    background-color: rgb(var(--surface-alt));
+  }
+  .text-muted {
+    color: rgb(var(--text-muted));
+  }
+  .border-base {
+    border-color: rgb(var(--border));
+  }
+  .accent-bg {
+    background-color: rgb(var(--accent));
+    color: rgb(var(--accent-fg));
+  }
+  .accent-bg:hover {
+    background-color: rgb(var(--accent-hover));
+  }
+  .accent-text {
+    color: rgb(var(--accent));
+  }
+  .accent-text:hover {
+    color: rgb(var(--accent-hover));
+  }
+  .text-gradient {
+    background: linear-gradient(
+      90deg,
+      rgb(var(--accent)) 0%,
+      rgb(var(--accent-hover)) 100%
+    );
+    -webkit-background-clip: text;
+    color: transparent;
+  }
 }
 
 /* Dark mode transitions */
-html.dark body, body { transition: background 400ms, color 250ms; }
-
+html.dark body,
+body {
+  transition: background 400ms, color 250ms;
+}
